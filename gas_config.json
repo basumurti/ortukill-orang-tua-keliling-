@@ -1,0 +1,13 @@
+{
+  "webAppUrl": "https://script.google.com/macros/s/AKfycbz3ETMp4XjXq7Qi2zdGuMNr9EVjZGrU5UTuT6g93nXNH3SyZSmIa6sys4Jrd8nNAJFiAA/exec",
+  "sheetConfig": {
+    "productsSheet": "DASHBOARD_MUTASI_&_PROFIT",
+    "productRange": "B70:J",
+    "salesLogSheet": "LOG_PENJUALAN",
+    "barangMasukSheet": "LOG_BARANG_MASUK",
+    "productStartRow": 70,
+    "salesLogStartRow": 7,
+    "barangMasukStartRow": 4
+  },
+  "lastSynced": "2026-09-20T06:22:35.487Z"
+}
