@@ -66,6 +66,8 @@ export interface TransactionItem {
 export interface TransactionReceipt {
   id: string;
   transactionDate: string; // 'dd/MM/yyyy HH:mm:ss'
+  websiteTime?: string; // Jam input website 'HH:mm:ss' atau 'HH:mm'
+  createdAt?: number; // Epoch timestamp saat kasir input transaksi
   date: string; // 'dd/MM/yyyy'
   dateYmd?: string; // 'yyyy-MM-dd' for sorting and grouping
   paymentMethod: PaymentMethod;
@@ -151,4 +153,54 @@ export interface AppConfig {
   currency: string;
   timezone: string;
   webAppUrl?: string;
+}
+
+export type FinanceType = 'INCOME' | 'EXPENSE';
+
+export type FinanceCategory = 
+  | 'ONGKIR'            // Ongkir / Pengiriman (+ Uang Masuk)
+  | 'TIPS'              // Tips & Tambahan Uang (+ Uang Masuk)
+  | 'MODAL_LAIN'        // Modal / Pemasukan Lain (+ Uang Masuk)
+  | 'BENSIN'            // Bensin (- Uang Keluar)
+  | 'PEMBELIAN_STOK'   // Pembelian Stok / Operasional (- Uang Keluar)
+  | 'OPERASIONAL'       // Biaya Operasional / Sewa / Listrik (- Uang Keluar)
+  | 'PENGELUARAN_LAIN'; // Pengeluaran Lain (- Uang Keluar)
+
+export interface FinanceRecord {
+  id: string;
+  date: string; // DD/MM/YYYY
+  dateYmd: string; // YYYY-MM-DD
+  dateTimeStr: string; // DD/MM/YYYY HH:mm
+  type: FinanceType; // 'INCOME' (+) atau 'EXPENSE' (-)
+  category: FinanceCategory | string;
+  categoryLabel: string;
+  unitPrice?: number; // Kolom C (Harga Satuan di sheet LAIN-LAIN)
+  qty?: number; // Kolom D (Jumlah di sheet LAIN-LAIN)
+  amount: number; // Kolom E (Total = Harga * Jumlah)
+  description: string; // Kolom B (Keterangan di sheet LAIN-LAIN)
+  paymentMethod?: string; // Kolom F (Dibayar dengan: BCA, CASH, GOPAY, JAGO)
+  cashier?: string;
+  notes?: string;
+  rowNumber?: number; // Nomor baris di Google Sheets LAIN-LAIN
+  syncStatus?: 'SYNCED' | 'LOCAL' | 'PENDING';
+}
+
+export interface SalesTarget {
+  targetAmount: number;
+  month: string; // YYYY-MM
+  updatedAt?: string;
+}
+
+export interface LastUpdateInfo {
+  timestamp: string; // ISO date string
+  formatted: string; // e.g. "25/09/2026 17:15"
+  source: 'GOOGLE_SHEETS' | 'POS' | 'LOCAL' | 'MANUAL';
+  sourceLabel: string;
+  details?: string;
+  itemCounts?: {
+    products?: number;
+    transactions?: number;
+    finances?: number;
+    barangMasuk?: number;
+  };
 }

@@ -4,9 +4,11 @@ import {
   Store,
   Wifi,
   WifiOff,
-  Sparkles
+  Sparkles,
+  Database,
+  CheckCircle2
 } from 'lucide-react';
-import { BrandConfig } from '../types';
+import { BrandConfig, LastUpdateInfo } from '../types';
 import { formatRupiah } from '../services/storageService';
 
 interface HeaderProps {
@@ -19,6 +21,7 @@ interface HeaderProps {
   isConnectedGas: boolean;
   isSyncing: boolean;
   lastSynced: string | null;
+  lastUpdateInfo?: LastUpdateInfo | null;
   onSyncData: () => void;
   onResetData: () => void;
 }
@@ -33,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
   isConnectedGas,
   isSyncing,
   lastSynced,
+  lastUpdateInfo,
   onSyncData,
 }) => {
   const [currentTime, setCurrentTime] = useState('');
@@ -82,6 +86,18 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right: Honest Connection Pill & Sync Button */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Memorize Base on Last Update Badge */}
+          <div 
+            title={lastUpdateInfo ? `${lastUpdateInfo.sourceLabel}: ${lastUpdateInfo.details || 'Data aktif termemorize'} (${lastUpdateInfo.formatted})` : 'Data dimemorize berdasarkan update terakhir'}
+            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-stone-100/90 border border-stone-200 text-stone-700 shadow-2xs select-none"
+          >
+            <Database className="w-3.5 h-3.5 text-[#FF5E36]" />
+            <span className="text-[11px] font-semibold text-stone-500">Memorized:</span>
+            <span className="text-[11px] font-bold text-stone-800">
+              {lastUpdateInfo?.formatted ? lastUpdateInfo.formatted : (lastSynced ? `${lastSynced} WIB` : 'Terbaru')}
+            </span>
+          </div>
+
           {/* Status Badge */}
           <button
             onClick={() => setActiveTab('gas')}

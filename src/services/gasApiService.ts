@@ -1,4 +1,4 @@
-import { Product, TransactionReceipt, BarangMasukRecord } from '../types';
+import { Product, TransactionReceipt, BarangMasukRecord, FinanceRecord } from '../types';
 import { StorageService, classifyProduct } from './storageService';
 
 export interface GasDiagnosticResult {
@@ -11,6 +11,7 @@ export interface GasDiagnosticResult {
     products: string;
     salesLog: string;
     barangMasuk: string;
+    pengeluaranLain?: string;
   };
   sheetsStatus?: {
     productsSheetFound: boolean;
@@ -21,6 +22,8 @@ export interface GasDiagnosticResult {
     salesLogRowCount?: number;
     barangMasukSheetFound?: boolean;
     barangMasukRowCount?: number;
+    pengeluaranLainSheetFound?: boolean;
+    pengeluaranLainRowCount?: number;
   };
   sampleProductsLoaded?: Product[];
   ready?: boolean;
@@ -35,11 +38,13 @@ export interface GasAllDataResponse {
   todaySummary?: any;
   salesHistory?: TransactionReceipt[];
   barangMasukList?: BarangMasukRecord[];
+  pengeluaranLainList?: FinanceRecord[];
   diagnostics?: {
     productsCount: number;
     todayCount: number;
     totalSalesLogged: number;
     barangMasukCount?: number;
+    pengeluaranLainCount?: number;
   };
 }
 
@@ -47,24 +52,76 @@ export const DEFAULT_GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycb
 
 export class GasApiService {
   private static STORAGE_URL_KEY = 'ortukill_pos_gas_url_v2';
+  private static STORAGE_PRIMARY_URL_KEY = 'ortukill_pos_primary_gas_url_v2';
   private static STORAGE_LAST_SYNC = 'ortukill_pos_last_sync_v2';
+
+  // In-flight request lock & recent processed cache for frontend deduplication
+  private static activeInFlightRequests = new Set<string>();
+  private static recentProcessedKeys = new Set<string>();
+
+  private static trackKeyProcessed(key: string) {
+    this.recentProcessedKeys.add(key);
+    setTimeout(() => {
+      this.recentProcessedKeys.delete(key);
+    }, 60000); // 60-second idempotency window
+  }
+
+  // Lepaskan kunci duplikasi transaksi (misal saat transaksi di-void atau dihapus)
+  static releaseTransactionKey(trxId: string): void {
+    const cleanId = String(trxId || '').replace(/^#/, '').trim();
+    this.activeInFlightRequests.delete(`trx_${cleanId}`);
+    this.recentProcessedKeys.delete(`trx_${cleanId}`);
+    this.activeInFlightRequests.delete(`trx_${trxId}`);
+    this.recentProcessedKeys.delete(`trx_${trxId}`);
+  }
+
+  // Get Primary Store URL (URL Utama Toko yang bisa dirubah-rubah)
+  static getPrimaryStoreUrl(): string {
+    const saved = localStorage.getItem(this.STORAGE_PRIMARY_URL_KEY);
+    if (saved && saved.trim()) {
+      return saved.trim();
+    }
+    return DEFAULT_GAS_WEBAPP_URL;
+  }
+
+  // Set / Change Primary Store URL (Simpan permanen di server & browser)
+  static async setPrimaryStoreUrl(url: string): Promise<{ success: boolean; message?: string }> {
+    const cleanUrl = (url && url.trim()) || DEFAULT_GAS_WEBAPP_URL;
+    localStorage.setItem(this.STORAGE_PRIMARY_URL_KEY, cleanUrl);
+    localStorage.setItem(this.STORAGE_URL_KEY, cleanUrl);
+
+    try {
+      const res = await fetch('/api/gas/set-primary-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ primaryWebAppUrl: cleanUrl }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      }
+    } catch (err: any) {
+      console.warn('Gagal menyimpan primary URL ke server backend, disimpan di browser:', err);
+    }
+    return { success: true, message: 'URL Utama Toko tersimpan di browser.' };
+  }
 
   static getSavedWebAppUrl(): string {
     const saved = localStorage.getItem(this.STORAGE_URL_KEY);
     if (saved && saved.trim()) {
       return saved.trim();
     }
-    // Auto populate default permanent URL so user NEVER has to re-enter it
+    const primary = this.getPrimaryStoreUrl();
     try {
-      localStorage.setItem(this.STORAGE_URL_KEY, DEFAULT_GAS_WEBAPP_URL);
+      localStorage.setItem(this.STORAGE_URL_KEY, primary);
     } catch {
       // ignore
     }
-    return DEFAULT_GAS_WEBAPP_URL;
+    return primary;
   }
 
   static setSavedWebAppUrl(url: string): void {
-    const finalUrl = (url && url.trim()) || DEFAULT_GAS_WEBAPP_URL;
+    const finalUrl = (url && url.trim()) || this.getPrimaryStoreUrl();
     localStorage.setItem(this.STORAGE_URL_KEY, finalUrl);
   }
 
@@ -77,46 +134,56 @@ export class GasApiService {
   }
 
   // Get status from backend
-  static async getStatus(): Promise<{ configured: boolean; webAppUrl: string; lastSynced?: string }> {
+  static async getStatus(): Promise<{ configured: boolean; webAppUrl: string; primaryWebAppUrl?: string; lastSynced?: string }> {
     try {
       const res = await fetch('/api/gas/status');
       if (res.ok) {
         const data = await res.json();
-        const urlToUse = (data.webAppUrl && data.webAppUrl.trim()) || DEFAULT_GAS_WEBAPP_URL;
+        const primaryToUse = (data.primaryWebAppUrl && data.primaryWebAppUrl.trim()) || this.getPrimaryStoreUrl();
+        const urlToUse = (data.webAppUrl && data.webAppUrl.trim()) || primaryToUse;
+
+        localStorage.setItem(this.STORAGE_PRIMARY_URL_KEY, primaryToUse);
         this.setSavedWebAppUrl(urlToUse);
+
         return {
           ...data,
           configured: true,
           webAppUrl: urlToUse,
+          primaryWebAppUrl: primaryToUse,
         };
       }
     } catch {
       // Offline / fallback to local storage
     }
+    const localPrimary = this.getPrimaryStoreUrl();
     const localUrl = this.getSavedWebAppUrl();
     return {
       configured: !!localUrl,
       webAppUrl: localUrl,
+      primaryWebAppUrl: localPrimary,
       lastSynced: this.getLastSync() || undefined,
     };
   }
 
   // Save config & test
-  static async configureWebAppUrl(webAppUrl: string): Promise<{ success: boolean; message: string; testResult?: any }> {
+  static async configureWebAppUrl(webAppUrl: string, setAsPrimary = false): Promise<{ success: boolean; message: string; testResult?: any }> {
     this.setSavedWebAppUrl(webAppUrl);
+    if (setAsPrimary) {
+      localStorage.setItem(this.STORAGE_PRIMARY_URL_KEY, webAppUrl.trim());
+    }
 
     try {
       const res = await fetch('/api/gas/configure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ webAppUrl }),
+        body: JSON.stringify({ webAppUrl, setAsPrimary }),
       });
 
       if (res.ok) {
         const data = await res.json();
         return {
           success: true,
-          message: 'Konfigurasi tersimpan.',
+          message: setAsPrimary ? 'URL disimpan & ditetapkan sebagai URL Utama Toko.' : 'Konfigurasi tersimpan.',
           testResult: data.testResult,
         };
       }
@@ -126,7 +193,7 @@ export class GasApiService {
 
     return {
       success: true,
-      message: 'URL tersimpan di browser.',
+      message: 'URL tersimpan secara lokal di browser.',
     };
   }
 
@@ -198,7 +265,7 @@ export class GasApiService {
 
       // 1. Sync Products
       if (result.products && result.products.length > 0) {
-        StorageService.saveProducts(result.products);
+        StorageService.saveProducts(result.products, 'GOOGLE_SHEETS', `Sinkronisasi Spreadsheet (${result.products.length} produk)`);
       }
 
       // 2. Sync Sales History & Today's Transactions (Berdasarkan Tanggal)
@@ -215,18 +282,64 @@ export class GasApiService {
         normalizedSales.forEach((t) => mergedMap.set(t.id, t));
         todayMap.forEach((t, id) => mergedMap.set(id, t));
 
-        const finalTransactions = Array.from(mergedMap.values());
-        finalTransactions.sort((a, b) => String(b.dateYmd || b.date || '').localeCompare(String(a.dateYmd || a.date || '')));
+        // PENTING: Pertahankan JAM INPUT WEBSITE ASLI agar tidak ditimpa/diacak Google
+        const localExisting = StorageService.getTransactions();
+        const localMap = new Map(localExisting.map((t) => [t.id, t]));
 
-        if (finalTransactions.length > 0) {
-          localStorage.setItem('ortukill_pos_transactions_v1', JSON.stringify(finalTransactions));
-        }
+        mergedMap.forEach((sheetTrx, id) => {
+          const local = localMap.get(id);
+          if (local) {
+            if (local.websiteTime) {
+              sheetTrx.websiteTime = local.websiteTime;
+            }
+            if (local.createdAt) {
+              sheetTrx.createdAt = local.createdAt;
+            }
+            if (local.transactionDate && local.transactionDate.includes(':') && !local.transactionDate.includes('00:00')) {
+              sheetTrx.transactionDate = local.transactionDate;
+            }
+          } else if (!sheetTrx.websiteTime && sheetTrx.transactionDate && sheetTrx.transactionDate.includes(' ')) {
+            const timePart = sheetTrx.transactionDate.split(' ')[1].replace(/\./g, ':');
+            if (timePart !== '00:00' && timePart !== '00:00:00') {
+              sheetTrx.websiteTime = timePart;
+            }
+          }
+        });
+
+        const finalTransactions = Array.from(mergedMap.values());
+        // Urutkan transaksi secara konsisten berdasarkan tanggal & jam input website
+        finalTransactions.sort((a, b) => {
+          if (b.createdAt && a.createdAt && b.createdAt !== a.createdAt) {
+            return b.createdAt - a.createdAt;
+          }
+          const dateComp = String(b.dateYmd || b.date || '').localeCompare(String(a.dateYmd || a.date || ''));
+          if (dateComp !== 0) return dateComp;
+          const timeA = a.websiteTime || (a.transactionDate?.includes(' ') ? a.transactionDate.split(' ')[1] : '');
+          const timeB = b.websiteTime || (b.transactionDate?.includes(' ') ? b.transactionDate.split(' ')[1] : '');
+          if (timeB && timeA && timeB !== timeA) {
+            return timeB.localeCompare(timeA);
+          }
+          return b.id.localeCompare(a.id);
+        });
+
+        StorageService.saveTransactions(finalTransactions, 'GOOGLE_SHEETS', `Sinkronisasi ${finalTransactions.length} transaksi dari Spreadsheet`);
       }
 
       // 3. Sync LOG_BARANG_MASUK
-      if (result.barangMasukList && result.barangMasukList.length > 0) {
+      if (result.barangMasukList) {
         StorageService.saveBarangMasukList(result.barangMasukList);
       }
+
+      // 4. Sync LAIN-LAIN (PENGELUARAN LAIN-LAIN)
+      if (result.pengeluaranLainList) {
+        StorageService.syncPengeluaranLainList(result.pengeluaranLainList);
+      }
+
+      StorageService.setLastUpdateInfo({
+        source: 'GOOGLE_SHEETS',
+        sourceLabel: 'Google Sheets',
+        details: `Sinkronisasi Spreadsheet berhasil (${result.products?.length || 0} produk)`,
+      });
     }
 
     return result;
@@ -235,149 +348,388 @@ export class GasApiService {
   // Push new transaction to Google Sheets
   // PENTING: Untuk penulisan di Google Sheets (LOG_PENJUALAN), wajib menggunakan harga biasa bukan harga jual merah!
   static async pushTransaction(trx: TransactionReceipt): Promise<{ success: boolean; message?: string }> {
+    const lockKey = `trx_${trx.id}`;
+    if (this.activeInFlightRequests.has(lockKey) || this.recentProcessedKeys.has(lockKey)) {
+      console.warn(`[GasApiService Deduplication] Request untuk transaksi ${trx.id} diabaikan karena sedang/sudah dikirim.`);
+      return { success: true, message: 'Transaksi sedang/sudah dikirim (Deduplicated).' };
+    }
+
+    this.activeInFlightRequests.add(lockKey);
+
+    try {
+      const webAppUrl = this.getSavedWebAppUrl();
+
+      // Siapkan data transaksi khusus Google Sheets menggunakan HARGA BIASA
+      const sheetItems = trx.items.map((item) => {
+        const regularPrice = Number(item.regularPrice ?? item.price) || 0;
+        const regularTotal = regularPrice * item.qty;
+        const regularMargin = (regularPrice - (item.cost || 0)) * item.qty;
+
+        return {
+          ...item,
+          price: regularPrice, // Harga Jual Biasa
+          regularPrice: regularPrice,
+          total: regularTotal,
+          subtotal: regularTotal,
+          margin: regularMargin,
+        };
+      });
+
+      // PENTING: Jika ada diskon/promo, masukkan sebagai baris potongan PROMO-DISKON
+      // agar kolom G (Total Penjualan) di Google Sheets klop 100% dengan omset kasir
+      if (trx.discount && trx.discount > 0) {
+        const promoSku = (trx.promoCode ? trx.promoCode.trim().toUpperCase() : 'PROMO-DISKON');
+        const promoLabel = trx.promoName
+          ? `PROMO: ${trx.promoName}`
+          : 'POTONGAN PROMO / DISKON';
+
+        sheetItems.push({
+          productId: promoSku,
+          sku: promoSku,
+          name: promoLabel,
+          price: -Math.abs(trx.discount),
+          regularPrice: -Math.abs(trx.discount),
+          qty: 1,
+          total: -Math.abs(trx.discount),
+          subtotal: -Math.abs(trx.discount),
+          margin: -Math.abs(trx.discount),
+        });
+      }
+
+      // ATURAN MUTLAK:
+      // Biaya ongkir TIDAK BOLEH masuk ke sheet LOG_PENJUALAN.
+      // Semua ongkir dialihkan dan dicatat langsung ke sheet LAIN-LAIN.
+
+      const sheetSubtotal = sheetItems.reduce((sum, item) => sum + item.total, 0);
+      const sheetTotal = sheetSubtotal;
+      const sheetMargin = sheetItems.reduce((sum, item) => sum + item.margin, 0);
+
+      const sheetsPayload = {
+        ...trx,
+        items: sheetItems,
+        subtotal: sheetSubtotal,
+        total: sheetTotal,
+        margin: sheetMargin,
+        customerName: trx.isResellerMode 
+          ? `${trx.customerName || 'Reseller'} [Harga Merah]` 
+          : trx.customerName,
+      };
+
+      // Sinkronisasi biaya ongkir ke sheet LAIN-LAIN secara otomatis
+      if (trx.shippingFee && trx.shippingFee > 0) {
+        const customerSuffix = trx.customerName ? ` (${trx.customerName})` : '';
+        const ongkirDescription = `Ongkir Nota ${trx.id}${customerSuffix}`;
+        
+        this.pushPengeluaranLain({
+          id: `ONGKIR-${trx.id}`,
+          date: trx.date,
+          description: ongkirDescription,
+          unitPrice: trx.shippingFee,
+          qty: 1,
+          amount: trx.shippingFee,
+          paymentMethod: (trx.paymentMethod || 'CASH').toUpperCase(),
+          type: 'INCOME',
+          category: 'ONGKIR',
+          categoryLabel: 'Ongkir Pengiriman (+)',
+          cashier: trx.cashier || 'Kasir',
+        }).catch((err) => {
+          console.warn('Gagal sinkronisasi ongkir ke sheet LAIN-LAIN:', err);
+        });
+      }
+
+      // 1. Try server backend proxy
+      try {
+        const res = await fetch('/api/gas/transaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sheetsPayload),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            this.trackKeyProcessed(lockKey);
+            return data;
+          }
+          // Jika server backend mengembalikan pesan error eksplisit dari Apps Script
+          if (data && data.message) {
+            return data;
+          }
+        }
+      } catch (err) {
+        console.warn('Backend proxy /api/gas/transaction failed:', err);
+      }
+
+      // 2. Direct fallback to Google Apps Script Web App
+      if (webAppUrl) {
+        try {
+          const direct = await fetch(webAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'saveTransaction', transaction: sheetsPayload }),
+          });
+          if (direct.ok) {
+            const result = await direct.json();
+            if (result.success) {
+              this.trackKeyProcessed(lockKey);
+            }
+            return result;
+          }
+        } catch (err: any) {
+          console.warn('Direct GAS sync failed:', err);
+          return { success: false, message: 'Koneksi ke Google Sheets gagal: ' + (err?.message || 'Error') };
+        }
+      }
+
+      return { success: false, message: 'Google Apps Script belum dikonfigurasi atau belum terhubung.' };
+    } finally {
+      this.activeInFlightRequests.delete(lockKey);
+    }
+  }
+
+  // Push record barang masuk to LOG_BARANG_MASUK (B4:H)
+  static async pushBarangMasuk(entry: BarangMasukRecord): Promise<{ success: boolean; message?: string; updatedStock?: number; rowNumber?: number }> {
+    const lockKey = `bm_${entry.sku}_${entry.date}_${entry.qty}_${entry.totalCost}`;
+    if (this.activeInFlightRequests.has(lockKey) || this.recentProcessedKeys.has(lockKey)) {
+      console.warn(`[GasApiService Deduplication] Barang masuk ${entry.sku} diabaikan karena sedang/sudah dikirim.`);
+      return { success: true, message: 'Barang masuk sedang/sudah dikirim (Deduplicated).' };
+    }
+
+    this.activeInFlightRequests.add(lockKey);
+
+    try {
+      const webAppUrl = this.getSavedWebAppUrl();
+
+      // 1. Try server backend proxy
+      try {
+        const res = await fetch('/api/gas/barang-masuk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entry),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            this.trackKeyProcessed(lockKey);
+            return data;
+          }
+        }
+      } catch (err) {
+        console.warn('Backend proxy /api/gas/barang-masuk error:', err);
+      }
+
+      // 2. Direct fallback to Google Apps Script Web App
+      if (webAppUrl) {
+        try {
+          const direct = await fetch(webAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'recordBarangMasuk', entry }),
+          });
+          if (direct.ok) {
+            const data = await direct.json();
+            if (data.success) this.trackKeyProcessed(lockKey);
+            return data;
+          }
+        } catch (err: any) {
+          console.warn('Direct GAS barang masuk failed:', err);
+          return { success: false, message: 'Koneksi ke Google Sheets gagal: ' + (err?.message || 'Error') };
+        }
+      }
+
+      return { success: false, message: 'Google Apps Script belum dikonfigurasi atau belum terhubung.' };
+    } finally {
+      this.activeInFlightRequests.delete(lockKey);
+    }
+  }
+
+  // Push record pengeluaran lain to sheet LAIN-LAIN (A4:F)
+  static async pushPengeluaranLain(entry: {
+    id?: string;
+    date?: string;
+    description: string;
+    unitPrice?: number;
+    qty?: number;
+    amount: number;
+    paymentMethod?: string;
+    type?: string;
+    category?: string;
+    categoryLabel?: string;
+    cashier?: string;
+    isExpense?: boolean;
+    isIncome?: boolean;
+  }): Promise<{ success: boolean; message?: string; rowNumber?: number; entry?: FinanceRecord }> {
+    const entryId = entry.id || `fin_${entry.date || ''}_${entry.description}_${entry.amount}`;
+    const lockKey = `fin_${entryId}`;
+
+    if (this.activeInFlightRequests.has(lockKey) || this.recentProcessedKeys.has(lockKey)) {
+      console.warn(`[GasApiService Deduplication] Finance record ${entryId} diabaikan karena sedang/sudah dikirim.`);
+      return { success: true, message: 'Catatan keuangan sedang/sudah dikirim (Deduplicated).' };
+    }
+
+    this.activeInFlightRequests.add(lockKey);
+
+    try {
+      const webAppUrl = this.getSavedWebAppUrl();
+
+      const isIncome = entry.type === 'INCOME' || entry.isIncome === true || entry.description.toUpperCase().includes('ONGKIR');
+      const enrichedEntry = {
+        ...entry,
+        type: isIncome ? 'INCOME' : 'EXPENSE',
+        isIncome,
+        isExpense: !isIncome,
+      };
+
+      // 1. Try server backend proxy
+      try {
+        const res = await fetch('/api/gas/pengeluaran-lain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(enrichedEntry),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            this.trackKeyProcessed(lockKey);
+            return data;
+          }
+        }
+      } catch (err) {
+        console.warn('Backend proxy /api/gas/pengeluaran-lain error:', err);
+      }
+
+      // 2. Direct fallback to Google Apps Script Web App
+      if (webAppUrl) {
+        try {
+          const direct = await fetch(webAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'recordPengeluaranLain', entry: enrichedEntry }),
+          });
+          if (direct.ok) {
+            const data = await direct.json();
+            if (data.success) this.trackKeyProcessed(lockKey);
+            return data;
+          }
+        } catch (err: any) {
+          console.warn('Direct GAS pengeluaran lain failed:', err);
+          return { success: false, message: 'Koneksi ke Google Sheets gagal: ' + (err?.message || 'Error') };
+        }
+      }
+
+      return { success: false, message: 'Google Apps Script belum dikonfigurasi atau belum terhubung.' };
+    } finally {
+      this.activeInFlightRequests.delete(lockKey);
+    }
+  }
+
+  // PEMBERSIH DUPLIKAT DI SPREADSHEET (Action: cleanDuplicates)
+  static async cleanUpDuplicatesInSheet(): Promise<{ success: boolean; message?: string; deletedSalesCount?: number; deletedLainCount?: number; deletedBMCount?: number; totalDeleted?: number }> {
     const webAppUrl = this.getSavedWebAppUrl();
 
-    // Siapkan data transaksi khusus Google Sheets menggunakan HARGA BIASA
-    const sheetItems = trx.items.map((item) => {
-      const regularPrice = Number(item.regularPrice ?? item.price) || 0;
-      const regularTotal = regularPrice * item.qty;
-      const regularMargin = (regularPrice - (item.cost || 0)) * item.qty;
-
-      return {
-        ...item,
-        price: regularPrice, // Harga Jual Biasa
-        regularPrice: regularPrice,
-        total: regularTotal,
-        subtotal: regularTotal,
-        margin: regularMargin,
-      };
-    });
-
-    // PENTING: Jika ada diskon/promo, masukkan sebagai baris potongan PROMO-DISKON
-    // agar kolom G (Total Penjualan) di Google Sheets klop 100% dengan omset kasir
-    if (trx.discount && trx.discount > 0) {
-      const promoSku = (trx.promoCode ? trx.promoCode.trim().toUpperCase() : 'PROMO-DISKON');
-      const promoLabel = trx.promoName
-        ? `PROMO: ${trx.promoName}`
-        : 'POTONGAN PROMO / DISKON';
-
-      sheetItems.push({
-        productId: promoSku,
-        sku: promoSku,
-        name: promoLabel,
-        price: -Math.abs(trx.discount),
-        regularPrice: -Math.abs(trx.discount),
-        qty: 1,
-        total: -Math.abs(trx.discount),
-        subtotal: -Math.abs(trx.discount),
-        margin: -Math.abs(trx.discount),
-      });
-    }
-
-    // Jika ada ongkir, catat baris biaya pengiriman
-    if (trx.shippingFee && trx.shippingFee > 0) {
-      sheetItems.push({
-        productId: 'ONGKIR',
-        sku: 'ONGKIR',
-        name: 'BIAYA PENGIRIMAN / ONGKIR',
-        price: trx.shippingFee,
-        regularPrice: trx.shippingFee,
-        qty: 1,
-        total: trx.shippingFee,
-        subtotal: trx.shippingFee,
-        margin: 0,
-      });
-    }
-
-    const sheetSubtotal = sheetItems.reduce((sum, item) => sum + item.total, 0);
-    const sheetTotal = sheetSubtotal;
-    const sheetMargin = sheetItems.reduce((sum, item) => sum + item.margin, 0);
-
-    const sheetsPayload = {
-      ...trx,
-      items: sheetItems,
-      subtotal: sheetSubtotal,
-      total: sheetTotal,
-      margin: sheetMargin,
-      customerName: trx.isResellerMode 
-        ? `${trx.customerName || 'Reseller'} [Harga Merah]` 
-        : trx.customerName,
-    };
-
-    // 1. Try server backend proxy
     try {
-      const res = await fetch('/api/gas/transaction', {
+      const res = await fetch('/api/gas/clean-duplicates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sheetsPayload),
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) return data;
-      }
-    } catch (err) {
-      console.warn('Backend proxy /api/gas/transaction failed:', err);
+      if (res.ok) return await res.json();
+    } catch {
+      // ignore
     }
 
-    // 2. Direct fallback to Google Apps Script Web App
     if (webAppUrl) {
       try {
         const direct = await fetch(webAppUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'saveTransaction', transaction: sheetsPayload }),
+          body: JSON.stringify({ action: 'cleanDuplicates' }),
         });
-        if (direct.ok) {
-          return await direct.json();
-        }
+        if (direct.ok) return await direct.json();
       } catch (err: any) {
-        console.warn('Direct GAS sync failed:', err);
-        return { success: false, message: 'Koneksi ke Google Sheets gagal: ' + (err?.message || 'Error') };
+        return { success: false, message: 'Gagal menghubungi Google Apps Script: ' + err.message };
+      }
+    }
+
+    return { success: false, message: 'Google Apps Script belum dikonfigurasi atau terhubung.' };
+  }
+
+  // Fetch Pengeluaran Lain from sheet LAIN-LAIN
+  static async fetchPengeluaranLain(): Promise<{ success: boolean; list?: FinanceRecord[]; message?: string }> {
+    const webAppUrl = this.getSavedWebAppUrl();
+
+    // 1. Try server backend proxy
+    try {
+      const res = await fetch('/api/gas/pengeluaran-lain');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          if (data.list && data.list.length > 0) {
+            StorageService.syncPengeluaranLainList(data.list);
+          }
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend proxy /api/gas/pengeluaran-lain failed:', err);
+    }
+
+    // 2. Direct fallback
+    if (webAppUrl) {
+      try {
+        const fetchUrl = `${webAppUrl}${webAppUrl.includes('?') ? '&' : '?'}action=getPengeluaranLain`;
+        const direct = await fetch(fetchUrl, { redirect: 'follow' });
+        if (direct.ok) {
+          const data = await direct.json();
+          if (data.success && data.list && data.list.length > 0) {
+            StorageService.syncPengeluaranLainList(data.list);
+          }
+          return data;
+        }
+      } catch (e: any) {
+        return { success: false, message: 'Gagal mengambil data dari Google Apps Script: ' + e.message };
       }
     }
 
     return { success: false, message: 'Google Apps Script belum dikonfigurasi atau belum terhubung.' };
   }
 
-  // Push record barang masuk to LOG_BARANG_MASUK (B4:H)
-  static async pushBarangMasuk(entry: BarangMasukRecord): Promise<{ success: boolean; message?: string; updatedStock?: number; rowNumber?: number }> {
+  // Delete row in sheet LAIN-LAIN
+  static async deletePengeluaranLain(rowNumber: number): Promise<{ success: boolean; message?: string }> {
     const webAppUrl = this.getSavedWebAppUrl();
 
     // 1. Try server backend proxy
     try {
-      const res = await fetch('/api/gas/barang-masuk', {
+      const res = await fetch('/api/gas/pengeluaran-lain/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry),
+        body: JSON.stringify({ rowNumber }),
       });
-
       if (res.ok) {
-        const data = await res.json();
-        if (data.success) return data;
+        return await res.json();
       }
     } catch (err) {
-      console.warn('Backend proxy /api/gas/barang-masuk error:', err);
+      console.warn('Backend proxy /api/gas/pengeluaran-lain/delete error:', err);
     }
 
-    // 2. Direct fallback to Google Apps Script Web App
+    // 2. Direct fallback
     if (webAppUrl) {
       try {
         const direct = await fetch(webAppUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'recordBarangMasuk', entry }),
+          body: JSON.stringify({ action: 'deletePengeluaranLain', rowNumber }),
         });
         if (direct.ok) {
           return await direct.json();
         }
       } catch (err: any) {
-        console.warn('Direct GAS barang masuk failed:', err);
-        return { success: false, message: 'Koneksi ke Google Sheets gagal: ' + (err?.message || 'Error') };
+        return { success: false, message: 'Gagal menghapus baris di Google Sheets: ' + err.message };
       }
     }
 
-    return { success: false, message: 'Google Apps Script belum dikonfigurasi atau belum terhubung.' };
+    return { success: false, message: 'Gagal menghapus baris di Google Sheets.' };
   }
 
   // Push stock update to Google Sheets
@@ -408,31 +760,142 @@ export class GasApiService {
     return { success: false, message: 'Gagal update stok ke spreadsheet' };
   }
 
-  // Push void transaction
-  static async pushVoidTransaction(transactionId: string, reason?: string): Promise<{ success: boolean; message?: string }> {
+  // Push void & hapus transaksi dari Google Sheets
+  static async pushVoidTransaction(transactionId: string, reason?: string): Promise<{ success: boolean; message?: string; deletedSalesRows?: number; deletedLainRows?: number; totalDeleted?: number }> {
+    this.releaseTransactionKey(transactionId);
     const webAppUrl = this.getSavedWebAppUrl();
-    if (!webAppUrl) return { success: false, message: 'Belum terhubung ke spreadsheet' };
 
     try {
       const res = await fetch('/api/gas/void', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactionId, reason }),
+        body: JSON.stringify({ transactionId, reason: reason || 'Dibatalkan oleh kasir' }),
       });
       if (res.ok) return await res.json();
-    } catch {
+    } catch (err) {
+      console.warn('Backend proxy /api/gas/void error:', err);
+    }
+
+    if (webAppUrl) {
       try {
         const direct = await fetch(webAppUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'voidTransaction', transactionId, reason }),
+          body: JSON.stringify({ action: 'voidTransaction', transactionId, reason: reason || 'Dibatalkan oleh kasir' }),
         });
         if (direct.ok) return await direct.json();
       } catch (e) {
-        console.warn(e);
+        console.warn('Direct GAS void failed:', e);
       }
     }
-    return { success: false, message: 'Gagal void ke spreadsheet' };
+
+    return { success: false, message: 'Google Apps Script belum terhubung atau offline.' };
+  }
+
+  // Hapus transaksi secara permanen dari Google Sheets
+  static async deleteTransactionFromGas(transactionId: string, reason?: string): Promise<{ success: boolean; message?: string; deletedSalesRows?: number; deletedLainRows?: number; totalDeleted?: number }> {
+    this.releaseTransactionKey(transactionId);
+    const webAppUrl = this.getSavedWebAppUrl();
+
+    // 1. Coba endpoint khusus delete-transaction di backend
+    try {
+      const res = await fetch('/api/gas/delete-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId, reason: reason || 'Dihapus permanen oleh kasir' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) return data;
+      }
+    } catch (err) {
+      console.warn('Backend proxy /api/gas/delete-transaction error:', err);
+    }
+
+    // 2. Coba endpoint void di backend
+    try {
+      const res = await fetch('/api/gas/void', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId, reason: reason || 'Dihapus permanen oleh kasir' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) return data;
+      }
+    } catch (err) {
+      console.warn('Backend proxy /api/gas/void error:', err);
+    }
+
+    // 3. Fallback direct call ke Google Apps Script
+    if (webAppUrl) {
+      try {
+        const direct = await fetch(webAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'deleteTransaction', transactionId, reason: reason || 'Dihapus permanen oleh kasir' }),
+        });
+        if (direct.ok) {
+          const data = await direct.json();
+          if (data.success) return data;
+        }
+      } catch (e) {
+        // Coba action voidTransaction
+        try {
+          const directVoid = await fetch(webAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'voidTransaction', transactionId, reason: reason || 'Dihapus permanen oleh kasir' }),
+          });
+          if (directVoid.ok) return await directVoid.json();
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    return { success: false, message: 'Google Apps Script belum terhubung atau offline.' };
+  }
+
+  // Uji coba Tulis dan Hapus di LOG_PENJUALAN secara langsung
+  static async testWriteAndDeleteLogPenjualan(targetUrl?: string): Promise<{
+    success: boolean;
+    message: string;
+    stage?: string;
+    testId?: string;
+    writeResult?: any;
+    deleteResult?: any;
+  }> {
+    const url = (targetUrl || this.getSavedWebAppUrl() || '').trim();
+    try {
+      const res = await fetch('/api/gas/test-write-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ webAppUrl: url }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err: any) {
+      console.warn('Backend proxy /api/gas/test-write-delete error:', err);
+    }
+
+    if (url) {
+      try {
+        const direct = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'testWriteDelete' }),
+        });
+        if (direct.ok) {
+          return await direct.json();
+        }
+      } catch (err: any) {
+        return { success: false, message: 'Gagal menghubungi Apps Script: ' + err.message };
+      }
+    }
+
+    return { success: false, message: 'Google Apps Script belum dikonfigurasi atau offline.' };
   }
 
   // Isi otomatis Kolom J (KATEGORI) di spreadsheet DASHBOARD_MUTASI_&_PROFIT

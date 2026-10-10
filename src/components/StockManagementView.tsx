@@ -75,10 +75,15 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
         .map((p) => (p.category ? String(p.category).trim() : ''))
         .filter((c): c is string => Boolean(c))
     )
-  );
+  ) as string[];
   const categories: string[] = ['ALL', ...presentCategories];
 
   const filtered = products.filter((p) => {
+    const skuUpper = String(p.sku || '').toUpperCase();
+    const nameUpper = String(p.name || '').toUpperCase();
+    if (skuUpper.includes('PROMO') || nameUpper.includes('PROMO') || nameUpper.includes('POTONGAN') || p.category === 'PROMO') {
+      return false;
+    }
     if (selectedCategory !== 'ALL' && p.category !== selectedCategory) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();

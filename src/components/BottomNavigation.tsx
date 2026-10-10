@@ -11,7 +11,8 @@ import {
   X,
   ChevronRight,
   ShieldCheck,
-  Radio
+  Radio,
+  Receipt
 } from 'lucide-react';
 
 interface BottomNavigationProps {
@@ -93,6 +94,25 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
             {/* Menu Items */}
             <div className="space-y-2">
+              <button
+                onClick={() => {
+                  setActiveTab('history');
+                  setIsMoreMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left bg-stone-50 hover:bg-stone-100 border-stone-100 text-stone-800`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white text-stone-700 shadow-xs flex items-center justify-center">
+                    <Receipt className="w-5 h-5 text-[#FF5E36]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">Pengeluaran & Keuangan Lain</p>
+                    <p className="text-xs text-stone-500">Bensin, operasional, tips (+), ongkir (+)</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-stone-400" />
+              </button>
+
               <button
                 onClick={() => {
                   setActiveTab('shift');

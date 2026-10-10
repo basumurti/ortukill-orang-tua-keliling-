@@ -16,7 +16,8 @@ import {
   Banknote,
   QrCode,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from 'lucide-react';
 import { TransactionReceipt, DailySummary } from '../types';
 import { formatRupiah } from '../services/storageService';
@@ -26,9 +27,58 @@ interface TodayTransactionsViewProps {
   transactions: TransactionReceipt[];
   onViewReceipt: (receipt: TransactionReceipt) => void;
   onVoidTransaction: (id: string, reason: string) => void;
+  onDeleteTransaction?: (id: string) => void;
   onRefresh: () => void;
   onSyncSpreadsheet?: () => void;
   isSyncing?: boolean;
+}
+
+// Helper mengambil jam input website asli tanpa distorsi Google Sheets
+export function getPureWebsiteTime(t: TransactionReceipt): string {
+  // 1. Jika ada websiteTime eksplisit
+  if (t.websiteTime && t.websiteTime.trim()) {
+    return t.websiteTime.trim().replace(/\./g, ':');
+  }
+  // 2. Jika transactionDate memiliki jam (dd/MM/yyyy HH:mm:ss atau HH:mm)
+  if (t.transactionDate) {
+    const str = t.transactionDate.trim();
+    if (str.includes(' ')) {
+      const timePart = str.split(' ')[1].trim().replace(/\./g, ':');
+      if (timePart && timePart !== '00:00' && timePart !== '00:00:00') {
+        return timePart;
+      }
+    } else if (str.includes(':')) {
+      return str.replace(/\./g, ':');
+    }
+  }
+  // 3. Ekstrak dari format ID transaksi jika mengandung waktu: TRX-YYYYMMDD-HHMMSS-XXX
+  if (t.id) {
+    const matchTimeInId = t.id.match(/TRX-\d{8}-(\d{2})(\d{2})(\d{2})/);
+    if (matchTimeInId) {
+      return `${matchTimeInId[1]}:${matchTimeInId[2]}:${matchTimeInId[3]}`;
+    }
+    const matchEpoch = t.id.match(/TRX-(\d{13})/);
+    if (matchEpoch) {
+      const date = new Date(Number(matchEpoch[1]));
+      if (!isNaN(date.getTime())) {
+        const hh = String(date.getHours()).padStart(2, '0');
+        const mm = String(date.getMinutes()).padStart(2, '0');
+        const ss = String(date.getSeconds()).padStart(2, '0');
+        return `${hh}:${mm}:${ss}`;
+      }
+    }
+  }
+  // 4. Jika ada createdAt
+  if (t.createdAt) {
+    const date = new Date(t.createdAt);
+    if (!isNaN(date.getTime())) {
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      const ss = String(date.getSeconds()).padStart(2, '0');
+      return `${hh}:${mm}:${ss}`;
+    }
+  }
+  return '-';
 }
 
 export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
@@ -36,6 +86,7 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
   transactions,
   onViewReceipt,
   onVoidTransaction,
+  onDeleteTransaction,
   onRefresh,
   onSyncSpreadsheet,
   isSyncing,
@@ -48,6 +99,9 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
   const [voidingTrx, setVoidingTrx] = useState<TransactionReceipt | null>(null);
   const [voidReason, setVoidReason] = useState('');
 
+  // Delete modal state
+  const [deletingTrx, setDeletingTrx] = useState<TransactionReceipt | null>(null);
+
   // Filter transactions
   const filtered = transactions.filter((t) => {
     if (selectedPayment !== 'ALL' && t.paymentMethod !== selectedPayment) return false;
@@ -58,6 +112,22 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
     const matchCustomer = (t.customerName || '').toLowerCase().includes(q);
     const matchItems = t.items.some((i) => i.name.toLowerCase().includes(q) || (i.sku || '').toLowerCase().includes(q));
     return matchId || matchCustomer || matchItems;
+  });
+
+  // Urutkan transaksi hari ini secara ketat berdasarkan jam input website asli (terbaru di atas agar tetap urut)
+  const sortedTransactions = [...filtered].sort((a, b) => {
+    // 1. Bandingkan createdAt numerik jika ada
+    if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
+      return b.createdAt - a.createdAt;
+    }
+    // 2. Bandingkan jam input website asli
+    const timeA = getPureWebsiteTime(a);
+    const timeB = getPureWebsiteTime(b);
+    if (timeA !== '-' && timeB !== '-' && timeA !== timeB) {
+      return timeB.localeCompare(timeA);
+    }
+    // 3. Fallback perbandingan nomor ID transaksi
+    return b.id.localeCompare(a.id);
   });
 
   const handleConfirmVoid = () => {
@@ -333,7 +403,7 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
           <>
             {/* MOBILE VIEW (<640px): Card List Touch-Friendly */}
             <div className="space-y-3 sm:hidden">
-              {filtered.map((t) => {
+              {sortedTransactions.map((t) => {
                 const isVoided = t.status === 'VOIDED';
                 return (
                   <div
@@ -349,9 +419,9 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                           #{t.id}
                         </span>
                         <span className="text-stone-300">•</span>
-                        <div className="flex items-center gap-1 text-[11px] text-stone-500 font-medium">
-                          <Clock className="w-3 h-3 text-stone-400" />
-                          <span>{t.transactionDate.split(' ')[1] || t.transactionDate}</span>
+                        <div className="flex items-center gap-1 text-[11px] text-stone-600 font-mono font-bold">
+                          <Clock className="w-3 h-3 text-[#FF5E36]" />
+                          <span>{getPureWebsiteTime(t)}</span>
                         </div>
                       </div>
 
@@ -400,7 +470,7 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                       </div>
 
                       {/* Action buttons (min 44px touch) */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => onViewReceipt(t)}
                           className="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold flex items-center gap-1 min-h-[44px] cursor-pointer"
@@ -411,10 +481,19 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                         {!isVoided && (
                           <button
                             onClick={() => setVoidingTrx(t)}
-                            className="px-2.5 py-2 rounded-xl text-rose-600 hover:bg-rose-50 text-xs font-semibold flex items-center gap-1 min-h-[44px] cursor-pointer"
-                            title="Batalkan Transaksi"
+                            className="px-2.5 py-2 rounded-xl text-amber-600 hover:bg-amber-50 text-xs font-semibold flex items-center gap-1 min-h-[44px] cursor-pointer"
+                            title="Batalkan Transaksi (VOID) & Hapus di Sheet"
                           >
                             <Ban className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {onDeleteTransaction && (
+                          <button
+                            onClick={() => setDeletingTrx(t)}
+                            className="px-2.5 py-2 rounded-xl text-stone-400 hover:text-rose-600 hover:bg-rose-50 text-xs font-semibold flex items-center gap-1 min-h-[44px] cursor-pointer"
+                            title="Hapus Transaksi & Hapus Baris di Google Sheets"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>
@@ -430,7 +509,12 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                 <table className="w-full text-left text-xs">
                   <thead className="bg-stone-50 text-stone-500 uppercase text-[10px] tracking-wider border-b border-stone-200 font-semibold">
                     <tr>
-                      <th className="py-3.5 px-4">Waktu</th>
+                      <th className="py-3.5 px-4 font-semibold text-stone-900">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-[#FF5E36]" />
+                          <span>Jam Input</span>
+                        </div>
+                      </th>
                       <th className="py-3.5 px-4">No. Transaksi</th>
                       <th className="py-3.5 px-4">Pelanggan</th>
                       <th className="py-3.5 px-4">Item Minuman</th>
@@ -442,7 +526,7 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
-                    {filtered.map((t) => {
+                    {sortedTransactions.map((t) => {
                       const isVoided = t.status === 'VOIDED';
                       return (
                         <tr
@@ -451,8 +535,12 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                             isVoided ? 'opacity-50 bg-rose-50/30' : ''
                           }`}
                         >
-                          <td className="py-3.5 px-4 font-mono text-stone-600 whitespace-nowrap">
-                            {t.transactionDate.split(' ')[1] || t.transactionDate}
+                          <td className="py-3.5 px-4 font-mono whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs bg-stone-100 px-2.5 py-1 rounded-lg text-stone-800 border border-stone-200/80 font-bold tracking-tight">
+                                {getPureWebsiteTime(t)}
+                              </span>
+                            </div>
                           </td>
                           <td className="py-3.5 px-4 font-mono font-bold text-[#FF5E36] whitespace-nowrap">
                             {t.id}
@@ -501,10 +589,19 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                               {!isVoided && (
                                 <button
                                   onClick={() => setVoidingTrx(t)}
-                                  className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
-                                  title="Void"
+                                  className="p-1 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors"
+                                  title="Void & Hapus di Sheet"
                                 >
                                   <Ban className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {onDeleteTransaction && (
+                                <button
+                                  onClick={() => setDeletingTrx(t)}
+                                  className="p-1 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                  title="Hapus Transaksi & Hapus Baris di Google Sheets"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               )}
                             </div>
@@ -527,7 +624,7 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
             <div className="flex items-center justify-between pb-3 border-b border-stone-100">
               <div className="flex items-center gap-2 text-rose-600">
                 <AlertTriangle className="w-5 h-5" />
-                <h3 className="font-bold text-base text-stone-900">Batalkan Transaksi</h3>
+                <h3 className="font-bold text-base text-stone-900">Batalkan Transaksi & Hapus di Sheet</h3>
               </div>
               <button
                 onClick={() => setVoidingTrx(null)}
@@ -537,10 +634,20 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
               </button>
             </div>
 
-            <p className="text-xs text-stone-600">
+            <p className="text-xs text-stone-600 leading-relaxed">
               Anda akan membatalkan transaksi <strong className="text-stone-900">#{voidingTrx.id}</strong> sejumlah{' '}
               <strong className="text-stone-900">{formatRupiah(voidingTrx.total)}</strong>. Stok barang akan dikembalikan otomatis.
             </p>
+
+            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100 text-[11px] text-rose-800 space-y-1">
+              <p className="font-bold flex items-center gap-1.5">
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                Hapus Otomatis di Google Sheets:
+              </p>
+              <p className="text-rose-700 leading-relaxed">
+                Seluruh baris transaksi ini di <strong>LOG_PENJUALAN</strong> dan baris ongkir di <strong>LAIN-LAIN</strong> akan langsung dihapus permanen dari Spreadsheet Anda.
+              </p>
+            </div>
 
             <div>
               <label className="text-[11px] font-bold text-stone-600 uppercase tracking-wider block mb-1">
@@ -566,7 +673,51 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                 onClick={handleConfirmVoid}
                 className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md min-h-[44px]"
               >
-                Konfirmasi VOID
+                Konfirmasi VOID & Hapus di Sheet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Struk Permanen Modal */}
+      {deletingTrx && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl border border-stone-200 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2 text-rose-600">
+                <Trash2 className="w-5 h-5" />
+                <h3 className="font-bold text-base text-stone-900">Hapus Struk Permanen</h3>
+              </div>
+              <button
+                onClick={() => setDeletingTrx(null)}
+                className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 hover:bg-stone-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Yakin ingin menghapus struk transaksi <strong className="text-stone-900">#{deletingTrx.id}</strong> ({formatRupiah(deletingTrx.total)}) secara permanen dari database lokal dan Google Sheets?
+            </p>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                onClick={() => setDeletingTrx(null)}
+                className="flex-1 py-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs min-h-[44px]"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  if (onDeleteTransaction && deletingTrx) {
+                    onDeleteTransaction(deletingTrx.id);
+                    setDeletingTrx(null);
+                  }
+                }}
+                className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md min-h-[44px]"
+              >
+                Ya, Hapus Permanen
               </button>
             </div>
           </div>

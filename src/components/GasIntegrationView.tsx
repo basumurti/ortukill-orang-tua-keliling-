@@ -16,7 +16,12 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
-  CheckCheck
+  CheckCheck,
+  Star,
+  Pencil,
+  RotateCcw,
+  Trash2,
+  ShieldCheck
 } from 'lucide-react';
 import { generateEnhancedGoogleAppsScriptCode } from '../services/gasCodeGenerator';
 import { GasApiService, GasDiagnosticResult, DEFAULT_GAS_WEBAPP_URL } from '../services/gasApiService';
@@ -30,6 +35,9 @@ interface GasIntegrationViewProps {
 export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncComplete }) => {
   const [copied, setCopied] = useState(false);
   const [webAppUrl, setWebAppUrl] = useState('');
+  const [primaryStoreUrl, setPrimaryStoreUrl] = useState<string>(GasApiService.getPrimaryStoreUrl());
+  const [isEditingPrimary, setIsEditingPrimary] = useState<boolean>(false);
+  const [primaryInputDraft, setPrimaryInputDraft] = useState<string>('');
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [fillingCategories, setFillingCategories] = useState(false);
@@ -40,6 +48,42 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
   const [diagnostic, setDiagnostic] = useState<GasDiagnosticResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [testingWriteDelete, setTestingWriteDelete] = useState(false);
+  const [writeDeleteResult, setWriteDeleteResult] = useState<{
+    success: boolean;
+    message: string;
+    stage?: string;
+    testId?: string;
+    writeResult?: any;
+    deleteResult?: any;
+  } | null>(null);
+
+  const handleTestWriteDelete = async () => {
+    const url = (webAppUrl || primaryStoreUrl || '').trim();
+    if (!url) {
+      setErrorMessage('Masukkan URL Web App terlebih dahulu.');
+      return;
+    }
+
+    setTestingWriteDelete(true);
+    setWriteDeleteResult(null);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      const res = await GasApiService.testWriteAndDeleteLogPenjualan(url);
+      setWriteDeleteResult(res);
+      if (res.success) {
+        setSuccessMessage('✓ Sukses! Uji coba Tulis dan Hapus di LOG_PENJUALAN berhasil 100%. Baris uji coba telah dihapus bersih.');
+      } else {
+        setErrorMessage(res.message || 'Uji coba gagal pada tahap ' + (res.stage || 'proses'));
+      }
+    } catch (err: any) {
+      setErrorMessage('Terjadi error saat uji coba: ' + err.message);
+    } finally {
+      setTestingWriteDelete(false);
+    }
+  };
 
   const scriptCode = generateEnhancedGoogleAppsScriptCode();
 
@@ -98,11 +142,15 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
     const initUrl = async () => {
       try {
         const status = await GasApiService.getStatus();
-        const urlToUse = status.webAppUrl || GasApiService.getSavedWebAppUrl();
+        const primary = status.primaryWebAppUrl || GasApiService.getPrimaryStoreUrl();
+        const urlToUse = status.webAppUrl || primary;
+        setPrimaryStoreUrl(primary);
         setWebAppUrl(urlToUse);
         testUrl(urlToUse);
       } catch {
+        const primary = GasApiService.getPrimaryStoreUrl();
         const saved = GasApiService.getSavedWebAppUrl();
+        setPrimaryStoreUrl(primary);
         setWebAppUrl(saved);
         testUrl(saved);
       }
@@ -114,6 +162,57 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
     navigator.clipboard.writeText(scriptCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  // Jadikan URL yang sedang diketik sebagai URL Utama Toko baru
+  const handleSetCurrentAsPrimary = async () => {
+    if (!webAppUrl.trim()) {
+      setErrorMessage('Silakan masukkan URL Web App terlebih dahulu.');
+      return;
+    }
+    try {
+      const clean = webAppUrl.trim();
+      await GasApiService.setPrimaryStoreUrl(clean);
+      setPrimaryStoreUrl(clean);
+      setSuccessMessage('⭐ URL Utama Toko berhasil diubah dan disimpan permanen!');
+      testUrl(clean);
+    } catch (err: any) {
+      setErrorMessage('Gagal menyimpan URL Utama Toko: ' + err.message);
+    }
+  };
+
+  // Beralih kembali ke URL Utama Toko
+  const handleUsePrimaryUrl = () => {
+    const primary = primaryStoreUrl || GasApiService.getPrimaryStoreUrl();
+    setWebAppUrl(primary);
+    GasApiService.setSavedWebAppUrl(primary);
+    testUrl(primary);
+    setSuccessMessage('Berhasil beralih ke URL Utama Toko!');
+  };
+
+  // Buka editor inline URL Utama Toko
+  const handleStartEditPrimary = () => {
+    setPrimaryInputDraft(primaryStoreUrl);
+    setIsEditingPrimary(true);
+  };
+
+  // Simpan perubahan URL Utama Toko dari editor inline
+  const handleSaveEditedPrimary = async () => {
+    if (!primaryInputDraft.trim()) {
+      setErrorMessage('URL Utama Toko tidak boleh kosong.');
+      return;
+    }
+    try {
+      const clean = primaryInputDraft.trim();
+      await GasApiService.setPrimaryStoreUrl(clean);
+      setPrimaryStoreUrl(clean);
+      setWebAppUrl(clean);
+      setIsEditingPrimary(false);
+      setSuccessMessage('⭐ URL Utama Toko berhasil diperbarui & disimpan permanen!');
+      testUrl(clean);
+    } catch (err: any) {
+      setErrorMessage('Gagal memperbarui URL Utama Toko: ' + err.message);
+    }
   };
 
   const testUrl = async (urlToTest: string) => {
@@ -148,11 +247,11 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
     setSuccessMessage(null);
 
     try {
-      GasApiService.setSavedWebAppUrl(webAppUrl.trim());
+      await GasApiService.configureWebAppUrl(webAppUrl.trim());
       const res = await GasApiService.testConnection(webAppUrl.trim());
       setDiagnostic(res);
       if (res.success) {
-        setSuccessMessage('URL berhasil disimpan & koneksi Google Apps Script terverifikasi!');
+        setSuccessMessage('URL berhasil disimpan permanen ke server & koneksi terverifikasi!');
       } else {
         setErrorMessage(res.message || 'URL disimpan, namun gagal merespons. Pastikan opsi hak akses Deployment adalah "Anyone".');
       }
@@ -185,6 +284,28 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
       setErrorMessage('Sinkronisasi gagal: ' + err.message);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const [cleaningDuplicates, setCleaningDuplicates] = useState(false);
+
+  const handleCleanDuplicates = async () => {
+    setCleaningDuplicates(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      const res = await GasApiService.cleanUpDuplicatesInSheet();
+      if (res.success) {
+        setSuccessMessage(res.message || 'Pembersihan duplikat selesai!');
+        await GasApiService.fetchAndSyncAll();
+        if (onSyncComplete) onSyncComplete();
+      } else {
+        setErrorMessage(res.message || 'Gagal membersihkan duplikat.');
+      }
+    } catch (err: any) {
+      setErrorMessage('Error pembersihan duplikat: ' + err.message);
+    } finally {
+      setCleaningDuplicates(false);
     }
   };
 
@@ -221,6 +342,156 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
         </button>
       </div>
 
+      {/* Unified Logic: Penulisan Bersih & Hapus/VOID Otomatis Tanpa Benturan */}
+      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 rounded-2xl p-4 border border-teal-200/80 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-teal-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-extrabold text-stone-900 text-sm">
+                  Sistem Terpadu: Penulisan Bersih & Penghapusan Otomatis (Anti-Benturan)
+                </span>
+                <span className="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Harmonis & Aktif
+                </span>
+              </div>
+              <p className="text-stone-600 text-xs mt-1 leading-relaxed">
+                Logika penulisan dan penghapusan diatur secara sinkron agar tidak saling menghalangi:
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleCleanDuplicates}
+            disabled={cleaningDuplicates}
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap min-h-[40px] flex-shrink-0"
+            title="Bersihkan baris ganda yang tidak sengaja terinput di Google Sheets"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${cleaningDuplicates ? 'animate-spin' : ''}`} />
+            <span>{cleaningDuplicates ? 'Membersihkan Duplikat...' : 'Bersihkan Duplikat di Sheets'}</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1 border-t border-teal-100">
+          <div className="bg-white/80 p-2.5 rounded-xl border border-teal-200/50">
+            <span className="font-bold text-teal-900 block mb-0.5">✓ 1. Saat Transaksi Kasir Dibuat (Write):</span>
+            <span className="text-stone-600 leading-normal">
+              Dicatat langsung ke sheet <strong>LOG_PENJUALAN</strong> (dan ongkir ke <strong>LAIN-LAIN</strong>) sekali saja tanpa dobel.
+            </span>
+          </div>
+
+          <div className="bg-white/80 p-2.5 rounded-xl border border-rose-200/50">
+            <span className="font-bold text-rose-900 block mb-0.5">✓ 2. Saat Transaksi Di-VOID / Dihapus (Delete):</span>
+            <span className="text-stone-600 leading-normal">
+              Seluruh baris transaksi langsung <strong>dihapus permanen (deleteRow)</strong> dari Google Sheets, dan kunci anti-duplikat langsung dilepas seketika.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* NEW: Test & Verify LOG_PENJUALAN Write & Delete Card */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border-2 border-[#FF5E36]/30 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-[#FFF2ED] text-[#FF5E36] flex items-center justify-center font-black">
+              🧪
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-extrabold text-stone-900">
+                  Uji Coba Otomatis: Tulis & Hapus LOG_PENJUALAN
+                </h3>
+                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                  v3.4 Siap Diuji
+                </span>
+              </div>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Menguji penulisan transaksi kasir ke <strong>LOG_PENJUALAN</strong> dan langsung menghapusnya kembali untuk memastikan sistem 100% normal.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleTestWriteDelete}
+            disabled={testingWriteDelete}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF5E36] hover:bg-[#F24E24] disabled:opacity-50 text-white text-xs font-bold transition-all cursor-pointer shadow-sm min-h-[44px] flex-shrink-0"
+          >
+            <RefreshCw className={`w-4 h-4 ${testingWriteDelete ? 'animate-spin' : ''}`} />
+            <span>{testingWriteDelete ? 'Menguji Tulis & Hapus...' : 'Jalankan Tes Tulis & Hapus Sekarang'}</span>
+          </button>
+        </div>
+
+        {/* Live Test Diagnostic Output */}
+        {testingWriteDelete && (
+          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2 animate-in fade-in">
+            <div className="flex items-center gap-2 font-bold text-amber-800">
+              <RefreshCw className="w-4 h-4 animate-spin text-[#FF5E36]" />
+              <span>Sedang memproses pengujian pipeline Google Sheets...</span>
+            </div>
+            <ul className="text-[11px] text-amber-700 space-y-1 list-disc list-inside">
+              <li>Tahap 1: Mengirim dummy transaksi ke sheet LOG_PENJUALAN via saveTransaction...</li>
+              <li>Tahap 2: Menunggu konfirmasi nomor baris yang tercatat di Spreadsheet...</li>
+              <li>Tahap 3: Menjalankan penghapusan otomatis (deleteRow) agar sheet tetap bersih...</li>
+            </ul>
+          </div>
+        )}
+
+        {writeDeleteResult && (
+          <div className={`p-4 rounded-xl border text-xs space-y-2.5 animate-in fade-in ${
+            writeDeleteResult.success 
+              ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900' 
+              : 'bg-rose-50/80 border-rose-200 text-rose-900'
+          }`}>
+            <div className="flex items-center gap-2">
+              {writeDeleteResult.success ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+              )}
+              <h4 className="font-extrabold text-xs sm:text-sm">
+                {writeDeleteResult.message}
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
+              <div className="bg-white/80 p-2.5 rounded-lg border border-stone-200/80 space-y-1">
+                <span className="font-bold text-stone-700 block">1. Status Penulisan (WRITE):</span>
+                <span className="text-stone-600">
+                  {writeDeleteResult.writeResult?.message || (writeDeleteResult.stage === 'WRITE' ? 'Gagal pada tahap penulisan' : 'Berhasil')}
+                </span>
+                {writeDeleteResult.writeResult?.startRow && (
+                  <span className="block font-mono text-[10px] text-emerald-700">
+                    Tercatat di baris: {writeDeleteResult.writeResult.startRow}
+                  </span>
+                )}
+              </div>
+
+              <div className="bg-white/80 p-2.5 rounded-lg border border-stone-200/80 space-y-1">
+                <span className="font-bold text-stone-700 block">2. Status Penghapusan (DELETE):</span>
+                <span className="text-stone-600">
+                  {writeDeleteResult.deleteResult?.message || (writeDeleteResult.success ? 'Berhasil dihapus' : 'Belum selesai')}
+                </span>
+                {writeDeleteResult.deleteResult?.deletedSalesRows !== undefined && (
+                  <span className="block font-mono text-[10px] text-emerald-700">
+                    Baris dihapus: {writeDeleteResult.deleteResult.deletedSalesRows} baris
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {writeDeleteResult.testId && (
+              <p className="text-[10px] text-stone-500 font-mono">
+                ID Uji Coba: {writeDeleteResult.testId}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* URL Input & Quick Sync Controls */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/80 shadow-xs space-y-3">
         <div className="flex items-center justify-between">
@@ -243,24 +514,97 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
           )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-stone-500 leading-relaxed">
-            URL Web App ini telah <strong>tersimpan permanen di server</strong> (tidak akan hilang/minta input lagi).
-          </p>
-          {webAppUrl !== DEFAULT_GAS_WEBAPP_URL && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-stone-50 border border-stone-200/80">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-8 h-8 rounded-xl bg-[#FFF2ED] text-[#FF5E36] flex items-center justify-center flex-shrink-0">
+              <Star className="w-4 h-4 fill-[#FF5E36]" />
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold text-stone-900">URL Utama Toko:</span>
+                <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                  Tersimpan Permanen
+                </span>
+              </div>
+              <p className="text-[11px] font-mono text-stone-500 truncate max-w-xs sm:max-w-md mt-0.5" title={primaryStoreUrl}>
+                {primaryStoreUrl}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
+            {/* Tombol beralih kembali ke URL Utama jika input berbeda */}
+            {webAppUrl.trim() !== primaryStoreUrl.trim() && (
+              <button
+                type="button"
+                onClick={handleUsePrimaryUrl}
+                className="text-[11px] font-bold text-stone-700 bg-white hover:bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                title="Gunakan URL Utama Toko saat ini"
+              >
+                <RotateCcw className="w-3 h-3 text-stone-500" />
+                <span>Gunakan URL Utama</span>
+              </button>
+            )}
+
+            {/* Tombol Jadikan URL yang sedang diketik sebagai URL Utama Toko */}
             <button
               type="button"
-              onClick={() => {
-                setWebAppUrl(DEFAULT_GAS_WEBAPP_URL);
-                GasApiService.setSavedWebAppUrl(DEFAULT_GAS_WEBAPP_URL);
-                testUrl(DEFAULT_GAS_WEBAPP_URL);
-              }}
-              className="text-[11px] text-[#FF5E36] hover:underline font-semibold cursor-pointer"
+              onClick={handleSetCurrentAsPrimary}
+              disabled={!webAppUrl.trim() || webAppUrl.trim() === primaryStoreUrl.trim()}
+              className="text-[11px] font-bold text-[#FF5E36] bg-[#FFF2ED] hover:bg-[#FFE5DC] border border-[#FF5E36]/30 px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Jadikan URL yang diketik di bawah sebagai URL Utama Toko"
             >
-              Reset ke URL Utama Toko
+              <Star className="w-3 h-3" />
+              <span>Jadikan URL Utama</span>
             </button>
-          )}
+
+            {/* Tombol Ubah URL Utama Toko */}
+            <button
+              type="button"
+              onClick={handleStartEditPrimary}
+              className="text-[11px] font-bold text-stone-700 bg-white hover:bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              title="Ketik atau paste URL Utama Toko baru"
+            >
+              <Pencil className="w-3 h-3 text-stone-500" />
+              <span>Ubah URL Utama</span>
+            </button>
+          </div>
         </div>
+
+        {/* Panel input inline jika user klik "Ubah URL Utama" */}
+        {isEditingPrimary && (
+          <div className="p-3.5 bg-amber-50/90 border border-amber-200 rounded-2xl space-y-2 animate-in fade-in">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                Masukkan URL Utama Toko yang Baru:
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsEditingPrimary(false)}
+                className="text-[11px] text-stone-500 hover:text-stone-800 font-semibold cursor-pointer"
+              >
+                Batal
+              </button>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="url"
+                value={primaryInputDraft}
+                onChange={(e) => setPrimaryInputDraft(e.target.value)}
+                placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                className="flex-1 px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-mono text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#FF5E36]"
+              />
+              <button
+                type="button"
+                onClick={handleSaveEditedPrimary}
+                className="px-4 py-2 bg-[#FF5E36] hover:bg-[#F24E24] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer whitespace-nowrap"
+              >
+                Simpan Sebagai URL Utama
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-2">
           <input
@@ -318,32 +662,43 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div className="bg-white p-2.5 rounded-xl border border-stone-100">
                 <p className="text-stone-400 text-[10px] uppercase font-bold">Sheet Produk</p>
-                <p className="font-bold text-stone-800 mt-0.5">
+                <p className="font-bold text-stone-800 mt-0.5 truncate">
                   {diagnostic.sheetsStatus?.productsSheetName || 'DASHBOARD_MUTASI_&_PROFIT'}
                 </p>
                 <p className="text-[10px] text-stone-500 mt-0.5">
-                  {diagnostic.sheetsStatus?.productsRowCount ? `${diagnostic.sheetsStatus.productsRowCount} baris terdeteksi` : 'Data baris 71+'}
+                  {diagnostic.sheetsStatus?.productsRowCount ? `${diagnostic.sheetsStatus.productsRowCount} baris` : 'Baris 71+'} (Read)
                 </p>
               </div>
 
               <div className="bg-white p-2.5 rounded-xl border border-stone-100">
-                <p className="text-stone-400 text-[10px] uppercase font-bold">Sheet Log Penjualan</p>
-                <p className="font-bold text-stone-800 mt-0.5">
+                <p className="text-stone-400 text-[10px] uppercase font-bold">Log Penjualan</p>
+                <p className="font-bold text-stone-800 mt-0.5 truncate">
                   {diagnostic.sheetsStatus?.salesLogSheetName || 'LOG_PENJUALAN'}
                 </p>
                 <p className="text-[10px] text-stone-500 mt-0.5">
-                  {diagnostic.sheetsStatus?.salesLogRowCount ? `${diagnostic.sheetsStatus.salesLogRowCount} baris terdeteksi` : 'Data baris 8+'}
+                  {diagnostic.sheetsStatus?.salesLogRowCount ? `${diagnostic.sheetsStatus.salesLogRowCount} baris` : 'Baris 8+'} (Write)
                 </p>
               </div>
 
               <div className="bg-white p-2.5 rounded-xl border border-stone-100">
-                <p className="text-stone-400 text-[10px] uppercase font-bold">Sheet Barang Masuk</p>
-                <p className="font-bold text-stone-800 mt-0.5">LOG_BARANG_MASUK</p>
+                <p className="text-stone-400 text-[10px] uppercase font-bold">Barang Masuk</p>
+                <p className="font-bold text-stone-800 mt-0.5 truncate">LOG_BARANG_MASUK</p>
                 <p className="text-[10px] text-stone-500 mt-0.5">
-                  {diagnostic.sheetsStatus?.barangMasukRowCount ? `${diagnostic.sheetsStatus.barangMasukRowCount} baris` : 'Data baris 5+'}
+                  {diagnostic.sheetsStatus?.barangMasukRowCount ? `${diagnostic.sheetsStatus.barangMasukRowCount} baris` : 'Baris 5+'} (Write)
+                </p>
+              </div>
+
+              <div className="bg-white p-2.5 rounded-xl border border-stone-100">
+                <p className="text-emerald-600 text-[10px] uppercase font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Sheet LAIN-LAIN
+                </p>
+                <p className="font-bold text-stone-800 mt-0.5 truncate">LAIN-LAIN</p>
+                <p className="text-[10px] text-emerald-700 font-medium mt-0.5">
+                  {diagnostic.sheetsStatus?.pengeluaranLainRowCount ? `${diagnostic.sheetsStatus.pengeluaranLainRowCount} baris` : 'A4:F'} (Read & Write)
                 </p>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { Product, AppConfig, TransactionReceipt, BarangMasukRecord } from '../types';
+import { Product, AppConfig, TransactionReceipt, BarangMasukRecord, FinanceRecord, SalesTarget } from '../types';
 
 export const INITIAL_CONFIG: AppConfig = {
   brand: {
@@ -1038,3 +1038,68 @@ export const INITIAL_BARANG_MASUK: BarangMasukRecord[] = [
     totalCost: 480000,
   },
 ];
+
+export const INITIAL_FINANCE_RECORDS: FinanceRecord[] = [
+  {
+    id: 'FIN-20260922-01',
+    date: getDemoTimestamp(0, 30).dateOnly,
+    dateYmd: normalizeYmdHelper(getDemoTimestamp(0, 30).dateOnly),
+    dateTimeStr: getDemoTimestamp(0, 30).full,
+    type: 'EXPENSE',
+    category: 'BENSIN',
+    categoryLabel: 'Bensin Motor Kurir',
+    amount: 35000,
+    description: 'Beli Pertalite kirim barang toko ke konsumen',
+    cashier: 'Kasir Utama',
+  },
+  {
+    id: 'FIN-20260921-02',
+    date: getDemoTimestamp(1, 120).dateOnly,
+    dateYmd: normalizeYmdHelper(getDemoTimestamp(1, 120).dateOnly),
+    dateTimeStr: getDemoTimestamp(1, 120).full,
+    type: 'INCOME',
+    category: 'ONGKIR',
+    categoryLabel: 'Ongkir Pengiriman',
+    amount: 25000,
+    description: 'Ongkir ekspedisi/delivery lokal Kediri',
+    cashier: 'Kasir Utama',
+  },
+  {
+    id: 'FIN-20260920-03',
+    date: getDemoTimestamp(2, 240).dateOnly,
+    dateYmd: normalizeYmdHelper(getDemoTimestamp(2, 240).dateOnly),
+    dateTimeStr: getDemoTimestamp(2, 240).full,
+    type: 'INCOME',
+    category: 'TIPS',
+    categoryLabel: 'Tips / Tambahan Uang',
+    amount: 20000,
+    description: 'Tips dari pelanggan Mas Dimas Kediri',
+    cashier: 'Kasir Utama',
+  },
+  {
+    id: 'FIN-20260918-04',
+    date: getDemoTimestamp(4, 300).dateOnly,
+    dateYmd: normalizeYmdHelper(getDemoTimestamp(4, 300).dateOnly),
+    dateTimeStr: getDemoTimestamp(4, 300).full,
+    type: 'EXPENSE',
+    category: 'OPERASIONAL',
+    categoryLabel: 'Operasional Toko',
+    amount: 50000,
+    description: 'Beli isi ulang galon air & perlengkapan kebersihan toko',
+    cashier: 'Kasir Utama',
+  },
+];
+
+function normalizeYmdHelper(s: string): string {
+  if (!s) return '';
+  const parts = s.split('/');
+  if (parts.length === 3) {
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+  }
+  return s;
+}
+
+export const INITIAL_SALES_TARGET: SalesTarget = {
+  targetAmount: 50000000, // Rp 50.000.000 / bulan
+  month: new Date().toISOString().slice(0, 7), // YYYY-MM
+};

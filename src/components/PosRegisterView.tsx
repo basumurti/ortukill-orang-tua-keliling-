@@ -33,7 +33,8 @@ import {
   ShieldCheck,
   ArrowRight,
   Gift,
-  Percent
+  Percent,
+  Loader2
 } from 'lucide-react';
 import { Product, CartItem, PaymentMethod, BrandConfig, PromoRule } from '../types';
 import { formatRupiah } from '../services/storageService';
@@ -116,7 +117,7 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
         .map((p) => (p.category ? String(p.category).trim() : ''))
         .filter((c): c is string => Boolean(c))
     )
-  );
+  ) as string[];
 
   const categories: string[] = ['ALL', ...presentCategories];
 
@@ -131,6 +132,11 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
 
   // Filtered products
   const filteredProducts = products.filter((p) => {
+    const skuUpper = String(p.sku || '').toUpperCase();
+    const nameUpper = String(p.name || '').toUpperCase();
+    if (skuUpper.includes('PROMO') || nameUpper.includes('PROMO') || nameUpper.includes('POTONGAN') || p.category === 'PROMO') {
+      return false;
+    }
     const cat = p.category || 'Belum dikategorikan';
     if (selectedCategory !== 'ALL' && cat !== selectedCategory) return false;
     if (!searchQuery.trim()) return true;
@@ -164,9 +170,17 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
     (Math.ceil(finalTotal / 100000) + 1) * 100000 || 200000,
   ].filter((val, index, self) => val > 0 && self.indexOf(val) === index);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleCheckoutAndClose = () => {
-    onProcessCheckout();
-    setIsCartSheetOpen(false);
+    if (isSubmitting || cart.length === 0 || isCashInsufficient) return;
+    setIsSubmitting(true);
+    try {
+      onProcessCheckout();
+      setIsCartSheetOpen(false);
+    } finally {
+      setTimeout(() => setIsSubmitting(false), 1200);
+    }
   };
 
   const getCartOrderShareText = () => {
@@ -1231,15 +1245,19 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
 
                 {/* Ongkos Kirim / Ongkir */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-bold text-stone-600 uppercase tracking-wider flex items-center gap-1">
+                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                    <label className="text-[11px] font-bold text-stone-600 uppercase tracking-wider flex items-center gap-1.5">
                       <Truck className="w-3.5 h-3.5 text-[#FF5E36]" />
                       <span>Ongkos Kirim / Ongkir (Rp)</span>
+                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                        <FileSpreadsheet className="w-2.5 h-2.5 text-emerald-600" />
+                        Masuk ke Sheet LAIN-LAIN
+                      </span>
                     </label>
                     {shippingFee > 0 && (
                       <button
                         onClick={() => setShippingFee(0)}
-                        className="text-[11px] text-rose-500 font-semibold cursor-pointer"
+                        className="text-[11px] text-rose-500 hover:text-rose-600 font-semibold cursor-pointer"
                       >
                         Hapus Ongkir
                       </button>
@@ -1275,6 +1293,10 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
                       </button>
                     ))}
                   </div>
+                  <p className="text-[10px] text-stone-400 mt-1 flex items-center gap-1 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                    Biaya ongkir otomatis dicatat ke sheet <strong>LAIN-LAIN</strong> (tidak masuk ke LOG_PENJUALAN).
+                  </p>
                 </div>
               </div>
 
@@ -1465,16 +1487,25 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
               {/* Primary Checkout Button */}
               <button
                 onClick={handleCheckoutAndClose}
-                disabled={cart.length === 0 || isCashInsufficient}
+                disabled={cart.length === 0 || isCashInsufficient || isSubmitting}
                 id="btn-process-checkout"
                 className={`w-full py-3.5 rounded-2xl font-extrabold text-sm tracking-wide transition-all duration-150 flex items-center justify-center gap-2 shadow-lg min-h-[48px] ${
-                  cart.length === 0 || isCashInsufficient
+                  cart.length === 0 || isCashInsufficient || isSubmitting
                     ? 'bg-stone-200 text-stone-400 cursor-not-allowed shadow-none'
                     : 'bg-gradient-to-r from-[#FF5E36] to-[#FFA07A] hover:brightness-105 active:scale-[0.98] text-white shadow-[#FF5E36]/25 cursor-pointer'
                 }`}
               >
-                <Sparkles className="w-4 h-4 fill-current" />
-                <span>Simpan & Selesaikan ({formatRupiah(finalTotal)})</span>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-stone-500" />
+                    <span>Memproses Transaksi...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 fill-current" />
+                    <span>Simpan & Selesaikan ({formatRupiah(finalTotal)})</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

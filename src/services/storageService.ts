@@ -7,24 +7,52 @@ import {
   PaymentMethod, 
   BrandConfig, 
   BarangMasukRecord,
-  PromoRule 
+  PromoRule,
+  FinanceRecord,
+  SalesTarget,
+  LastUpdateInfo
 } from '../types';
 import { 
   INITIAL_CONFIG, 
   INITIAL_PRODUCTS, 
   INITIAL_TRANSACTIONS, 
-  INITIAL_BARANG_MASUK 
+  INITIAL_BARANG_MASUK, 
+  INITIAL_FINANCE_RECORDS,
+  INITIAL_SALES_TARGET
 } from '../data/initialData';
 
 const STORAGE_KEYS = {
   CONFIG: 'ortukill_pos_config_v1',
   PRODUCTS: 'ortukill_pos_products_v3',
-  TRANSACTIONS: 'ortukill_pos_transactions_v1',
-  BARANG_MASUK: 'ortukill_pos_barang_masuk_v1',
+  TRANSACTIONS: 'ortukill_pos_transactions_v2',
+  TRANSACTIONS_LEGACY: 'ortukill_pos_transactions_v1',
+  BARANG_MASUK: 'ortukill_pos_barang_masuk_v2',
+  BARANG_MASUK_LEGACY: 'ortukill_pos_barang_masuk_v1',
   SHIFTS: 'ortukill_pos_shifts_v1',
   CURRENT_SHIFT: 'ortukill_pos_current_shift_v1',
   PROMOS: 'ortukill_pos_promos_v1',
+  FINANCES: 'ortukill_pos_finances_v2',
+  FINANCES_LEGACY: 'ortukill_pos_finances_v1',
+  SALES_TARGET: 'ortukill_pos_sales_target_v1',
+  LAST_UPDATE: 'ortukill_pos_last_update_v2',
+  PURGE_FLAG: 'ortukill_pos_demo_purged_v2',
+  DELETED_TRX: 'ortukill_pos_deleted_trx_v2',
 };
+
+// Daftar ID transaksi demo dari initialData untuk mencegah demo muncul kembali
+const DEMO_TRANSACTION_IDS = new Set([
+  'TRX-20260915-001',
+  'TRX-20260915-002',
+  'TRX-20260915-003',
+  'TRX-20260320-1001',
+  'TRX-20260320-1002',
+  'TRX-20260322-1003',
+  'TRX-20260322-1004',
+  'TRX-20260323-1005',
+  'TRX-20260324-1006',
+  'TRX-20260325-1007',
+  'TRX-20260325-1008',
+]);
 
 export const INITIAL_PROMOS: PromoRule[] = [
   {
@@ -365,13 +393,74 @@ export class StorageService {
     localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(config));
   }
 
-  // Products
+  // Pastikan data demo statis awal tidak lagi memuat ulang transaksi palsu
+  static ensureDemoPurged(): void {
+    try {
+      const isPurged = localStorage.getItem(STORAGE_KEYS.PURGE_FLAG);
+      if (isPurged === 'true') return;
+
+      // Cek dan bersihkan transaksi demo jika masih ada di browser
+      const v2 = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+      const v1 = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS_LEGACY);
+
+      let cleanTransactions: TransactionReceipt[] = [];
+      const sourceStr = v2 || v1;
+      if (sourceStr) {
+        try {
+          const parsed = JSON.parse(sourceStr);
+          if (Array.isArray(parsed)) {
+            cleanTransactions = parsed.filter(
+              (t) => !DEMO_TRANSACTION_IDS.has(t.id) && !t.id?.startsWith('TRX-20260915-')
+            );
+          }
+        } catch (e) {}
+      }
+
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(cleanTransactions));
+
+      // Bersihkan catatan keuangan demo jika ada
+      const fLegacy = localStorage.getItem(STORAGE_KEYS.FINANCES_LEGACY);
+      const fV2 = localStorage.getItem(STORAGE_KEYS.FINANCES);
+      const fSource = fV2 || fLegacy;
+      let cleanFinances: FinanceRecord[] = [];
+      if (fSource) {
+        try {
+          const parsedFin = JSON.parse(fSource);
+          if (Array.isArray(parsedFin)) {
+            cleanFinances = parsedFin.filter((f) => !f.id?.startsWith('FIN-00'));
+          }
+        } catch (e) {}
+      }
+      localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(cleanFinances));
+
+      // Bersihkan barang masuk demo
+      const bmLegacy = localStorage.getItem(STORAGE_KEYS.BARANG_MASUK_LEGACY);
+      const bmV2 = localStorage.getItem(STORAGE_KEYS.BARANG_MASUK);
+      const bmSource = bmV2 || bmLegacy;
+      let cleanBm: BarangMasukRecord[] = [];
+      if (bmSource) {
+        try {
+          const parsedBm = JSON.parse(bmSource);
+          if (Array.isArray(parsedBm)) {
+            cleanBm = parsedBm.filter((b) => !b.id?.startsWith('BM-10'));
+          }
+        } catch (e) {}
+      }
+      localStorage.setItem(STORAGE_KEYS.BARANG_MASUK, JSON.stringify(cleanBm));
+
+      localStorage.setItem(STORAGE_KEYS.PURGE_FLAG, 'true');
+    } catch (e) {
+      console.warn('ensureDemoPurged warning:', e);
+    }
+  }
+
+  // Products - Memorized berdasarkan pembaruan terakhir
   static getProducts(): Product[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-      if (stored) {
+      if (stored !== null) {
         const parsed: Product[] = JSON.parse(stored);
-        if (parsed && parsed.length > 0) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           // Normalize and categorize
           return parsed.map((p) => ({
             ...p,
@@ -385,16 +474,22 @@ export class StorageService {
     } catch (e) {
       console.error('Failed to load products', e);
     }
+    // Jika benar-benar pertama kali di browser, inisialisasi katalog sekali saja
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(INITIAL_PRODUCTS));
     return INITIAL_PRODUCTS;
   }
 
-  static saveProducts(products: Product[]): void {
+  static saveProducts(products: Product[], source: 'GOOGLE_SHEETS' | 'POS' | 'LOCAL' = 'LOCAL', details?: string): void {
     const formatted = products.map((p) => ({
       ...p,
       category: p.category && p.category !== 'PRODUK' ? p.category : classifyProduct(p.sku, p.name),
     }));
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(formatted));
+    this.setLastUpdateInfo({
+      source,
+      sourceLabel: source === 'GOOGLE_SHEETS' ? 'Google Sheets' : 'Pembaruan Lokal',
+      details: details || `Katalog produk diperbarui (${formatted.length} produk)`,
+    });
   }
 
   static updateProductStock(idOrSku: string, newStockOrDelta: number, isDirectSet: boolean = true): Product[] {
@@ -409,7 +504,7 @@ export class StorageService {
       }
       return p;
     });
-    this.saveProducts(updated);
+    this.saveProducts(updated, 'LOCAL', `Update stok ${idOrSku}: ${newStockOrDelta}`);
     return updated;
   }
 
@@ -423,7 +518,7 @@ export class StorageService {
       totalAsset: (product.stock || 0) * (product.cost || 0),
     };
     const updated = [newProd, ...products];
-    this.saveProducts(updated);
+    this.saveProducts(updated, 'LOCAL', `Tambah produk baru: ${newProd.name}`);
     return updated;
   }
 
@@ -442,25 +537,51 @@ export class StorageService {
     } else {
       products.push(updatedProduct);
     }
-    this.saveProducts(products);
+    this.saveProducts(products, 'LOCAL', `Ubah produk: ${product.name}`);
     return products;
   }
 
   static deleteProduct(sku: string): Product[] {
     const products = this.getProducts().filter((p) => p.sku !== sku);
-    this.saveProducts(products);
+    this.saveProducts(products, 'LOCAL', `Hapus produk SKU ${sku}`);
     return products;
   }
 
-  // Transactions
+  // Blacklist ID Transaksi yang sudah dihapus / di-void secara permanen
+  static getDeletedTransactionIds(): Set<string> {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.DELETED_TRX);
+      if (stored) {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr)) return new Set(arr);
+      }
+    } catch {}
+    return new Set<string>();
+  }
+
+  static markTransactionAsDeleted(trxId: string): void {
+    if (!trxId) return;
+    try {
+      const deletedSet = this.getDeletedTransactionIds();
+      deletedSet.add(trxId);
+      deletedSet.add(trxId.replace(/^#/, ''));
+      localStorage.setItem(STORAGE_KEYS.DELETED_TRX, JSON.stringify(Array.from(deletedSet)));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // Transactions - Memorized riil, TIDAK PERNAH memuat demo awal
   static getTransactions(): TransactionReceipt[] {
+    this.ensureDemoPurged();
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-      if (stored) {
+      if (stored !== null) {
         const parsed: TransactionReceipt[] = JSON.parse(stored);
-        if (parsed && parsed.length > 0) {
-          const normalized = normalizeTransactionsByDate(parsed);
-          // If normalized produced changes, persist
+        if (Array.isArray(parsed)) {
+          const deletedSet = this.getDeletedTransactionIds();
+          const activeOnly = parsed.filter((t) => !deletedSet.has(t.id) && !deletedSet.has(t.id.replace(/^#/, '')));
+          const normalized = normalizeTransactionsByDate(activeOnly);
           if (normalized !== parsed) {
             localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(normalized));
           }
@@ -470,8 +591,21 @@ export class StorageService {
     } catch (e) {
       console.error('Failed to load transactions', e);
     }
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(INITIAL_TRANSACTIONS));
-    return INITIAL_TRANSACTIONS;
+    return [];
+  }
+
+  static saveTransactions(transactions: TransactionReceipt[], source: 'GOOGLE_SHEETS' | 'POS' | 'LOCAL' = 'LOCAL', details?: string): void {
+    this.ensureDemoPurged();
+    const deletedSet = this.getDeletedTransactionIds();
+    // Filter transaksi yang sudah dihapus secara permanen
+    const filtered = transactions.filter((t) => !deletedSet.has(t.id) && !deletedSet.has(t.id.replace(/^#/, '')));
+    const normalized = normalizeTransactionsByDate(filtered);
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(normalized));
+    this.setLastUpdateInfo({
+      source,
+      sourceLabel: source === 'GOOGLE_SHEETS' ? 'Google Sheets' : source === 'POS' ? 'Kasir POS' : 'Update Lokal',
+      details: details || `Memorize ${normalized.length} transaksi`,
+    });
   }
 
   static generateTransactionId(): string {
@@ -479,13 +613,24 @@ export class StorageService {
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
-    const random = Math.floor(1000 + Math.random() * 9000);
-    return `TRX-${y}${m}${d}-${random}`;
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const random = Math.floor(100 + Math.random() * 900);
+    return `TRX-${y}${m}${d}-${hh}${mm}${ss}-${random}`;
   }
 
   static saveTransaction(trx: TransactionReceipt): TransactionReceipt[] {
     const products = this.getProducts();
     const productMap = new Map(products.map((p) => [p.sku, p]));
+
+    // Pastikan jam input website asli dan timestamp terekam sempurna
+    if (!trx.websiteTime && trx.transactionDate && trx.transactionDate.includes(' ')) {
+      trx.websiteTime = trx.transactionDate.split(' ')[1].replace(/\./g, ':');
+    }
+    if (!trx.createdAt) {
+      trx.createdAt = Date.now();
+    }
 
     // Ensure items have category, cost, and accurate margins
     const enrichedItems = trx.items.map((item) => {
@@ -501,17 +646,37 @@ export class StorageService {
       };
     });
 
-    const totalMargin = enrichedItems.reduce((sum, i) => sum + i.margin, 0);
+    const grossMargin = enrichedItems.reduce((sum, i) => sum + i.margin, 0);
+    const discount = Number(trx.discount) || 0;
+    const finalMargin = Math.max(0, grossMargin - discount);
 
     const enrichedTrx: TransactionReceipt = {
       ...trx,
       items: enrichedItems,
-      margin: totalMargin,
+      margin: finalMargin,
     };
 
     const list = this.getTransactions();
     const updated = [enrichedTrx, ...list];
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
+
+    // Automatically record shipping fee as website income (+) if present
+    if (trx.shippingFee && trx.shippingFee > 0) {
+      try {
+        this.saveFinanceRecord({
+          id: `FIN-ONGKIR-${trx.id}`,
+          type: 'INCOME',
+          category: 'ONGKIR',
+          categoryLabel: 'Ongkir Pengiriman (+)',
+          amount: trx.shippingFee,
+          description: `Ongkir Nota ${trx.id} (${trx.customerName || 'Pelanggan'})`,
+          cashier: trx.cashier || 'Kasir Utama',
+          date: trx.date,
+        });
+      } catch (e) {
+        console.error('Failed to auto-record shipping fee', e);
+      }
+    }
 
     // Deduct stock locally from DASHBOARD_MUTASI_&_PROFIT
     enrichedTrx.items.forEach((item) => {
@@ -521,7 +686,13 @@ export class StorageService {
         prod.totalAsset = prod.stock * (prod.cost || 0);
       }
     });
-    this.saveProducts(products);
+    this.saveProducts(products, 'POS', `Stok dikurangi nota ${trx.id}`);
+
+    this.setLastUpdateInfo({
+      source: 'POS',
+      sourceLabel: 'Kasir POS',
+      details: `Transaksi ${trx.id} (${formatRupiah(trx.total)})`,
+    });
 
     return updated;
   }
@@ -548,8 +719,53 @@ export class StorageService {
       return t;
     });
 
-    this.saveProducts(products);
+    this.saveProducts(products, 'POS', `Stok dikembalikan nota VOID ${trxId}`);
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
+
+    this.setLastUpdateInfo({
+      source: 'POS',
+      sourceLabel: 'Void Transaksi',
+      details: `Nota ${trxId} dibatalkan (VOID)`,
+    });
+
+    return updated;
+  }
+
+  static deleteTransaction(trxId: string, restoreStock = true): TransactionReceipt[] {
+    this.markTransactionAsDeleted(trxId);
+    const list = this.getTransactions();
+    const products = this.getProducts();
+    const target = list.find((t) => t.id === trxId);
+
+    if (target && restoreStock && target.status !== 'VOIDED') {
+      target.items.forEach((item) => {
+        const prod = products.find((p) => p.id === item.productId || p.sku === item.sku);
+        if (prod) {
+          prod.stock += item.qty;
+          prod.totalAsset = prod.stock * (prod.cost || 0);
+        }
+      });
+      this.saveProducts(products, 'POS', `Stok dikembalikan nota dihapus ${trxId}`);
+    }
+
+    const updated = list.filter((t) => t.id !== trxId);
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
+
+    // Hapus juga catatan keuangan ongkir jika ada yang terikat nomor struk ini
+    try {
+      const finances = this.getFinanceRecords();
+      const updatedFinances = finances.filter((f) => !f.description.includes(trxId));
+      if (updatedFinances.length !== finances.length) {
+        localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(updatedFinances));
+      }
+    } catch (e) {}
+
+    this.setLastUpdateInfo({
+      source: 'POS',
+      sourceLabel: 'Hapus Transaksi',
+      details: `Nota ${trxId} dihapus permanen`,
+    });
+
     return updated;
   }
 
@@ -596,22 +812,29 @@ export class StorageService {
     };
   }
 
-  // LOG_BARANG_MASUK (B4:H)
+  // LOG_BARANG_MASUK (B4:H) - Memorized, tidak memuat demo
   static getBarangMasukList(): BarangMasukRecord[] {
+    this.ensureDemoPurged();
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.BARANG_MASUK);
-      if (stored) {
-        return JSON.parse(stored);
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error(e);
     }
-    localStorage.setItem(STORAGE_KEYS.BARANG_MASUK, JSON.stringify(INITIAL_BARANG_MASUK));
-    return INITIAL_BARANG_MASUK;
+    return [];
   }
 
   static saveBarangMasukList(list: BarangMasukRecord[]): void {
+    this.ensureDemoPurged();
     localStorage.setItem(STORAGE_KEYS.BARANG_MASUK, JSON.stringify(list));
+    this.setLastUpdateInfo({
+      source: 'LOCAL',
+      sourceLabel: 'Barang Masuk',
+      details: `Catatan barang masuk disimpan (${list.length} data)`,
+    });
   }
 
   static addBarangMasuk(entry: BarangMasukRecord): void {
@@ -645,6 +868,12 @@ export class StorageService {
 
     // Also update product stock in DASHBOARD_MUTASI_&_PROFIT
     this.updateProductStock(entry.sku, newRecord.qty, false);
+
+    this.setLastUpdateInfo({
+      source: 'LOCAL',
+      sourceLabel: 'Restock Barang',
+      details: `Barang Masuk: ${newRecord.name} (+${newRecord.qty})`,
+    });
 
     return newRecord;
   }
@@ -791,13 +1020,210 @@ export class StorageService {
     return promos;
   }
 
+  // Finance (Pemasukan & Pengeluaran Non-Penjualan) - Memorized, tidak memuat demo
+  static getFinanceRecords(): FinanceRecord[] {
+    this.ensureDemoPurged();
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.FINANCES);
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Failed to load finance records', e);
+    }
+    return [];
+  }
+
+  static saveFinanceRecord(rec: Omit<FinanceRecord, 'id' | 'dateYmd' | 'dateTimeStr'> & { id?: string; date?: string; dateYmd?: string; dateTimeStr?: string }): FinanceRecord[] {
+    const list = this.getFinanceRecords();
+    const { full, date } = getFormattedNow();
+    const entryDate = rec.date || date;
+    const dateYmd = rec.dateYmd || normalizeDateToYmd(entryDate);
+
+    const categoryMap: Record<string, string> = {
+      ONGKIR: 'Ongkir Pengiriman (+)',
+      TIPS: 'Tips & Bonus (+)',
+      MODAL_LAIN: 'Modal / Pemasukan Lain (+)',
+      BENSIN: 'Bensin Motor/Kendaraan (-)',
+      PEMBELIAN_STOK: 'Pembelian Stok / Kulakan (-)',
+      OPERASIONAL: 'Operasional Toko (-)',
+      PENGELUARAN_LAIN: 'Pengeluaran Lain-Lain (-)',
+    };
+
+    const qty = Number(rec.qty) || 1;
+    const unitPrice = rec.unitPrice !== undefined ? Number(rec.unitPrice) : Math.abs(Number(rec.amount) || 0) / qty;
+    const amount = rec.amount !== undefined ? Math.abs(Number(rec.amount) || 0) : unitPrice * qty;
+
+    const newRec: FinanceRecord = {
+      id: rec.id || `FIN-${Date.now().toString().slice(-8)}`,
+      date: entryDate,
+      dateYmd: dateYmd,
+      dateTimeStr: rec.dateTimeStr || `${entryDate} ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`,
+      type: rec.type,
+      category: rec.category,
+      categoryLabel: rec.categoryLabel || categoryMap[rec.category] || rec.category,
+      unitPrice: unitPrice,
+      qty: qty,
+      amount: amount,
+      description: rec.description || '',
+      paymentMethod: (rec.paymentMethod || 'CASH').toUpperCase(),
+      cashier: rec.cashier || 'Kasir Utama',
+      notes: rec.notes || '',
+      rowNumber: rec.rowNumber,
+      syncStatus: rec.syncStatus || 'LOCAL',
+    };
+
+    const updated = [newRec, ...list.filter((f) => f.id !== newRec.id)];
+    localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(updated));
+
+    this.setLastUpdateInfo({
+      source: 'LOCAL',
+      sourceLabel: 'Catatan Keuangan',
+      details: `${newRec.type === 'INCOME' ? 'Pemasukan' : 'Pengeluaran'}: ${newRec.description} (${formatRupiah(amount)})`,
+    });
+
+    return updated;
+  }
+
+  // Sinkronisasi data dari sheet LAIN-LAIN (Google Sheets)
+  static syncPengeluaranLainList(remoteList: FinanceRecord[]): FinanceRecord[] {
+    if (!remoteList || remoteList.length === 0) {
+      return this.getFinanceRecords();
+    }
+
+    const localList = this.getFinanceRecords();
+    const mergedMap = new Map<string, FinanceRecord>();
+
+    // 1. Masukkan remote items lebih dulu
+    remoteList.forEach((r) => {
+      const key = r.rowNumber ? `SHEET-ROW-${r.rowNumber}` : (r.id || `${r.date}-${r.description}-${r.amount}`);
+      mergedMap.set(key, {
+        ...r,
+        syncStatus: 'SYNCED',
+      });
+    });
+
+    // 2. Pertahankan local records yang belum ada di spreadsheet (misal pemasukan atau lokal baru)
+    localList.forEach((loc) => {
+      const hasMatch = remoteList.some(
+        (rem) =>
+          (loc.rowNumber && rem.rowNumber === loc.rowNumber) ||
+          (loc.date === rem.date && loc.description === rem.description && loc.amount === rem.amount)
+      );
+
+      if (!hasMatch) {
+        mergedMap.set(loc.id, loc);
+      }
+    });
+
+    const result = Array.from(mergedMap.values());
+    result.sort((a, b) => String(b.dateYmd || b.date || '').localeCompare(String(a.dateYmd || a.date || '')));
+
+    localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(result));
+    return result;
+  }
+
+  static deleteFinanceRecord(id: string): FinanceRecord[] {
+    const list = this.getFinanceRecords().filter((f) => f.id !== id);
+    localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(list));
+    this.setLastUpdateInfo({
+      source: 'LOCAL',
+      sourceLabel: 'Hapus Keuangan',
+      details: 'Catatan keuangan dihapus',
+    });
+    return list;
+  }
+
+  // Sales Target Bulanan
+  static getSalesTarget(): SalesTarget {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.SALES_TARGET);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error('Failed to load sales target', e);
+    }
+    localStorage.setItem(STORAGE_KEYS.SALES_TARGET, JSON.stringify(INITIAL_SALES_TARGET));
+    return INITIAL_SALES_TARGET;
+  }
+
+  static saveSalesTarget(targetAmount: number, month?: string): SalesTarget {
+    const currentMonth = month || new Date().toISOString().slice(0, 7);
+    const newTarget: SalesTarget = {
+      targetAmount: Math.max(0, Number(targetAmount) || 0),
+      month: currentMonth,
+      updatedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(STORAGE_KEYS.SALES_TARGET, JSON.stringify(newTarget));
+    return newTarget;
+  }
+
+  // Memorize Base on Last Update State Management
+  static getLastUpdateInfo(): LastUpdateInfo {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.LAST_UPDATE);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {}
+
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    return {
+      timestamp: now.toISOString(),
+      formatted: `${d}/${m}/${y} ${time} WIB`,
+      source: 'LOCAL',
+      sourceLabel: 'Memorize Aktif',
+      details: 'Menggunakan data pembaruan terakhir',
+    };
+  }
+
+  static setLastUpdateInfo(info: Partial<LastUpdateInfo>): LastUpdateInfo {
+    const current = this.getLastUpdateInfo();
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    const updated: LastUpdateInfo = {
+      timestamp: now.toISOString(),
+      formatted: `${d}/${m}/${y} ${time} WIB`,
+      source: info.source || current.source,
+      sourceLabel: info.sourceLabel || (info.source === 'GOOGLE_SHEETS' ? 'Google Sheets' : info.source === 'POS' ? 'Kasir POS' : 'Update Lokal'),
+      details: info.details || current.details || 'Pembaruan data kasir',
+      itemCounts: {
+        products: info.itemCounts?.products ?? (JSON.parse(localStorage.getItem(STORAGE_KEYS.PRODUCTS) || '[]')?.length || 0),
+        transactions: info.itemCounts?.transactions ?? (JSON.parse(localStorage.getItem(STORAGE_KEYS.TRANSACTIONS) || '[]')?.length || 0),
+        finances: info.itemCounts?.finances ?? (JSON.parse(localStorage.getItem(STORAGE_KEYS.FINANCES) || '[]')?.length || 0),
+        barangMasuk: info.itemCounts?.barangMasuk ?? (JSON.parse(localStorage.getItem(STORAGE_KEYS.BARANG_MASUK) || '[]')?.length || 0),
+      },
+    };
+
+    try {
+      localStorage.setItem(STORAGE_KEYS.LAST_UPDATE, JSON.stringify(updated));
+    } catch (e) {}
+
+    return updated;
+  }
+
+  // Bersihkan data transaksi dan keuangan ke kondisi fresh (TIDAK menyuntikkan data demo palsu!)
   static resetToInitialData(): void {
-    localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(INITIAL_CONFIG));
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(INITIAL_PRODUCTS));
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(INITIAL_TRANSACTIONS));
-    localStorage.setItem(STORAGE_KEYS.BARANG_MASUK, JSON.stringify(INITIAL_BARANG_MASUK));
-    localStorage.setItem(STORAGE_KEYS.PROMOS, JSON.stringify(INITIAL_PROMOS));
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.BARANG_MASUK, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify([]));
     localStorage.removeItem(STORAGE_KEYS.CURRENT_SHIFT);
     localStorage.removeItem(STORAGE_KEYS.SHIFTS);
+    this.setLastUpdateInfo({
+      source: 'LOCAL',
+      sourceLabel: 'Data Dibersihkan',
+      details: 'Data transaksi & catatan kasir dibersihkan (tanpa data demo)',
+    });
   }
 }

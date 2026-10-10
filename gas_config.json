@@ -1,5 +1,6 @@
 {
   "webAppUrl": "https://script.google.com/macros/s/AKfycbz3ETMp4XjXq7Qi2zdGuMNr9EVjZGrU5UTuT6g93nXNH3SyZSmIa6sys4Jrd8nNAJFiAA/exec",
+  "primaryWebAppUrl": "https://script.google.com/macros/s/AKfycbz3ETMp4XjXq7Qi2zdGuMNr9EVjZGrU5UTuT6g93nXNH3SyZSmIa6sys4Jrd8nNAJFiAA/exec",
   "sheetConfig": {
     "productsSheet": "DASHBOARD_MUTASI_&_PROFIT",
     "productRange": "B70:J",
@@ -9,5 +10,5 @@
     "salesLogStartRow": 7,
     "barangMasukStartRow": 4
   },
-  "lastSynced": "2026-09-20T06:22:35.487Z"
+  "lastSynced": "2026-10-01T10:35:26.652Z"
 }

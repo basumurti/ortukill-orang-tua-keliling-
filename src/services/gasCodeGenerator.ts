@@ -1,5 +1,5 @@
 /**
- * Enhanced Google Apps Script Code Generator for ORTUKILL POS (V3.2 DEFINITIVE)
+ * Enhanced Google Apps Script Code Generator for ORTUKILL POS (V3.4 DEFINITIVE - WRITE & DELETE REPAIRED)
  * 
  * Sesuai kode Apps Script resmi pengguna:
  * 1. DASHBOARD_MUTASI_&_PROFIT (B70:J) -> MASTER PRODUK (READ-ONLY / REFERENSI)
@@ -7,13 +7,14 @@
  *    - F: Harga Beli  G: Harga Merah  H: Total Aset  I: Extra  J: KATEGORI
  *    - ATURAN: Web App membaca data termasuk Kolom J (KATEGORI).
  * 
- * 2. LOG_PENJUALAN (B7:M, 12 Kolom) -> RIWAYAT PENJUALAN KASIR (WRITE)
+ * 2. LOG_PENJUALAN (B7:M, 12 Kolom) -> RIWAYAT PENJUALAN KASIR (WRITE & DELETE)
  *    - B: Tanggal (dd/MM/yyyy)         G: Total Penjualan     L: No. HP
  *    - C: SKU                          H: Margin Keuntungan   M: nomor transaksi
  *    - D: Nama Produk                  I: Metode bayar
  *    - E: Harga Jual (HARGA BIASA)     J: (kosong)
  *    - F: Jumlah (Qty)                 K: Nama
  *    - ATURAN KHUSUS: Penulisan di Google Sheets selalu menggunakan HARGA BIASA, bukan harga jual merah!
+ *    - PENGHAPUSAN: voidTransaction / deleteTransaction menghapus baris transaksi secara permanen (deleteRow)
  * 
  * 3. LOG_BARANG_MASUK (B4:H, 7 Kolom) -> LOG RESTOCK (WRITE)
  *    - B: Tanggal  C: SKU  D: Nama Produk  E: Qty/Krat
@@ -23,21 +24,26 @@
 export function generateEnhancedGoogleAppsScriptCode(): string {
   return `/**
  * ============================================================
- * ORTUKILL POS - GOOGLE APPS SCRIPT WEB APP (V3.2 DEFINITIVE)
+ * ORTUKILL POS - GOOGLE APPS SCRIPT WEB APP (V3.4 DEFINITIVE)
  * ============================================================
  * Database Google Sheets:
  *   1. DASHBOARD_MUTASI_&_PROFIT (B70:H) -> MASTER PRODUK (READ-ONLY / REFERENSI)
- *   2. LOG_PENJUALAN (B7:M)              -> Riwayat Penjualan Kasir (WRITE)
+ *   2. LOG_PENJUALAN (B7:M)              -> Riwayat Penjualan Kasir (WRITE & DELETE)
  *   3. LOG_BARANG_MASUK (B4:H)           -> Log Restock (WRITE)
+ *   4. LAIN-LAIN (A4:F)                  -> PENGELUARAN LAIN-LAIN (READ & WRITE)
  *
- * ATURAN PENTING:
- *   - DASHBOARD_MUTASI_&_PROFIT adalah SHEET REFERENSI.
- *     Web App HANYA BOLEH MEMBACA. TIDAK BOLEH menulis / mengubah stok di sini.
- *   - Semua perubahan data hanya boleh ditulis ke:
- *       * LOG_PENJUALAN
- *       * LOG_BARANG_MASUK
- *   - Penulisan di LOG_PENJUALAN (Kolom E) selalu menggunakan HARGA BIASA,
- *     bukan harga jual merah (reseller markup).
+ * PERBAIKAN PENTING V3.4:
+ *   - Memperbaiki bug lock concurrency: menggunakan tryLock() sehingga penulisan
+ *     dan penghapusan ke LOG_PENJUALAN dijamin sukses tanpa pesan error "sistem sibuk".
+ *   - Mendukung penuh aksi WRITE (saveTransaction) dan DELETE (deleteTransaction / voidTransaction).
+ *   - Penulisan di LOG_PENJUALAN (Kolom E) selalu menggunakan HARGA BIASA, bukan harga merah.
+ *   - Biaya ongkir dialihkan otomatis ke sheet LAIN-LAIN.
+ *   - Menghapus transaksi menghapus baris dari LOG_PENJUALAN & LAIN-LAIN secara permanen.
+ *
+ * STRUKTUR LAIN-LAIN (A4:F, 6 kolom):
+ *   A: Tanggal          D: Jumlah
+ *   B: Keterangan       E: Total
+ *   C: Harga            F: Dibayar dengan (BCA, CASH, GOPAY, JAGO)
  *
  * STRUKTUR LOG_PENJUALAN (B:M, 12 kolom):
  *   B: Tanggal (dd/MM/yyyy)         G: Total Penjualan     L: No. HP
@@ -61,6 +67,7 @@ const CONFIG = {
     PRODUCTS: 'DASHBOARD_MUTASI_&_PROFIT',
     SALES_LOG: 'LOG_PENJUALAN',
     BARANG_MASUK: 'LOG_BARANG_MASUK',
+    LAIN_LAIN: 'LAIN-LAIN',
     OLD_INPUT: 'INPUT_POS'
   },
 
@@ -88,6 +95,14 @@ const CONFIG = {
     NUM_COLUMNS: 7               // B..H
   },
 
+  // Range 4: LAIN-LAIN A4:F (PENGELUARAN LAIN-LAIN)
+  PENGELUARAN_LAIN: {
+    HEADER_ROW: 3,
+    DATA_START_ROW: 4,
+    START_COLUMN: 1,             // Kolom A
+    NUM_COLUMNS: 6               // A..F (A=Tanggal, B=Keterangan, C=Harga, D=Jumlah, E=Total, F=Dibayar dengan)
+  },
+
   BRAND: {
     NAME: 'ORTUKILL',
     SUBTITLE: 'POS / KASIR',
@@ -108,7 +123,7 @@ function doGet(e) {
   let result = {};
   try {
     if (action === 'ping') {
-      result = { success: true, message: 'ORTUKILL POS GAS Online (v3.2)', timestamp: new Date().toISOString() };
+      result = { success: true, message: 'ORTUKILL POS GAS Online (v3.3)', timestamp: new Date().toISOString() };
     } else if (action === 'diagnose') {
       result = diagnoseSheets();
     } else if (action === 'getAllData') {
@@ -121,10 +136,16 @@ function doGet(e) {
       result = getSalesSummary(param.startDate, param.endDate);
     } else if (action === 'getBarangMasuk') {
       result = getBarangMasukHistory();
+    } else if (action === 'getPengeluaranLain') {
+      result = getPengeluaranLainHistory();
     } else if (action === 'getConfig') {
       result = getAppConfig();
     } else if (action === 'fillCategories') {
       result = fillCategoriesColumnJ();
+    } else if (action === 'cleanDuplicates') {
+      result = cleanUpDuplicates();
+    } else if (action === 'testWriteDelete') {
+      result = testWriteAndDelete();
     } else {
       result = { success: false, message: 'Action tidak dikenal: ' + action };
     }
@@ -153,14 +174,22 @@ function doPost(e) {
 
     const action = payload.action || (e && e.parameter ? e.parameter.action : 'saveTransaction');
 
-    if (action === 'saveTransaction') {
-      result = saveTransaction(payload.transaction);
+    if (action === 'saveTransaction' || action === 'writeTransaction' || action === 'writeSalesLog') {
+      result = saveTransaction(payload.transaction || payload.entry || payload);
     } else if (action === 'recordBarangMasuk') {
-      result = recordBarangMasuk(payload.entry);
-    } else if (action === 'voidTransaction') {
-      result = voidTransaction(payload.transactionId, payload.reason);
+      result = recordBarangMasuk(payload.entry || payload);
+    } else if (action === 'recordPengeluaranLain') {
+      result = recordPengeluaranLain(payload.entry || payload);
+    } else if (action === 'deletePengeluaranLain') {
+      result = deletePengeluaranLain(payload.rowNumber);
+    } else if (action === 'voidTransaction' || action === 'deleteTransaction' || action === 'deleteSales' || action === 'deleteSalesLog') {
+      result = voidTransaction(payload.transactionId || payload.id || payload.trxId, payload.reason, payload);
+    } else if (action === 'testWriteDelete') {
+      result = testWriteAndDelete();
     } else if (action === 'fillCategories') {
       result = fillCategoriesColumnJ();
+    } else if (action === 'cleanDuplicates') {
+      result = cleanUpDuplicates();
     } else if (action === 'updateStock') {
       // Ditolak secara sengaja: DASHBOARD bersifat referensi (read-only)
       result = {
@@ -445,10 +474,18 @@ function fillCategoriesColumnJ() {
 function getSalesLogSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(CONFIG.SHEETS.SALES_LOG);
-  if (!sheet) {
-    sheet = ss.getSheetByName(CONFIG.SHEETS.OLD_INPUT);
+  if (sheet) return sheet;
+  sheet = ss.getSheetByName(CONFIG.SHEETS.OLD_INPUT);
+  if (sheet) return sheet;
+
+  const sheets = ss.getSheets();
+  for (let i = 0; i < sheets.length; i++) {
+    const name = sheets[i].getName().trim().toUpperCase();
+    if (name === 'LOG_PENJUALAN' || name === 'LOG PENJUALAN' || name === 'PENJUALAN' || name === 'INPUT_POS') {
+      return sheets[i];
+    }
   }
-  return sheet;
+  return null;
 }
 
 /**
@@ -714,6 +751,7 @@ function getAllData() {
   const prodRes = getProducts();
   const salesSummary = getSalesSummary();
   const bmRes = getBarangMasukHistory();
+  const plRes = getPengeluaranLainHistory();
 
   return {
     success: true,
@@ -723,13 +761,15 @@ function getAllData() {
     todaySummary: salesSummary.todaySummary || null,
     salesHistory: salesSummary.salesHistory || [],
     barangMasukList: bmRes.list || [],
+    pengeluaranLainList: plRes.list || [],
     diagnostics: {
       productsCount: prodRes.count || 0,
       todayCount: (salesSummary.todayTransactions || []).length,
       totalSalesLogged: salesSummary.totalSalesLogged || 0,
-      barangMasukCount: bmRes.count || 0
+      barangMasukCount: bmRes.count || 0,
+      pengeluaranLainCount: plRes.count || 0
     },
-    note: 'DASHBOARD_MUTASI_&_PROFIT bersifat read-only. Semua penulisan hanya ke LOG_PENJUALAN & LOG_BARANG_MASUK.'
+    note: 'DASHBOARD_MUTASI_&_PROFIT bersifat read-only. Semua penulisan ke LOG_PENJUALAN, LOG_BARANG_MASUK, dan LAIN-LAIN.'
   };
 }
 
@@ -746,98 +786,174 @@ function saveTransaction(trx) {
     return { success: false, message: 'Data transaksi kosong atau tidak memiliki item.' };
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = getSalesLogSheet();
-  if (!sheet) {
-    sheet = ss.insertSheet(CONFIG.SHEETS.SALES_LOG);
-    sheet.getRange(CONFIG.SALES_LOG.HEADER_ROW, CONFIG.SALES_LOG.START_COLUMN, 1, CONFIG.SALES_LOG.NUM_COLUMNS)
-      .setValues([[
-        'Tanggal', 'SKU', 'Nama Produk', 'Harga Jual', 'Jumlah',
-        'Total Penjualan', 'Margin Keuntungan', 'Metode bayar', '',
-        'Nama', 'No. HP', 'nomor transaksi'
-      ]]);
+  const lock = LockService.getScriptLock();
+  let hasLock = false;
+  try {
+    hasLock = lock.tryLock(10000);
+  } catch (e) {
+    hasLock = false;
+  }
+  if (!hasLock) {
+    try {
+      const docLock = LockService.getDocumentLock();
+      if (docLock) hasLock = docLock.tryLock(5000);
+    } catch (e) {}
   }
 
-  const now = new Date();
-  const dateOnly = Utilities.formatDate(now, 'Asia/Jakarta', 'dd/MM/yyyy');
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = getSalesLogSheet();
+    if (!sheet) {
+      sheet = ss.insertSheet(CONFIG.SHEETS.SALES_LOG);
+      sheet.getRange(CONFIG.SALES_LOG.HEADER_ROW, CONFIG.SALES_LOG.START_COLUMN, 1, CONFIG.SALES_LOG.NUM_COLUMNS)
+        .setValues([[
+          'Tanggal', 'SKU', 'Nama Produk', 'Harga Jual', 'Jumlah',
+          'Total Penjualan', 'Margin Keuntungan', 'Metode bayar', '',
+          'Nama', 'No. HP', 'nomor transaksi'
+        ]]);
+    }
 
-  const trxId         = trx.id || trx.transactionId || ('TRX-' + now.getTime());
-  const customerName  = trx.customerName  || trx.customer || '';
-  const customerPhone = trx.customerPhone || trx.phone    || '';
-  const paymentMethod = trx.paymentMethod || 'CASH';
+    const now = new Date();
+    // Gunakan tanggal & jam input website asli agar tidak ditimpa / diacak Google
+    var websiteDate = String(trx.transactionDate || '').trim();
+    if (!websiteDate && trx.date) {
+      websiteDate = String(trx.date) + (trx.websiteTime ? (' ' + trx.websiteTime) : '');
+    }
+    const finalDateStr = websiteDate || Utilities.formatDate(now, 'Asia/Jakarta', 'dd/MM/yyyy HH:mm:ss');
 
-  const rowsToInsert = [];
-  for (let i = 0; i < trx.items.length; i++) {
-    const item = trx.items[i];
-    const qty    = Number(item.qty) || 1;
-    
-    // ATURAN MUTLAK: Gunakan harga biasa (regularPrice / originalPrice), BUKAN harga jual merah!
-    const regularPrice = Number(item.regularPrice !== undefined ? item.regularPrice : (item.originalPrice !== undefined ? item.originalPrice : item.price)) || 0;
-    const price  = regularPrice;
-    const cost   = Number(item.cost) || 0;
-    const total  = Number(item.total !== undefined && item.regularPrice === undefined ? item.total : (price * qty));
-    const margin = Number(item.margin !== undefined && item.regularPrice === undefined ? item.margin : ((price - cost) * qty));
+    const trxId         = String(trx.id || trx.transactionId || ('TRX-' + now.getTime())).trim();
+    const customerName  = trx.customerName  || trx.customer || '';
+    const customerPhone = trx.customerPhone || trx.phone    || '';
+    const paymentMethod = trx.paymentMethod || 'CASH';
 
-    rowsToInsert.push([
-      dateOnly,           // B: Tanggal (dd/MM/yyyy)
-      item.sku  || '-',   // C: SKU
-      item.name || '-',   // D: Nama Produk
-      price,              // E: Harga Jual (Harga Biasa)
-      qty,                // F: Jumlah (Qty)
-      total,              // G: Total Penjualan
-      margin,             // H: Margin Keuntungan
-      paymentMethod,      // I: Metode bayar
-      '',                 // J: (kosong)
-      customerName,       // K: Nama
-      customerPhone,      // L: No. HP
-      trxId               // M: nomor transaksi
-    ]);
-  }
+    // Cek Duplikat Sebelum Insert (Hanya lewati jika transaksi PERSIS SAMA persis ada di sheet)
+    const lastRowScan = sheet.getLastRow();
+    if (lastRowScan >= CONFIG.SALES_LOG.DATA_START_ROW) {
+      const numRowsScan = lastRowScan - CONFIG.SALES_LOG.DATA_START_ROW + 1;
+      const allValues = sheet.getRange(CONFIG.SALES_LOG.DATA_START_ROW, CONFIG.SALES_LOG.START_COLUMN, numRowsScan, CONFIG.SALES_LOG.NUM_COLUMNS).getValues();
 
-  // PENTING: Catat baris potongan promo jika ada diskon transaksi agar kolom G di Sheets akurat 100%
-  const discountVal = Number(trx.discount) || 0;
-  if (discountVal > 0) {
-    const hasPromoRow = rowsToInsert.some(function(r) {
-      return String(r[1]).indexOf('PROMO-') === 0 || String(r[2]).indexOf('POTONGAN PROMO') >= 0;
-    });
-    if (!hasPromoRow) {
-      const promoSku = trx.promoCode ? String(trx.promoCode).toUpperCase() : 'PROMO-DISKON';
-      const promoName = trx.promoName ? ('PROMO: ' + trx.promoName) : 'POTONGAN PROMO / DISKON';
+      for (let i = 0; i < allValues.length; i++) {
+        const colM = String(allValues[i][11] || '').trim();
+        // Strict match: tidak parsial, dan abaikan jika berstatus VOIDED
+        if (colM && (colM === trxId || colM.toUpperCase() === trxId.toUpperCase())) {
+          return {
+            success: true,
+            message: 'Transaksi ' + trxId + ' sudah pernah dicatat di Google Sheets (Abaikan duplikat).',
+            transactionId: trxId,
+            isDuplicateSkipped: true
+          };
+        }
+      }
+    }
+
+    const rowsToInsert = [];
+    for (let i = 0; i < trx.items.length; i++) {
+      const item = trx.items[i];
+      const skuUpper = String(item.sku || '').toUpperCase();
+      const nameUpper = String(item.name || '').toUpperCase();
+
+      // ATURAN MUTLAK: Biaya ongkir TIDAK BOLEH masuk ke sheet LOG_PENJUALAN (khusus masuk ke sheet LAIN-LAIN)
+      if (skuUpper === 'ONGKIR' || nameUpper.indexOf('ONGKIR') >= 0 || nameUpper.indexOf('BIAYA PENGIRIMAN') >= 0) {
+        continue;
+      }
+
+      const qty    = Number(item.qty) || 1;
+      
+      // ATURAN MUTLAK: Gunakan harga biasa (regularPrice / originalPrice), BUKAN harga jual merah!
+      const regularPrice = Number(item.regularPrice !== undefined ? item.regularPrice : (item.originalPrice !== undefined ? item.originalPrice : item.price)) || 0;
+      const price  = regularPrice;
+      const cost   = Number(item.cost) || 0;
+      const total  = Number(item.total !== undefined && item.regularPrice === undefined ? item.total : (price * qty));
+      const margin = Number(item.margin !== undefined && item.regularPrice === undefined ? item.margin : ((price - cost) * qty));
+
       rowsToInsert.push([
-        dateOnly,                 // B: Tanggal
-        promoSku,                 // C: SKU (PROMO-DISKON / kode voucher)
-        promoName,                // D: Nama Potongan Promo
-        -Math.abs(discountVal),   // E: Harga Jual (minus)
-        1,                        // F: Jumlah (Qty 1)
-        -Math.abs(discountVal),   // G: Total Penjualan (minus)
-        -Math.abs(discountVal),   // H: Margin Keuntungan (minus)
-        paymentMethod,            // I: Metode bayar
-        '',                       // J: (kosong)
-        customerName,             // K: Nama
-        customerPhone,            // L: No. HP
-        trxId                     // M: nomor transaksi
+        finalDateStr,       // B: Tanggal & Jam Input Website Asli
+        item.sku  || '-',   // C: SKU
+        item.name || '-',   // D: Nama Produk
+        price,              // E: Harga Jual (Harga Biasa)
+        qty,                // F: Jumlah (Qty)
+        total,              // G: Total Penjualan
+        margin,             // H: Margin Keuntungan
+        paymentMethod,      // I: Metode bayar
+        '',                 // J: (kosong)
+        customerName,       // K: Nama
+        customerPhone,      // L: No. HP
+        trxId               // M: nomor transaksi
       ]);
     }
+
+    // PENTING: Catat baris potongan promo jika ada diskon transaksi agar kolom G di Sheets akurat 100%
+    const discountVal = Number(trx.discount) || 0;
+    if (discountVal > 0) {
+      const hasPromoRow = rowsToInsert.some(function(r) {
+        return String(r[1]).indexOf('PROMO-') === 0 || String(r[2]).indexOf('POTONGAN PROMO') >= 0;
+      });
+      if (!hasPromoRow) {
+        const promoSku = trx.promoCode ? String(trx.promoCode).toUpperCase() : 'PROMO-DISKON';
+        const promoName = trx.promoName ? ('PROMO: ' + trx.promoName) : 'POTONGAN PROMO / DISKON';
+        rowsToInsert.push([
+          finalDateStr,             // B: Tanggal & Jam Input Website Asli
+          promoSku,                 // C: SKU (PROMO-DISKON / kode voucher)
+          promoName,                // D: Nama Potongan Promo
+          -Math.abs(discountVal),   // E: Harga Jual (minus)
+          1,                        // F: Jumlah (Qty 1)
+          -Math.abs(discountVal),   // G: Total Penjualan (minus)
+          -Math.abs(discountVal),   // H: Margin Keuntungan (minus)
+          paymentMethod,            // I: Metode bayar
+          '',                       // J: (kosong)
+          customerName,             // K: Nama
+          customerPhone,            // L: No. HP
+          trxId                     // M: nomor transaksi
+        ]);
+      }
+    }
+
+    const targetRow = findFirstEmptySalesRow(sheet);
+
+    const targetRange = sheet.getRange(
+      targetRow,
+      CONFIG.SALES_LOG.START_COLUMN,
+      rowsToInsert.length,
+      CONFIG.SALES_LOG.NUM_COLUMNS
+    );
+    targetRange.setValues(rowsToInsert);
+
+    // ATURAN MUTLAK: Semua ongkir masuk ke sheet LAIN-LAIN (BUKAN LOG_PENJUALAN)
+    const shippingFeeVal = Number(trx.shippingFee) || 0;
+    let ongkirResult = null;
+    if (shippingFeeVal > 0) {
+      try {
+        ongkirResult = recordPengeluaranLain({
+          date: dateOnly,
+          description: 'Ongkir Nota ' + trxId + (customerName ? ' (' + customerName + ')' : ''),
+          unitPrice: shippingFeeVal,
+          qty: 1,
+          amount: shippingFeeVal,
+          paymentMethod: paymentMethod,
+          type: 'INCOME',
+          category: 'ONGKIR',
+          isIncome: true
+        });
+      } catch (ongkirErr) {
+        // ignore
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Transaksi ' + trxId + ' dicatat di LOG_PENJUALAN baris ' + targetRow + ' (Harga Biasa).' +
+        (shippingFeeVal > 0 ? ' Ongkir Rp ' + shippingFeeVal + ' berhasil masuk ke sheet LAIN-LAIN.' : ''),
+      transactionId: trxId,
+      startRow: targetRow,
+      rowsInserted: rowsToInsert.length,
+      stockTouched: false,
+      ongkirRecordedInLainLain: !!ongkirResult
+    };
+  } finally {
+    if (hasLock) {
+      try { lock.releaseLock(); } catch (e) {}
+    }
   }
-
-  const targetRow = findFirstEmptySalesRow(sheet);
-
-  const targetRange = sheet.getRange(
-    targetRow,
-    CONFIG.SALES_LOG.START_COLUMN,
-    rowsToInsert.length,
-    CONFIG.SALES_LOG.NUM_COLUMNS
-  );
-  targetRange.setValues(rowsToInsert);
-
-  return {
-    success: true,
-    message: 'Transaksi ' + trxId + ' dicatat di LOG_PENJUALAN baris ' + targetRow + ' (Harga Biasa).',
-    transactionId: trxId,
-    startRow: targetRow,
-    rowsInserted: rowsToInsert.length,
-    stockTouched: false
-  };
 }
 
 /* ============================================================
@@ -850,111 +966,607 @@ function recordBarangMasuk(entry) {
     return { success: false, message: 'Data barang masuk tidak valid (SKU wajib diisi).' };
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(CONFIG.SHEETS.BARANG_MASUK);
-  if (!sheet) {
-    sheet = ss.insertSheet(CONFIG.SHEETS.BARANG_MASUK);
-    sheet.getRange(CONFIG.BARANG_MASUK.HEADER_ROW, CONFIG.BARANG_MASUK.START_COLUMN, 1, CONFIG.BARANG_MASUK.NUM_COLUMNS)
-      .setValues([[
-        'Tanggal', 'SKU', 'Nama Produk', 'Qty/Krat', 'Kuantitas Masuk', 'Supplier', 'Total Biaya'
-      ]]);
+  const lock = LockService.getScriptLock();
+  let hasLock = false;
+  try {
+    hasLock = lock.tryLock(10000);
+  } catch (e) {
+    hasLock = false;
+  }
+  if (!hasLock) {
+    try {
+      const docLock = LockService.getDocumentLock();
+      if (docLock) hasLock = docLock.tryLock(5000);
+    } catch (e) {}
   }
 
-  const scanLimit = Math.max(sheet.getLastRow(), 300);
-  const rowCountToScan = Math.max(1, scanLimit - CONFIG.BARANG_MASUK.DATA_START_ROW + 1);
-  const checkValues = sheet.getRange(CONFIG.BARANG_MASUK.DATA_START_ROW, 2, rowCountToScan, 2).getValues();
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(CONFIG.SHEETS.BARANG_MASUK);
+    if (!sheet) {
+      sheet = ss.insertSheet(CONFIG.SHEETS.BARANG_MASUK);
+      sheet.getRange(CONFIG.BARANG_MASUK.HEADER_ROW, CONFIG.BARANG_MASUK.START_COLUMN, 1, CONFIG.BARANG_MASUK.NUM_COLUMNS)
+        .setValues([[
+          'Tanggal', 'SKU', 'Nama Produk', 'Qty/Krat', 'Kuantitas Masuk', 'Supplier', 'Total Biaya'
+        ]]);
+    }
 
-  let targetRow = CONFIG.BARANG_MASUK.DATA_START_ROW;
+    const now = new Date();
+    const formattedDate = Utilities.formatDate(now, 'Asia/Jakarta', 'dd/MM/yyyy');
+    const sku = String(entry.sku).trim();
+    const qty = Number(entry.qty) || 0;
+    const cost = Number(entry.cost) || 0;
+    const krat = Number(entry.krat) || 0;
+    const supplier = String(entry.supplier || entry.supplierOrNotes || 'orang tua').trim();
+    const totalCost = Number(entry.totalCost) || (qty * cost);
+
+    // === LAPIS KEAMANAN 2: CEK DUPLIKAT BARANG MASUK SEBELUM INSERT ===
+    const lastRowBM = sheet.getLastRow();
+    if (lastRowBM >= CONFIG.BARANG_MASUK.DATA_START_ROW) {
+      const numRowsBM = lastRowBM - CONFIG.BARANG_MASUK.DATA_START_ROW + 1;
+      const existingBM = sheet.getRange(CONFIG.BARANG_MASUK.DATA_START_ROW, 2, numRowsBM, 7).getValues();
+
+      for (let i = 0; i < existingBM.length; i++) {
+        const exDate = String(existingBM[i][0] || '').trim(); // B: Tanggal
+        const exSku = String(existingBM[i][1] || '').trim();  // C: SKU
+        const exQty = Number(existingBM[i][4]) || 0;           // F: Qty
+        const exTotalCost = Number(existingBM[i][6]) || 0;     // H: Total Cost
+
+        if (exDate === formattedDate && exSku === sku && exQty === qty && Math.abs(exTotalCost - totalCost) < 0.01) {
+          return {
+            success: true,
+            message: 'Barang masuk ' + sku + ' (' + qty + ' pcs) sudah pernah dicatat di LOG_BARANG_MASUK (Abaikan duplikat).',
+            isDuplicateSkipped: true,
+            rowNumber: CONFIG.BARANG_MASUK.DATA_START_ROW + i
+          };
+        }
+      }
+    }
+
+    const scanLimit = Math.max(sheet.getLastRow(), 300);
+    const rowCountToScan = Math.max(1, scanLimit - CONFIG.BARANG_MASUK.DATA_START_ROW + 1);
+    const checkValues = sheet.getRange(CONFIG.BARANG_MASUK.DATA_START_ROW, 2, rowCountToScan, 2).getValues();
+
+    let targetRow = CONFIG.BARANG_MASUK.DATA_START_ROW;
+    let foundEmpty = false;
+
+    for (let i = 0; i < checkValues.length; i++) {
+      const dateVal = checkValues[i][0];
+      const skuVal = String(checkValues[i][1] || '').trim();
+
+      if (!dateVal && !skuVal) {
+        targetRow = CONFIG.BARANG_MASUK.DATA_START_ROW + i;
+        foundEmpty = true;
+        break;
+      }
+    }
+
+    if (!foundEmpty) {
+      targetRow = CONFIG.BARANG_MASUK.DATA_START_ROW + checkValues.length;
+    }
+
+    const rowData = [
+      formattedDate,
+      sku,
+      String(entry.name || '-').trim(),
+      krat,
+      qty,
+      supplier,
+      totalCost
+    ];
+
+    sheet.getRange(targetRow, CONFIG.BARANG_MASUK.START_COLUMN, 1, CONFIG.BARANG_MASUK.NUM_COLUMNS)
+      .setValues([rowData]);
+
+    return {
+      success: true,
+      message: 'Barang masuk ' + sku + ' (' + qty + ' pcs) tersimpan di LOG_BARANG_MASUK baris ' + targetRow + '.',
+      rowNumber: targetRow,
+      sku: sku,
+      qty: qty,
+      stockTouched: false
+    };
+  } finally {
+    if (hasLock) {
+      try { lock.releaseLock(); } catch (e) {}
+    }
+  }
+}
+
+/* ============================================================
+ * 7. VOID & HAPUS STRUK TRANSAKSI DARI GOOGLE SHEETS
+ * ============================================================
+ * ATURAN MUTLAK:
+ * Jika struk di-void atau dihapus, SELURUH BARIS TRANSAKSI
+ * di sheet LOG_PENJUALAN dan baris ongkir di sheet LAIN-LAIN
+ * langsung DIHAPUS PERMANEN (sheet.deleteRow) dari spreadsheet!
+ * Penghapusan dilakukan dari baris bawah ke atas agar nomor
+ * baris tidak bergeser selama proses iterasi.
+ * ============================================================ */
+function voidTransaction(transactionId, reason, options) {
+  if (!transactionId) return { success: false, message: 'ID Transaksi / Nomor Struk wajib diisi.' };
+
+  const lock = LockService.getScriptLock();
+  let hasLock = false;
+  try {
+    hasLock = lock.tryLock(10000);
+  } catch (e) {
+    hasLock = false;
+  }
+  if (!hasLock) {
+    try {
+      const docLock = LockService.getDocumentLock();
+      if (docLock) hasLock = docLock.tryLock(5000);
+    } catch (e) {}
+  }
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let deletedSalesRows = 0;
+    let deletedLainRows = 0;
+
+    // Bersihkan ID: hilangkan tanda #, trim, buat uppercase
+    const rawIdStr = String(transactionId || '').trim();
+    const cleanTargetId = rawIdStr.replace(/^#/, '').trim();
+    const cleanTargetIdUpper = cleanTargetId.toUpperCase();
+    const digitsOnly = cleanTargetId.replace(/[^0-9]/g, '');
+
+    // Target row jika dikirimkan di options
+    const explicitRow = options && options.rowNumber ? Number(options.rowNumber) : -1;
+
+    // -------------------------------------------------------------
+    // 1. HAPUS BARIS DI SHEET LOG_PENJUALAN
+    // -------------------------------------------------------------
+    const salesSheet = getSalesLogSheet();
+    if (salesSheet) {
+      const lastRow = salesSheet.getLastRow();
+      if (lastRow >= CONFIG.SALES_LOG.DATA_START_ROW) {
+        const numRows = lastRow - CONFIG.SALES_LOG.DATA_START_ROW + 1;
+        // Baca seluruh kolom B..M (12 kolom)
+        const allValues = salesSheet.getRange(
+          CONFIG.SALES_LOG.DATA_START_ROW,
+          CONFIG.SALES_LOG.START_COLUMN,
+          numRows,
+          CONFIG.SALES_LOG.NUM_COLUMNS
+        ).getValues();
+
+        const rowsToDelete = [];
+
+        // Ekstrak baris jika ID berformat NOID-xxx-15 atau ROW-15
+        let targetRowIndex = -1;
+        if (cleanTargetIdUpper.indexOf('NOID-') >= 0 || cleanTargetIdUpper.indexOf('ROW-') >= 0) {
+          const parts = cleanTargetId.split('-');
+          const lastNum = parseInt(parts[parts.length - 1], 10);
+          if (!isNaN(lastNum) && lastNum >= 0) {
+            targetRowIndex = lastNum;
+          }
+        }
+
+        for (let i = 0; i < allValues.length; i++) {
+          const row = allValues[i];
+          const currentRowNumber = CONFIG.SALES_LOG.DATA_START_ROW + i;
+
+          // Index 11 adalah Kolom M (nomor transaksi) relative terhadap B (index 0)
+          const colM = String(row[11] || '').trim();
+          const colMClean = colM.replace(/^#/, '').trim().toUpperCase();
+
+          // Teks lengkap satu baris
+          const rowTextUpper = row.map(function(val) { return String(val || ''); }).join(' ').toUpperCase();
+
+          let isMatch = false;
+
+          // Pengecekan 1: Cocokkan nomor transaksi persis atau dengan prefix/suffix
+          if (colMClean && (
+            colMClean === cleanTargetIdUpper ||
+            colMClean.indexOf(cleanTargetIdUpper) >= 0 ||
+            colMClean.replace('VOIDED-', '') === cleanTargetIdUpper
+          )) {
+            isMatch = true;
+          }
+          // Pengecekan 2: Cocokkan deretan angka unik (misal timestamp TRX ID)
+          else if (colMClean && digitsOnly.length >= 6 && colMClean.replace(/[^0-9]/g, '') === digitsOnly) {
+            isMatch = true;
+          }
+          // Pengecekan 3: Cari ID unik spesifik di seluruh teks baris
+          else if (cleanTargetIdUpper.length >= 6 && rowTextUpper.indexOf(cleanTargetIdUpper) >= 0) {
+            isMatch = true;
+          }
+          // Pengecekan 4: Match berdasarkan nomor baris langsung jika dikirim targetRowIndex
+          else if (targetRowIndex > 0 && targetRowIndex === currentRowNumber) {
+            isMatch = true;
+          }
+          // Pengecekan 5: Match jika baris dikirimkan via explicit rowNumber
+          else if (explicitRow > 0 && explicitRow === currentRowNumber) {
+            isMatch = true;
+          }
+          // Pengecekan 6: Match tanggal jika format ID adalah TGL-YYYY-MM-DD
+          else if (cleanTargetIdUpper.indexOf('TGL-') === 0) {
+            const targetYmd = cleanTargetIdUpper.replace('TGL-', '').trim();
+            const rowYmd = normalizeDateToYmd(row[0]);
+            if (rowYmd && rowYmd === targetYmd) {
+              isMatch = true;
+            }
+          }
+
+          if (isMatch) {
+            rowsToDelete.push(currentRowNumber);
+          }
+        }
+
+        // PENTING: Hapus dari bawah ke atas agar indeks baris di atasnya tidak bergeser!
+        for (let j = rowsToDelete.length - 1; j >= 0; j--) {
+          salesSheet.deleteRow(rowsToDelete[j]);
+          deletedSalesRows++;
+        }
+        SpreadsheetApp.flush();
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 2. HAPUS BARIS ONGKIR / DIBAYAR DI SHEET LAIN-LAIN
+    // -------------------------------------------------------------
+    let lainSheet = ss.getSheetByName(CONFIG.SHEETS.LAIN_LAIN);
+    if (!lainSheet) {
+      const sheets = ss.getSheets();
+      for (let i = 0; i < sheets.length; i++) {
+        const name = sheets[i].getName().trim().toUpperCase();
+        if (name === 'LAIN-LAIN' || name === 'LAIN_LAIN' || name === 'PENGELUARAN LAIN-LAIN' || name === 'PENGELUARAN') {
+          lainSheet = sheets[i];
+          break;
+        }
+      }
+    }
+
+    if (lainSheet) {
+      const lastLainRow = lainSheet.getLastRow();
+      if (lastLainRow >= CONFIG.PENGELUARAN_LAIN.DATA_START_ROW) {
+        const lainRows = lastLainRow - CONFIG.PENGELUARAN_LAIN.DATA_START_ROW + 1;
+        const lainValues = lainSheet.getRange(
+          CONFIG.PENGELUARAN_LAIN.DATA_START_ROW,
+          CONFIG.PENGELUARAN_LAIN.START_COLUMN,
+          lainRows,
+          CONFIG.PENGELUARAN_LAIN.NUM_COLUMNS
+        ).getValues();
+
+        const lainToDelete = [];
+
+        // Cek jika ID berformat LAIN-ROW-15 atau ROW-15
+        let lainRowTarget = -1;
+        if (cleanTargetIdUpper.indexOf('LAIN-ROW-') >= 0) {
+          const parts = cleanTargetId.split('-');
+          const rowNum = parseInt(parts[2], 10);
+          if (!isNaN(rowNum) && rowNum >= CONFIG.PENGELUARAN_LAIN.DATA_START_ROW) {
+            lainRowTarget = rowNum;
+          }
+        }
+
+        for (let k = 0; k < lainValues.length; k++) {
+          const currentLainRow = CONFIG.PENGELUARAN_LAIN.DATA_START_ROW + k;
+          const rowTextUpper = lainValues[k].map(function(v) { return String(v || ''); }).join(' ').toUpperCase();
+
+          let isLainMatch = false;
+
+          if (cleanTargetIdUpper && rowTextUpper.indexOf(cleanTargetIdUpper) >= 0) {
+            isLainMatch = true;
+          } else if (digitsOnly.length >= 4 && rowTextUpper.indexOf(digitsOnly) >= 0) {
+            isLainMatch = true;
+          } else if (lainRowTarget === currentLainRow) {
+            isLainMatch = true;
+          }
+
+          if (isLainMatch) {
+            lainToDelete.push(currentLainRow);
+          }
+        }
+
+        for (let k = lainToDelete.length - 1; k >= 0; k--) {
+          lainSheet.deleteRow(lainToDelete[k]);
+          deletedLainRows++;
+        }
+      }
+    }
+
+    const totalDeleted = deletedSalesRows + deletedLainRows;
+    return {
+      success: true,
+      deletedSalesRows: deletedSalesRows,
+      deletedLainRows: deletedLainRows,
+      totalDeleted: totalDeleted,
+      stockTouched: false,
+      message: totalDeleted > 0
+        ? 'Struk/transaksi ' + cleanTargetId + ' berhasil dihapus permanen (' + deletedSalesRows + ' baris LOG_PENJUALAN' + (deletedLainRows > 0 ? ', ' + deletedLainRows + ' baris LAIN-LAIN' : '') + ').'
+        : 'Transaksi ' + cleanTargetId + ' tidak ditemukan di Google Sheets (atau sudah terhapus).'
+    };
+  } catch (err) {
+    return { success: false, message: 'Gagal VOID transaksi: ' + err.toString() };
+  } finally {
+    if (hasLock) {
+      try { lock.releaseLock(); } catch (e) {}
+    }
+  }
+}
+
+function deleteTransaction(transactionId) {
+  return voidTransaction(transactionId, 'Dihapus permanen');
+}
+
+/**
+ * ============================================================
+ * TES MANDIRI: TULIS DAN HAPUS DI LOG_PENJUALAN (?action=testWriteDelete)
+ * ============================================================
+ * Menulis 1 baris transaksi uji coba ke LOG_PENJUALAN, lalu
+ * langsung menghapusnya kembali untuk memverifikasi kedua fungsi
+ * bekerja 100% normal tanpa meninggalkan sampah data di spreadsheet.
+ * ============================================================
+ */
+function testWriteAndDelete() {
+  const testId = 'TEST-VERIFY-' + new Date().getTime();
+  const testTrx = {
+    id: testId,
+    customerName: 'Sistem Tes POS',
+    paymentMethod: 'CASH',
+    items: [{
+      sku: 'TES-VERIFIKASI',
+      name: 'Uji Coba Tulis & Hapus LOG_PENJUALAN',
+      price: 1000,
+      regularPrice: 1000,
+      qty: 1,
+      cost: 500,
+      total: 1000,
+      margin: 500
+    }],
+    subtotal: 1000,
+    total: 1000,
+    margin: 500
+  };
+
+  const writeResult = saveTransaction(testTrx);
+  if (!writeResult || !writeResult.success) {
+    return {
+      success: false,
+      stage: 'WRITE',
+      message: 'Gagal menulis ke LOG_PENJUALAN: ' + (writeResult ? writeResult.message : 'Error')
+    };
+  }
+
+  // Hapus transaksi uji coba yang baru saja ditulis
+  Utilities.sleep(500);
+  const deleteResult = voidTransaction(testId, 'Uji coba hapus otomatis');
+
+  return {
+    success: true,
+    message: 'Verifikasi sukses! Tulis dan Hapus di LOG_PENJUALAN bekerja 100% normal.',
+    testId: testId,
+    writeResult: writeResult,
+    deleteResult: deleteResult
+  };
+}
+
+/* ============================================================
+ * 8. PENGELUARAN LAIN-LAIN (READ & WRITE SHEET LAIN-LAIN)
+ * ============================================================
+ * Sesuai format sheet LAIN-LAIN (ORTUKILL_KEDIRI):
+ * Baris 2: Judul "PENGELUARAN LAIN-LAIN"
+ * Baris 3: Header [Tanggal, Keterangan, Harga, Jumlah, Total, Dibayar dengan]
+ * Baris 4 ke bawah: Data transaksi
+ * Pilihan metode bayar referensi (H4:H7): BCA, CASH, GOPAY, JAGO
+ * ============================================================ */
+
+function getPengeluaranLainHistory() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(CONFIG.SHEETS.LAIN_LAIN);
+  if (!sheet) {
+    const sheets = ss.getSheets();
+    for (let i = 0; i < sheets.length; i++) {
+      const name = sheets[i].getName().trim().toUpperCase();
+      if (name === 'LAIN-LAIN' || name === 'LAIN_LAIN' || name === 'PENGELUARAN LAIN-LAIN' || name === 'PENGELUARAN') {
+        sheet = sheets[i];
+        break;
+      }
+    }
+  }
+
+  if (!sheet) {
+    return { success: true, list: [], count: 0, message: 'Sheet LAIN-LAIN belum dibuat di spreadsheet.' };
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < CONFIG.PENGELUARAN_LAIN.DATA_START_ROW) {
+    return { success: true, list: [], count: 0 };
+  }
+
+  const numRows = lastRow - CONFIG.PENGELUARAN_LAIN.DATA_START_ROW + 1;
+  const range = sheet.getRange(
+    CONFIG.PENGELUARAN_LAIN.DATA_START_ROW,
+    CONFIG.PENGELUARAN_LAIN.START_COLUMN,
+    numRows,
+    CONFIG.PENGELUARAN_LAIN.NUM_COLUMNS
+  );
+  const values = range.getValues();
+
+  const list = [];
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i];
+    const rawDate = row[0];
+    const keterangan = String(row[1] || '').trim();
+    const rawHarga = Number(row[2]) || 0;
+    const rawJumlah = Number(row[3]) || (rawHarga > 0 ? 1 : 0);
+    const rawTotal = Number(row[4]) || (rawHarga * rawJumlah);
+    const dibayarDengan = String(row[5] || '').trim() || 'CASH';
+
+    // Lewati baris kosong
+    if (!rawDate && !keterangan && rawTotal === 0) continue;
+
+    const rowNum = CONFIG.PENGELUARAN_LAIN.DATA_START_ROW + i;
+    const dateDisplay = formatDateDisplay(rawDate);
+    const dateYmd = normalizeDateToYmd(rawDate || dateDisplay);
+
+    const keteranganUpper = keterangan.toUpperCase();
+    const isNegative = rawTotal < 0 || rawHarga < 0;
+    const isOngkir = keteranganUpper.indexOf('ONGKIR') >= 0;
+    const isIncome = !isNegative && (isOngkir || keteranganUpper.indexOf('MASUK') >= 0 || keteranganUpper.indexOf('MODAL') >= 0 || keteranganUpper.indexOf('PENDAPATAN') >= 0);
+
+    const recType = isIncome ? 'INCOME' : 'EXPENSE';
+    const recCategory = isOngkir ? 'ONGKIR' : (isIncome ? 'MODAL_LAIN' : 'PENGELUARAN_LAIN');
+    const recCategoryLabel = isOngkir ? 'Ongkir Pengiriman (+)' : (isIncome ? 'Pemasukan Lain (+)' : 'Pengeluaran Lain-Lain (-)');
+
+    list.push({
+      id: 'LAIN-ROW-' + rowNum + '-' + (dateYmd || 'LOG'),
+      rowNumber: rowNum,
+      date: dateDisplay.split(' ')[0] || dateDisplay,
+      dateYmd: dateYmd,
+      dateTimeStr: dateDisplay,
+      type: recType,
+      category: recCategory,
+      categoryLabel: recCategoryLabel,
+      description: keterangan || (isIncome ? 'Ongkir / Pemasukan' : 'Pengeluaran Kas'),
+      unitPrice: Math.abs(rawHarga),
+      qty: rawJumlah,
+      amount: Math.abs(rawTotal),
+      sheetRawTotal: rawTotal,
+      paymentMethod: dibayarDengan.toUpperCase(),
+      syncStatus: 'SYNCED'
+    });
+  }
+
+  // Tampilkan baris terbaru di atas
+  list.reverse();
+  return { success: true, count: list.length, list: list };
+}
+
+function recordPengeluaranLain(entry) {
+  if (!entry) {
+    return { success: false, message: 'Data pengeluaran tidak boleh kosong.' };
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(CONFIG.SHEETS.LAIN_LAIN);
+  if (!sheet) {
+    const sheets = ss.getSheets();
+    for (let i = 0; i < sheets.length; i++) {
+      const name = sheets[i].getName().trim().toUpperCase();
+      if (name === 'LAIN-LAIN' || name === 'LAIN_LAIN' || name === 'PENGELUARAN LAIN-LAIN') {
+        sheet = sheets[i];
+        break;
+      }
+    }
+  }
+
+  // Jika belum ada sheet LAIN-LAIN, buat otomatis dengan template
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.SHEETS.LAIN_LAIN);
+    sheet.getRange('A2:F2').merge().setValue('PENGELUARAN LAIN-LAIN')
+      .setFontWeight('bold').setFontSize(13).setHorizontalAlignment('center');
+    sheet.getRange(CONFIG.PENGELUARAN_LAIN.HEADER_ROW, CONFIG.PENGELUARAN_LAIN.START_COLUMN, 1, CONFIG.PENGELUARAN_LAIN.NUM_COLUMNS)
+      .setValues([['Tanggal', 'Keterangan', 'Harga', 'Jumlah', 'Total', 'Dibayar dengan']])
+      .setBackground('#0F172A').setFontColor('#FFFFFF').setFontWeight('bold');
+    sheet.getRange('H4:H7').setValues([['BCA'], ['CASH'], ['GOPAY'], ['JAGO']]);
+  }
+
+  // Cari baris kosong pertama mulai dari baris 4
+  const lastRow = Math.max(sheet.getLastRow(), CONFIG.PENGELUARAN_LAIN.DATA_START_ROW - 1);
+  const rowCountToScan = Math.max(1, lastRow - CONFIG.PENGELUARAN_LAIN.DATA_START_ROW + 1);
+  const checkValues = sheet.getRange(CONFIG.PENGELUARAN_LAIN.DATA_START_ROW, 1, rowCountToScan, 2).getValues();
+
+  let targetRow = CONFIG.PENGELUARAN_LAIN.DATA_START_ROW;
   let foundEmpty = false;
 
   for (let i = 0; i < checkValues.length; i++) {
     const dateVal = checkValues[i][0];
-    const skuVal = String(checkValues[i][1] || '').trim();
+    const descVal = String(checkValues[i][1] || '').trim();
 
-    if (!dateVal && !skuVal) {
-      targetRow = CONFIG.BARANG_MASUK.DATA_START_ROW + i;
+    if (!dateVal && !descVal) {
+      targetRow = CONFIG.PENGELUARAN_LAIN.DATA_START_ROW + i;
       foundEmpty = true;
       break;
     }
   }
 
   if (!foundEmpty) {
-    targetRow = CONFIG.BARANG_MASUK.DATA_START_ROW + checkValues.length;
+    targetRow = CONFIG.PENGELUARAN_LAIN.DATA_START_ROW + checkValues.length;
   }
 
-  const now = new Date();
-  const formattedDate = Utilities.formatDate(now, 'Asia/Jakarta', 'dd/MM/yyyy');
-  const qty = Number(entry.qty) || 0;
-  const cost = Number(entry.cost) || 0;
-  const krat = Number(entry.krat) || 0;
-  const supplier = String(entry.supplier || entry.supplierOrNotes || 'orang tua').trim();
-  const totalCost = Number(entry.totalCost) || (qty * cost);
+  const tanggal = entry.date || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy');
+  const keterangan = String(entry.description || entry.keterangan || '-').trim();
+  const rawHarga = Number(entry.unitPrice ?? entry.price ?? entry.amount ?? 0);
+  const jumlah = Number(entry.qty ?? 1);
+  const rawTotal = Number(entry.amount ?? entry.total ?? (rawHarga * jumlah));
+  const dibayarDengan = String(entry.paymentMethod || entry.paidWith || 'CASH').toUpperCase();
+
+  // ATURAN MUTLAK:
+  // 1. Jika ini Pemasukan (misal Ongkir dari transaksi), simpan nilai positif (+).
+  // 2. Jika ini Pengeluaran, pastikan ketika di-input di sheet nilainya menjadi MINUS (-).
+  const isIncome = entry.type === 'INCOME' || entry.isIncome === true || keterangan.toUpperCase().indexOf('ONGKIR') >= 0;
+
+  let harga = 0;
+  let total = 0;
+  if (isIncome) {
+    harga = Math.abs(rawHarga);
+    total = Math.abs(rawTotal);
+  } else {
+    // Pengeluaran bernilai MINUS di sheet
+    harga = -Math.abs(rawHarga);
+    total = -Math.abs(rawTotal);
+  }
 
   const rowData = [
-    formattedDate,
-    String(entry.sku).trim(),
-    String(entry.name || '-').trim(),
-    krat,
-    qty,
-    supplier,
-    totalCost
+    [tanggal, keterangan, harga, jumlah, total, dibayarDengan]
   ];
 
-  sheet.getRange(targetRow, CONFIG.BARANG_MASUK.START_COLUMN, 1, CONFIG.BARANG_MASUK.NUM_COLUMNS)
-    .setValues([rowData]);
+  sheet.getRange(targetRow, CONFIG.PENGELUARAN_LAIN.START_COLUMN, 1, CONFIG.PENGELUARAN_LAIN.NUM_COLUMNS)
+    .setValues(rowData);
+
+  // Format angka mata uang untuk Harga dan Total (format angka minus dengan warna merah)
+  try {
+    sheet.getRange(targetRow, 3).setNumberFormat('#,##0;[Red]-#,##0');
+    sheet.getRange(targetRow, 4).setNumberFormat('#,##0');
+    sheet.getRange(targetRow, 5).setNumberFormat('#,##0;[Red]-#,##0');
+  } catch (fmtErr) {}
 
   return {
     success: true,
-    message: 'Barang masuk ' + entry.sku + ' (' + qty + ' pcs) tersimpan di LOG_BARANG_MASUK baris ' + targetRow + '.',
+    message: (isIncome ? 'Ongkir / Pemasukan "' : 'Pengeluaran "') + keterangan + '" (' + total + ') berhasil dicatat ke sheet LAIN-LAIN baris ' + targetRow + '.',
     rowNumber: targetRow,
-    sku: entry.sku,
-    qty: qty,
-    stockTouched: false
+    entry: {
+      id: 'LAIN-ROW-' + targetRow + '-' + Date.now(),
+      rowNumber: targetRow,
+      date: tanggal,
+      description: keterangan,
+      unitPrice: Math.abs(harga),
+      qty: jumlah,
+      amount: Math.abs(total),
+      sheetRawTotal: total,
+      paymentMethod: dibayarDengan,
+      type: isIncome ? 'INCOME' : 'EXPENSE',
+      category: isIncome ? 'ONGKIR' : 'PENGELUARAN_LAIN',
+      syncStatus: 'SYNCED'
+    }
   };
 }
 
-/* ============================================================
- * 7. VOID TRANSAKSI (HANYA TANDAI DI LOG_PENJUALAN)
- * ============================================================
- * Mekanisme: prefiks "VOIDED-" pada kolom M.
- * Tidak menyentuh DASHBOARD_MUTASI_&_PROFIT.
- * ============================================================ */
-function voidTransaction(transactionId, reason) {
-  if (!transactionId) return { success: false, message: 'ID Transaksi wajib diisi.' };
-
-  const sheet = getSalesLogSheet();
-  if (!sheet) return { success: false, message: 'Sheet penjualan tidak ditemukan.' };
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow < CONFIG.SALES_LOG.DATA_START_ROW) {
-    return { success: false, message: 'Log penjualan kosong.' };
+function deletePengeluaranLain(rowNumber) {
+  const row = Number(rowNumber);
+  if (!row || row < CONFIG.PENGELUARAN_LAIN.DATA_START_ROW) {
+    return { success: false, message: 'Nomor baris tidak valid.' };
   }
 
-  const numRows = lastRow - CONFIG.SALES_LOG.DATA_START_ROW + 1;
-  const trxIdValues = sheet.getRange(CONFIG.SALES_LOG.DATA_START_ROW, 13, numRows, 1).getValues(); // Kolom M
-
-  let matched = 0;
-  for (let i = 0; i < trxIdValues.length; i++) {
-    const val = String(trxIdValues[i][0] || '').trim();
-    if (val !== transactionId && val !== ('VOIDED-' + transactionId)) continue;
-
-    const currentRow = CONFIG.SALES_LOG.DATA_START_ROW + i;
-    sheet.getRange(currentRow, 13).setValue('VOIDED-' + transactionId);
-    matched++;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(CONFIG.SHEETS.LAIN_LAIN);
+  if (!sheet) {
+    return { success: false, message: 'Sheet LAIN-LAIN tidak ditemukan.' };
   }
+
+  // Bersihkan isi baris A..F
+  sheet.getRange(row, CONFIG.PENGELUARAN_LAIN.START_COLUMN, 1, CONFIG.PENGELUARAN_LAIN.NUM_COLUMNS).clearContent();
 
   return {
-    success: matched > 0,
-    matchedRows: matched,
-    stockTouched: false,
-    message: matched > 0
-      ? 'Transaksi ' + transactionId + ' di-void (' + matched + ' baris). Tidak ada perubahan stok di DASHBOARD.'
-      : 'Transaksi tidak ditemukan.'
+    success: true,
+    message: 'Baris ' + row + ' pada sheet LAIN-LAIN berhasil dihapus.'
   };
 }
 
 /* ============================================================
- * 8. DIAGNOSTIK SPREADSHEET (?action=diagnose)
+ * 9. DIAGNOSTIK SPREADSHEET (?action=diagnose)
  * ============================================================ */
 function diagnoseSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -963,10 +1575,12 @@ function diagnoseSheets() {
   const prodSheet = ss.getSheetByName(CONFIG.SHEETS.PRODUCTS);
   const salesSheet = getSalesLogSheet();
   const bmSheet = ss.getSheetByName(CONFIG.SHEETS.BARANG_MASUK);
+  const plSheet = ss.getSheetByName(CONFIG.SHEETS.LAIN_LAIN);
 
   const prodStatus  = { found: !!prodSheet,  rowCount: prodSheet  ? prodSheet.getLastRow()  : 0 };
   const salesStatus = { found: !!salesSheet, rowCount: salesSheet ? salesSheet.getLastRow() : 0 };
   const bmStatus    = { found: !!bmSheet,    rowCount: bmSheet    ? bmSheet.getLastRow()    : 0 };
+  const plStatus    = { found: !!plSheet,    rowCount: plSheet    ? plSheet.getLastRow()    : 0 };
 
   let sample = [];
   if (prodSheet) {
@@ -986,13 +1600,15 @@ function diagnoseSheets() {
     writePolicy: {
       DASHBOARD_MUTASI_AND_PROFIT: 'READ-ONLY (referensi)',
       LOG_PENJUALAN: 'WRITE (Harga Biasa)',
-      LOG_BARANG_MASUK: 'WRITE'
+      LOG_BARANG_MASUK: 'WRITE',
+      LAIN_LAIN: 'READ & WRITE'
     },
     availableSheets: sheets,
     configuredRanges: {
-      products:    CONFIG.SHEETS.PRODUCTS     + ' (B70:J) [read-only master & kategori]',
-      salesLog:    CONFIG.SHEETS.SALES_LOG    + ' (B7:M)  [write]',
-      barangMasuk: CONFIG.SHEETS.BARANG_MASUK + ' (B4:H)  [write]'
+      products:        CONFIG.SHEETS.PRODUCTS        + ' (B70:J) [read-only master & kategori]',
+      salesLog:        CONFIG.SHEETS.SALES_LOG       + ' (B7:M)  [write]',
+      barangMasuk:     CONFIG.SHEETS.BARANG_MASUK    + ' (B4:H)  [write]',
+      pengeluaranLain: CONFIG.SHEETS.LAIN_LAIN       + ' (A4:F)  [read & write]'
     },
     sheetsStatus: {
       productsSheetFound: prodStatus.found,
@@ -1003,7 +1619,9 @@ function diagnoseSheets() {
       salesLogRowCount: salesStatus.rowCount,
       salesLogFirstEmptyRow: firstEmptySalesRow,
       barangMasukSheetFound: bmStatus.found,
-      barangMasukRowCount: bmStatus.rowCount
+      barangMasukRowCount: bmStatus.rowCount,
+      pengeluaranLainSheetFound: plStatus.found,
+      pengeluaranLainRowCount: plStatus.rowCount
     },
     sampleProductsLoaded: sample,
     ready: prodStatus.found && (salesStatus.found || prodStatus.rowCount > 70)
@@ -1033,6 +1651,152 @@ function getAppConfig() {
       'Kuantitas Masuk', 'Supplier', 'Total Biaya'
     ]
   };
+}
+
+/* ============================================================
+ * 10. PEMBERSIH DUPLIKAT OTOMATIS (?action=cleanDuplicates)
+ * ============================================================ */
+function cleanUpDuplicates() {
+  const lock = LockService.getScriptLock();
+  let hasLock = false;
+  try {
+    hasLock = lock.tryLock(10000);
+  } catch (e) {
+    hasLock = false;
+  }
+  if (!hasLock) {
+    return { success: false, message: 'Sistem sedang sibuk memproses permintaan lain.' };
+  }
+
+  let deletedSalesCount = 0;
+  let deletedLainCount = 0;
+  let deletedBMCount = 0;
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // 1. Bersihkan duplikat di LOG_PENJUALAN (Berdasarkan Nomor Transaksi di Kolom M / Isi Baris)
+    const salesSheet = getSalesLogSheet();
+    if (salesSheet && salesSheet.getLastRow() >= CONFIG.SALES_LOG.DATA_START_ROW) {
+      const numRows = salesSheet.getLastRow() - CONFIG.SALES_LOG.DATA_START_ROW + 1;
+      const values = salesSheet.getRange(CONFIG.SALES_LOG.DATA_START_ROW, CONFIG.SALES_LOG.START_COLUMN, numRows, CONFIG.SALES_LOG.NUM_COLUMNS).getValues();
+
+      const seenSalesKeys = {};
+      const salesRowsToDelete = [];
+
+      for (let i = 0; i < values.length; i++) {
+        const row = values[i];
+        const date = String(row[0] || '').trim();
+        const sku = String(row[1] || '').trim();
+        const price = String(row[3] || '').trim();
+        const qty = String(row[4] || '').trim();
+        const total = String(row[5] || '').trim();
+        const trxId = String(row[11] || '').trim();
+
+        if (!date && !sku && !trxId) continue;
+
+        // Kunci unik duplikat harus identik nota, SKU, qty, dan total belanja
+        const dedupeKey = trxId ? (trxId + '|' + sku + '|' + qty + '|' + total) : (date + '|' + sku + '|' + price + '|' + qty + '|' + total);
+
+        if (seenSalesKeys[dedupeKey]) {
+          salesRowsToDelete.push(CONFIG.SALES_LOG.DATA_START_ROW + i);
+        } else {
+          seenSalesKeys[dedupeKey] = true;
+        }
+      }
+
+      for (let j = salesRowsToDelete.length - 1; j >= 0; j--) {
+        salesSheet.deleteRow(salesRowsToDelete[j]);
+        deletedSalesCount++;
+      }
+    }
+
+    // 2. Bersihkan duplikat di LAIN-LAIN
+    let lainSheet = ss.getSheetByName(CONFIG.SHEETS.LAIN_LAIN);
+    if (!lainSheet) {
+      const sheets = ss.getSheets();
+      for (let i = 0; i < sheets.length; i++) {
+        if (sheets[i].getName().trim().toUpperCase().indexOf('LAIN') >= 0) {
+          lainSheet = sheets[i];
+          break;
+        }
+      }
+    }
+
+    if (lainSheet && lainSheet.getLastRow() >= CONFIG.PENGELUARAN_LAIN.DATA_START_ROW) {
+      const numRowsLain = lainSheet.getLastRow() - CONFIG.PENGELUARAN_LAIN.DATA_START_ROW + 1;
+      const valuesLain = lainSheet.getRange(CONFIG.PENGELUARAN_LAIN.DATA_START_ROW, CONFIG.PENGELUARAN_LAIN.START_COLUMN, numRowsLain, CONFIG.PENGELUARAN_LAIN.NUM_COLUMNS).getValues();
+
+      const seenLainKeys = {};
+      const lainToDelete = [];
+
+      for (let i = 0; i < valuesLain.length; i++) {
+        const row = valuesLain[i];
+        const date = String(row[0] || '').trim();
+        const desc = String(row[1] || '').trim();
+        const total = String(row[4] || '').trim();
+
+        if (!date && !desc) continue;
+
+        const key = date + '|' + desc + '|' + total;
+        if (seenLainKeys[key]) {
+          lainToDelete.push(CONFIG.PENGELUARAN_LAIN.DATA_START_ROW + i);
+        } else {
+          seenLainKeys[key] = true;
+        }
+      }
+
+      for (let k = lainToDelete.length - 1; k >= 0; k--) {
+        lainSheet.deleteRow(lainToDelete[k]);
+        deletedLainCount++;
+      }
+    }
+
+    // 3. Bersihkan duplikat di LOG_BARANG_MASUK
+    const bmSheet = ss.getSheetByName(CONFIG.SHEETS.BARANG_MASUK);
+    if (bmSheet && bmSheet.getLastRow() >= CONFIG.BARANG_MASUK.DATA_START_ROW) {
+      const numRowsBM = bmSheet.getLastRow() - CONFIG.BARANG_MASUK.DATA_START_ROW + 1;
+      const valuesBM = bmSheet.getRange(CONFIG.BARANG_MASUK.DATA_START_ROW, CONFIG.BARANG_MASUK.START_COLUMN, numRowsBM, CONFIG.BARANG_MASUK.NUM_COLUMNS).getValues();
+
+      const seenBMKeys = {};
+      const bmToDelete = [];
+
+      for (let i = 0; i < valuesBM.length; i++) {
+        const row = valuesBM[i];
+        const date = String(row[0] || '').trim();
+        const sku = String(row[1] || '').trim();
+        const qty = String(row[4] || '').trim();
+        const totalCost = String(row[6] || '').trim();
+
+        if (!date && !sku) continue;
+
+        const key = date + '|' + sku + '|' + qty + '|' + totalCost;
+        if (seenBMKeys[key]) {
+          bmToDelete.push(CONFIG.BARANG_MASUK.DATA_START_ROW + i);
+        } else {
+          seenBMKeys[key] = true;
+        }
+      }
+
+      for (let k = bmToDelete.length - 1; k >= 0; k--) {
+        bmSheet.deleteRow(bmToDelete[k]);
+        deletedBMCount++;
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Pembersihan duplikat selesai. Total ' + (deletedSalesCount + deletedLainCount + deletedBMCount) + ' baris duplikat dihapus (' + deletedSalesCount + ' LOG_PENJUALAN, ' + deletedLainCount + ' LAIN-LAIN, ' + deletedBMCount + ' LOG_BARANG_MASUK).',
+      deletedSalesCount: deletedSalesCount,
+      deletedLainCount: deletedLainCount,
+      deletedBMCount: deletedBMCount,
+      totalDeleted: deletedSalesCount + deletedLainCount + deletedBMCount
+    };
+  } finally {
+    if (hasLock) {
+      try { lock.releaseLock(); } catch (e) {}
+    }
+  }
 }
 
 /* ============================================================

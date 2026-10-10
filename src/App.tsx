@@ -15,9 +15,12 @@ import {
   TransactionReceipt, 
   DailySummary, 
   ShiftRecord, 
-  BrandConfig 
+  BrandConfig,
+  FinanceRecord,
+  SalesTarget,
+  LastUpdateInfo
 } from './types';
-import { StorageService } from './services/storageService';
+import { StorageService, formatRupiah } from './services/storageService';
 import { GasApiService } from './services/gasApiService';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
@@ -63,6 +66,11 @@ export default function App() {
   const [currentShift, setCurrentShift] = useState<ShiftRecord>(StorageService.getCurrentShift());
   const [shiftHistory, setShiftHistory] = useState<ShiftRecord[]>([]);
 
+  // Finances & Target
+  const [financeRecords, setFinanceRecords] = useState<FinanceRecord[]>([]);
+  const [salesTarget, setSalesTarget] = useState<SalesTarget>(StorageService.getSalesTarget());
+  const [lastUpdateInfo, setLastUpdateInfo] = useState<LastUpdateInfo>(StorageService.getLastUpdateInfo());
+
   // Receipt Modal
   const [activeReceipt, setActiveReceipt] = useState<TransactionReceipt | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -88,6 +96,9 @@ export default function App() {
     const summary = StorageService.getDailySummary();
     const curShift = StorageService.getCurrentShift();
     const shifts = StorageService.getShiftHistory();
+    const finances = StorageService.getFinanceRecords();
+    const target = StorageService.getSalesTarget();
+    const updateInfo = StorageService.getLastUpdateInfo();
 
     setProducts(prods);
     setTransactions(allTrx);
@@ -95,6 +106,9 @@ export default function App() {
     setTodaySummary(summary);
     setCurrentShift(curShift);
     setShiftHistory(shifts);
+    setFinanceRecords(finances);
+    setSalesTarget(target);
+    setLastUpdateInfo(updateInfo);
   };
 
   // Live Sync with Google Sheets
@@ -311,12 +325,17 @@ export default function App() {
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const y = now.getFullYear();
     const dateFormatted = `${d}/${m}/${y}`;
-    const timeFormatted = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const timeFormatted = `${hours}:${minutes}:${seconds}`;
 
     const newReceipt: TransactionReceipt = {
       id: StorageService.generateTransactionId(),
       date: dateFormatted,
       transactionDate: `${dateFormatted} ${timeFormatted}`,
+      websiteTime: timeFormatted,
+      createdAt: now.getTime(),
       customerName: customerName.trim() || undefined,
       paymentMethod,
       promoCode: appliedPromoCode || undefined,
@@ -369,15 +388,25 @@ export default function App() {
     // Reset checkout form
     handleClearCart();
 
-    // 3. Asynchronously push to Google Spreadsheet LOG_PENJUALAN
+    // 3. Asynchronously push to Google Spreadsheet (Produk ke LOG_PENJUALAN, Ongkir ke LAIN-LAIN)
     GasApiService.pushTransaction(newReceipt)
       .then((res) => {
         if (res.success) {
-          showToast(`✓ Transaksi ${newReceipt.id} tercatat di Spreadsheet (LOG_PENJUALAN)`, 'success');
+          const ongkirNotice = newReceipt.shippingFee && newReceipt.shippingFee > 0
+            ? ' & Ongkir masuk ke sheet LAIN-LAIN'
+            : '';
+          showToast(`✓ Transaksi ${newReceipt.id} tercatat di LOG_PENJUALAN${ongkirNotice}`, 'success');
+          // Refresh data keuangan agar baris ongkir langsung sinkron di UI
+          if (newReceipt.shippingFee && newReceipt.shippingFee > 0) {
+            refreshAllData();
+          }
+        } else {
+          showToast(`⚠️ Transaksi disimpan di kasir, namun gagal ke Sheets: ${res.message || 'Error'}`, 'error');
         }
       })
       .catch((err) => {
         console.warn('Background push to Google Sheets failed:', err);
+        showToast(`⚠️ Transaksi disimpan di kasir, gagal ke Sheets: ${err?.message || 'Error'}`, 'error');
       });
   };
 
@@ -387,7 +416,7 @@ export default function App() {
     setIsReceiptOpen(true);
   };
 
-  // Void Transaction
+  // Void Transaction & Delete from Google Sheets
   const handleVoidTransaction = (id: string, reason: string) => {
     StorageService.voidTransaction(id, reason);
     refreshAllData();
@@ -395,10 +424,44 @@ export default function App() {
     GasApiService.pushVoidTransaction(id, reason)
       .then((res) => {
         if (res.success) {
-          showToast(`✓ Transaksi ${id} ditandai VOID di Google Sheets`, 'info');
+          const detail = res.totalDeleted ? ` (${res.totalDeleted} baris dihapus di Sheets)` : '';
+          showToast(`✓ Struk #${id} di-VOID${detail}`, 'success');
+          // Sinkronisasi ulang data terbaru dari Google Sheets
+          GasApiService.fetchAndSyncAll()
+            .then(() => refreshAllData())
+            .catch(() => {});
+        } else {
+          showToast(`Transaksi #${id} di-VOID lokal. (${res.message || 'Sheets offline'})`, 'info');
         }
       })
-      .catch((err) => console.warn(err));
+      .catch((err) => {
+        console.warn(err);
+        showToast(`Transaksi #${id} di-VOID lokal`, 'info');
+      });
+  };
+
+  // Delete Transaction permanently & Delete from Google Sheets
+  const handleDeleteTransaction = (id: string) => {
+    StorageService.deleteTransaction(id, true);
+    refreshAllData();
+
+    GasApiService.deleteTransactionFromGas(id)
+      .then((res) => {
+        if (res.success) {
+          const detail = res.totalDeleted ? ` (${res.totalDeleted} baris dihapus di Sheets)` : '';
+          showToast(`✓ Struk #${id} berhasil dihapus permanen${detail}`, 'success');
+          // Sinkronisasi ulang data terbaru dari Google Sheets
+          GasApiService.fetchAndSyncAll()
+            .then(() => refreshAllData())
+            .catch(() => {});
+        } else {
+          showToast(`Struk #${id} dihapus dari riwayat lokal`, 'info');
+        }
+      })
+      .catch((err) => {
+        console.warn(err);
+        showToast(`Struk #${id} dihapus dari riwayat lokal`, 'info');
+      });
   };
 
   // Product & Stock Management
@@ -442,12 +505,75 @@ export default function App() {
     refreshAllData();
   };
 
-  // Reset Demo Data
+  // Finances & Target Handlers
+  const handleAddFinanceRecord = async (rec: Omit<FinanceRecord, 'id' | 'dateYmd' | 'dateTimeStr'>) => {
+    // 1. Simpan lokal agar langsung tampil di UI
+    const updatedList = StorageService.saveFinanceRecord(rec);
+    const savedRec = updatedList[0];
+    refreshAllData();
+
+    // 2. Tulis langsung ke sheet LAIN-LAIN di Google Sheets (Pengeluaran akan menjadi minus di sheet)
+    try {
+      const isExpense = rec.type === 'EXPENSE';
+      const res = await GasApiService.pushPengeluaranLain({
+        date: rec.date,
+        description: rec.description,
+        unitPrice: rec.unitPrice,
+        qty: rec.qty,
+        amount: rec.amount,
+        paymentMethod: rec.paymentMethod,
+        type: rec.type,
+        category: rec.category,
+        categoryLabel: rec.categoryLabel,
+        cashier: rec.cashier,
+      });
+
+      if (res.success) {
+        if (res.rowNumber && savedRec) {
+          StorageService.saveFinanceRecord({
+            ...savedRec,
+            rowNumber: res.rowNumber,
+            syncStatus: 'SYNCED',
+          });
+          refreshAllData();
+        }
+        showToast(`${isExpense ? 'Pengeluaran (Minus)' : 'Pemasukan'} tersimpan ke Sheet LAIN-LAIN baris ${res.rowNumber || 'baru'}!`, 'success');
+      } else {
+        showToast(`Tersimpan lokal. ${res.message || ''}`, 'info');
+      }
+    } catch (err: any) {
+      showToast('Tersimpan lokal (Google Sheets offline)', 'info');
+    }
+  };
+
+  const handleDeleteFinanceRecord = async (id: string, rowNumber?: number) => {
+    StorageService.deleteFinanceRecord(id);
+    refreshAllData();
+
+    if (rowNumber) {
+      try {
+        const res = await GasApiService.deletePengeluaranLain(rowNumber);
+        if (res.success) {
+          showToast(`Baris ${rowNumber} di sheet LAIN-LAIN berhasil dihapus`, 'success');
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+  };
+
+  const handleSaveSalesTarget = (targetAmount: number, month?: string) => {
+    StorageService.saveSalesTarget(targetAmount, month);
+    refreshAllData();
+    showToast(`Target penjualan disetel ke ${formatRupiah(targetAmount)}`, 'success');
+  };
+
+  // Reset / Bersihkan data lokal ke kondisi bersih (tanpa data demo)
   const handleResetData = () => {
     StorageService.resetToInitialData();
     handleClearCart();
     refreshAllData();
-    showToast('Data demo dikembalikan ke setelan awal', 'info');
+    showToast('Data transaksi kasir dibersihkan. Memori disetel berdasarkan pembaruan terakhir.', 'info');
   };
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
@@ -465,6 +591,7 @@ export default function App() {
         isConnectedGas={isConnectedGas}
         isSyncing={isSyncing}
         lastSynced={lastSynced}
+        lastUpdateInfo={lastUpdateInfo}
         onSyncData={() => handleSyncSpreadsheet(false)}
         onResetData={handleResetData}
       />
@@ -530,6 +657,7 @@ export default function App() {
             transactions={todayTransactions}
             onViewReceipt={handleViewReceipt}
             onVoidTransaction={handleVoidTransaction}
+            onDeleteTransaction={handleDeleteTransaction}
             onRefresh={refreshAllData}
             onSyncSpreadsheet={() => handleSyncSpreadsheet(false)}
             isSyncing={isSyncing}
@@ -540,7 +668,14 @@ export default function App() {
           <SalesHistoryView
             transactions={transactions}
             products={products}
+            financeRecords={financeRecords}
+            salesTarget={salesTarget}
             onViewReceipt={handleViewReceipt}
+            onVoidTransaction={handleVoidTransaction}
+            onDeleteTransaction={handleDeleteTransaction}
+            onAddFinanceRecord={handleAddFinanceRecord}
+            onDeleteFinanceRecord={handleDeleteFinanceRecord}
+            onSaveSalesTarget={handleSaveSalesTarget}
             onSyncSpreadsheet={() => handleSyncSpreadsheet(false)}
             isSyncing={isSyncing}
           />
@@ -616,6 +751,8 @@ export default function App() {
         brand={brand}
         isOpen={isReceiptOpen}
         onClose={() => setIsReceiptOpen(false)}
+        onVoidTransaction={handleVoidTransaction}
+        onDeleteTransaction={handleDeleteTransaction}
       />
     </div>
   );
