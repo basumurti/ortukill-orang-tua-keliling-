@@ -104,6 +104,10 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
 
   // Filter transactions
   const filtered = transactions.filter((t) => {
+    const rawId = String(t.id || '').trim();
+    if (rawId.toUpperCase().startsWith('VOIDED-') || rawId.toUpperCase().startsWith('#VOIDED-')) {
+      return false;
+    }
     if (selectedPayment !== 'ALL' && t.paymentMethod !== selectedPayment) return false;
     if (selectedStatus !== 'ALL' && t.status !== selectedStatus) return false;
     if (!searchQuery.trim()) return true;
@@ -283,11 +287,16 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
             </div>
           </div>
           <div className="mt-2">
-            <h3 className="text-lg sm:text-xl font-extrabold text-stone-900 tracking-tight">
-              {summary.totalQty} Botol
-            </h3>
+            <div className="flex items-baseline justify-between gap-1">
+              <h3 className="text-lg sm:text-xl font-extrabold text-stone-900 tracking-tight">
+                {summary.totalQty} Botol
+              </h3>
+              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md" title="Total botol kecuali bir, promo, dan harga minuman di bawah 30rb">
+                {summary.filteredBottleQty ?? 0} Non-Bir/≥30k
+              </span>
+            </div>
             <p className="text-[11px] text-stone-500 mt-0.5">
-              Item minuman
+              Excl. bir, promo & &lt;30rb: <strong className="text-amber-700">{summary.filteredBottleQty ?? 0} btl</strong>
             </p>
           </div>
         </div>

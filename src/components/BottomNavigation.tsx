@@ -12,7 +12,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Radio,
-  Receipt
+  Receipt,
+  Sparkles
 } from 'lucide-react';
 
 interface BottomNavigationProps {
@@ -22,6 +23,7 @@ interface BottomNavigationProps {
   cartCount: number;
   isConnectedGas: boolean;
   onResetData: () => void;
+  onOpenAiCopilot?: () => void;
 }
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
@@ -31,6 +33,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   cartCount,
   isConnectedGas,
   onResetData,
+  onOpenAiCopilot,
 }) => {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
@@ -94,6 +97,33 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
             {/* Menu Items */}
             <div className="space-y-2">
+              {onOpenAiCopilot && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMoreMenuOpen(false);
+                    onOpenAiCopilot();
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left bg-gradient-to-r from-orange-50 via-rose-50 to-amber-50 border-[#FF5E36]/30 text-stone-900 shadow-xs cursor-pointer active:scale-98"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF643D] to-[#FF5E36] text-white shadow-xs flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 animate-pulse" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-extrabold text-stone-900">AI Copilot Kasir</p>
+                        <span className="text-[9px] font-black bg-[#FF5E36] text-white px-2 py-0.5 rounded-full">
+                          Voice & Text
+                        </span>
+                      </div>
+                      <p className="text-xs text-stone-500">Tambah stok, buat struk, omset & pengeluaran</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#FF5E36]" />
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   setActiveTab('history');

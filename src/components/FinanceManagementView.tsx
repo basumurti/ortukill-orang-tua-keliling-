@@ -25,7 +25,8 @@ import {
   Check,
   CreditCard,
   Banknote,
-  SendHorizontal
+  SendHorizontal,
+  Package
 } from 'lucide-react';
 import { FinanceRecord, FinanceType, FinanceCategory } from '../types';
 import { formatRupiah, getFormattedNow } from '../services/storageService';
@@ -47,7 +48,7 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
   isSyncing = false,
 }) => {
   const [type, setType] = useState<FinanceType>('EXPENSE');
-  const [category, setCategory] = useState<FinanceCategory>('PENGELUARAN_LAIN');
+  const [category, setCategory] = useState<FinanceCategory | string>('PENGELUARAN_LAIN');
   
   // Kolom Sheet LAIN-LAIN: Tanggal (A), Keterangan (B), Harga (C), Jumlah (D), Total (E), Dibayar dengan (F)
   const todayFormatted = getFormattedNow().date; // DD/MM/YYYY
@@ -86,6 +87,7 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
   ];
 
   const categoryOptions = type === 'EXPENSE' ? [
+    { value: 'RESTOK_BARANG', label: 'Restok Barang', icon: Package, color: 'text-amber-600 bg-amber-50' },
     { value: 'PENGELUARAN_LAIN', label: 'Pengeluaran Lain-Lain', icon: MoreHorizontal, color: 'text-stone-600 bg-stone-100' },
     { value: 'BENSIN', label: 'Bensin Motor / Kendaraan', icon: Fuel, color: 'text-amber-600 bg-amber-50' },
     { value: 'OPERASIONAL', label: 'Operasional & Perlengkapan', icon: Building2, color: 'text-blue-600 bg-blue-50' },
@@ -524,7 +526,7 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                     <button
                       key={opt.value}
                       type="button"
-                      onClick={() => setCategory(opt.value as FinanceCategory)}
+                      onClick={() => setCategory(opt.value)}
                       className={`flex items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                         isSelected
                           ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
@@ -695,6 +697,23 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                 <option value="CASH">CASH</option>
                 <option value="GOPAY">GOPAY</option>
                 <option value="JAGO">JAGO</option>
+              </select>
+
+              {/* Category Filter Selector */}
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-[#FF5E36] w-full sm:w-auto"
+              >
+                <option value="ALL">Semua Kategori</option>
+                <option value="RESTOK_BARANG">Restok Barang</option>
+                <option value="PENGELUARAN_LAIN">Pengeluaran Lain-Lain</option>
+                <option value="BENSIN">Bensin</option>
+                <option value="OPERASIONAL">Operasional</option>
+                <option value="PEMBELIAN_STOK">Pembelian Stok</option>
+                <option value="ONGKIR">Ongkir</option>
+                <option value="TIPS">Tips</option>
+                <option value="MODAL_LAIN">Modal Lain</option>
               </select>
             </div>
 

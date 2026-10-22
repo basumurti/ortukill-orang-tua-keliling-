@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   Plus, 
@@ -34,14 +34,143 @@ import {
   ArrowRight,
   Gift,
   Percent,
-  Loader2
+  Loader2,
+  CalendarDays
 } from 'lucide-react';
-import { Product, CartItem, PaymentMethod, BrandConfig, PromoRule } from '../types';
-import { formatRupiah } from '../services/storageService';
+import { Product, CartItem, PaymentMethod, BrandConfig, PromoRule, TransactionReceipt } from '../types';
+import { formatRupiah, normalizeDateToYmd, StorageService, isDateToday, calculateFilteredBottleCount } from '../services/storageService';
 import { PromoSelectorModal } from './PromoSelectorModal';
+
+export interface CustomDateOption {
+  dateStr: string;
+  timeStr: string;
+  dateTimeStr: string;
+  dateYmd: string;
+}
+
+// Helper: Menghitung jam otomatis ({kecuali hari ini} +1 menit dari nota terakhir, kalau hari ini sesuai jam input)
+export function computeAutoTimeForDate(
+  targetYmd: string,
+  transactions: TransactionReceipt[] = [],
+  currentTodayYmd?: string
+): {
+  timeStr: string;
+  lastTrxId: string | null;
+  lastTimeStr: string | null;
+  hasPrevious: boolean;
+  explanation: string;
+} {
+  const now = new Date();
+  const nowYmd = currentTodayYmd || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  // 1. KASUS HARI INI: buat sesuai jam input (real-time saat ini)
+  if (!targetYmd || targetYmd === nowYmd) {
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    const currentClock = `${h}:${m}:${s}`;
+    return {
+      timeStr: currentClock,
+      lastTrxId: null,
+      lastTimeStr: null,
+      hasPrevious: false,
+      explanation: 'Sesuai jam input (real-time)',
+    };
+  }
+
+  // 2. KASUS KECUALI HARI INI: Logika Otomatis Jam (+1 Menit dari Nota Terakhir pada tanggal tersebut)
+  const dayTrx = (transactions || []).filter((t) => {
+    const rawId = String(t.id || '').trim();
+    if (rawId.toUpperCase().startsWith('VOIDED-') || rawId.toUpperCase().startsWith('#VOIDED-') || t.status === 'VOIDED') {
+      return false;
+    }
+    const ymd = normalizeDateToYmd(t.date || t.transactionDate || '');
+    return ymd === targetYmd;
+  });
+
+  if (dayTrx.length === 0) {
+    return {
+      timeStr: '10:00:00',
+      lastTrxId: null,
+      lastTimeStr: null,
+      hasPrevious: false,
+      explanation: 'Nota pertama di tanggal ini (default 10:00:00)',
+    };
+  }
+
+  // Cari transaksi terakhir pada hari tersebut
+  let maxSeconds = -1;
+  let lastTrx: TransactionReceipt | null = null;
+  let lastTimeFormatted = '';
+
+  dayTrx.forEach((t) => {
+    let raw = (t.websiteTime || '').trim();
+    if (!raw && t.transactionDate && t.transactionDate.includes(' ')) {
+      raw = t.transactionDate.split(' ')[1].trim();
+    }
+    // Jika masih kosong atau 00:00, coba ekstrak dari format TRX ID (TRX-YYYYMMDD-HHmmss-xxx)
+    if ((!raw || raw === '00:00' || raw === '00:00:00') && t.id) {
+      const matchId = String(t.id).match(/TRX-\d{8}-(\d{2})(\d{2})(\d{2})/);
+      if (matchId) {
+        raw = `${matchId[1]}:${matchId[2]}:${matchId[3]}`;
+      }
+    }
+
+    if (raw) {
+      const clean = raw.replace(/\./g, ':');
+      const parts = clean.match(/(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+      if (parts) {
+        const hh = parseInt(parts[1], 10);
+        const mm = parseInt(parts[2], 10);
+        const ss = parts[3] ? parseInt(parts[3], 10) : 0;
+        const totalSec = hh * 3600 + mm * 60 + ss;
+        if (totalSec > maxSeconds) {
+          maxSeconds = totalSec;
+          lastTrx = t;
+          lastTimeFormatted = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+        }
+      }
+    }
+  });
+
+  // Jika tidak ditemukan jam spesifik (> 0), gunakan createdAt
+  if (maxSeconds <= 0) {
+    let latestCreated = 0;
+    dayTrx.forEach((t) => {
+      if (t.createdAt && t.createdAt > latestCreated) {
+        latestCreated = t.createdAt;
+        lastTrx = t;
+      }
+    });
+    if (latestCreated > 0) {
+      const d = new Date(latestCreated);
+      maxSeconds = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+      lastTimeFormatted = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+    } else {
+      maxSeconds = 10 * 3600; // 10:00:00
+      lastTimeFormatted = '10:00:00';
+    }
+  }
+
+  // Tambahkan 1 menit (+60 detik)
+  const nextSec = Math.min(86399, maxSeconds + 60);
+  const nextH = String(Math.floor(nextSec / 3600)).padStart(2, '0');
+  const nextM = String(Math.floor((nextSec % 3600) / 60)).padStart(2, '0');
+  const nextS = String(nextSec % 60).padStart(2, '0');
+  const nextTime = `${nextH}:${nextM}:${nextS}`;
+
+  return {
+    timeStr: nextTime,
+    lastTrxId: lastTrx ? lastTrx.id : null,
+    lastTimeStr: lastTimeFormatted,
+    hasPrevious: true,
+    explanation: `+1 mnt dari nota #${lastTrx ? lastTrx.id : 'terakhir'} (${lastTimeFormatted} ➔ ${nextTime})`,
+  };
+}
 
 interface PosRegisterViewProps {
   products: Product[];
+  transactions?: TransactionReceipt[];
   cart: CartItem[];
   customerName: string;
   setCustomerName: (name: string) => void;
@@ -62,11 +191,12 @@ interface PosRegisterViewProps {
   onUpdateItemPrice: (productId: string, newPrice: number) => void;
   onRemoveFromCart: (productId: string) => void;
   onClearCart: () => void;
-  onProcessCheckout: () => void;
+  onProcessCheckout: (customDateOption?: CustomDateOption) => void;
   brand?: BrandConfig;
   todayOmset?: number;
   todayMargin?: number;
   todayCount?: number;
+  todayFilteredBottleQty?: number;
   isConnectedGas?: boolean;
   onNavigateTab?: (tab: 'pos' | 'today' | 'history' | 'stock' | 'shift' | 'gas') => void;
   isRedPriceMode?: boolean;
@@ -75,6 +205,7 @@ interface PosRegisterViewProps {
 
 export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
   products,
+  transactions = [],
   cart,
   customerName,
   setCustomerName,
@@ -100,6 +231,7 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
   todayOmset = 0,
   todayMargin = 0,
   todayCount = 0,
+  todayFilteredBottleQty,
   isConnectedGas = false,
   onNavigateTab,
   isRedPriceMode = false,
@@ -110,20 +242,76 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
 
-  // Kategori murni 100% dinamis mengikuti isi Kolom J di Google Sheets
+  // Menghitung botol keluar hari ini (kecuali bir, promo, dan harga minuman di bawah 30rb)
+  const computedFilteredBottleQty = useMemo(() => {
+    if (typeof todayFilteredBottleQty === 'number') {
+      return todayFilteredBottleQty;
+    }
+    const todayList = (transactions || []).filter((t) => t.status !== 'VOIDED' && isDateToday(t.date));
+    return calculateFilteredBottleCount(todayList);
+  }, [todayFilteredBottleQty, transactions]);
+
+  // Date Picker Keranjang Kasir: tanggal & jam transaksi otomatis +1 menit
+  const todayYmd = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, []);
+
+  const [txDate, setTxDate] = useState<string>(todayYmd);
+  const [txTime, setTxTime] = useState<string>('');
+  const [timeExplanation, setTimeExplanation] = useState<string>('');
+
+  // Jam real-time berjalan untuk hari ini (sesuai jam input transaksi)
+  const [liveClock, setLiveClock] = useState<string>(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      setLiveClock(
+        `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+      );
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Fungsi kalkulasi jam otomatis ({kecuali hari ini} +1 menit dari nota terakhir, hari ini sesuai jam input)
+  const updateAutoTimeForDate = (dateYmd: string) => {
+    const calc = computeAutoTimeForDate(dateYmd, transactions, todayYmd);
+    setTxTime(calc.timeStr);
+    setTimeExplanation(calc.explanation);
+  };
+
+  // Re-kalkulasi saat tanggal diubah atau daftar transaksi berubah
+  useEffect(() => {
+    updateAutoTimeForDate(txDate);
+  }, [txDate, transactions, todayYmd]);
+
+  // Daftar promo aktif kasir (memastikan PROMO 5RB dengan sku PROMO 5RB selalu ada)
+  const availablePromos = useMemo(() => {
+    return StorageService.getPromos().filter((p) => p.isActive !== false);
+  }, [isPromoModalOpen]);
+
+  // Kategori murni dinamis mengikuti isi Kolom J di Google Sheets + Kategori "Daftar Promo"
   const presentCategories = Array.from(
     new Set(
       products
         .map((p) => (p.category ? String(p.category).trim() : ''))
-        .filter((c): c is string => Boolean(c))
+        .filter((c): c is string => Boolean(c) && c.toUpperCase() !== 'PROMO' && c.toUpperCase() !== 'DAFTAR PROMO')
     )
   ) as string[];
 
-  const categories: string[] = ['ALL', ...presentCategories];
+  const categories: string[] = ['ALL', ...presentCategories, 'Daftar Promo'];
 
   // Category counts
   const categoryCounts: Record<string, number> = {
     ALL: products.length,
+    'Daftar Promo': availablePromos.length,
   };
   products.forEach((p) => {
     const cat = p.category ? String(p.category).trim() : 'Lainnya';
@@ -148,19 +336,28 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
     );
   });
 
-  // Calculations
-  const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
-  const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
-  const finalTotal = Math.max(0, subtotal - discount + shippingFee);
+  // Calculations: pisahkan item produk minuman fisik vs item promo potongan
+  const regularItems = cart.filter((i) => i.price >= 0 && !String(i.sku || '').toUpperCase().includes('PROMO'));
+  const promoCartItems = cart.filter((i) => i.price < 0 || String(i.sku || '').toUpperCase().includes('PROMO'));
+
+  const itemsSubtotal = regularItems.reduce((sum, item) => sum + item.subtotal, 0);
+  const promoCartDiscount = Math.abs(promoCartItems.reduce((sum, item) => sum + item.subtotal, 0));
+  const effectiveDiscount = discount + promoCartDiscount;
+
+  // Subtotal umum untuk tampilan kasir
+  const subtotal = itemsSubtotal > 0 ? itemsSubtotal : cart.reduce((sum, item) => sum + item.subtotal, 0);
+  const totalBottleQty = regularItems.reduce((sum, item) => sum + item.qty, 0);
+  const totalQty = totalBottleQty > 0 ? totalBottleQty : cart.reduce((sum, item) => sum + item.qty, 0);
+  const finalTotal = Math.max(0, subtotal - effectiveDiscount + shippingFee);
   const change = cashReceived >= finalTotal ? cashReceived - finalTotal : 0;
   const isCashInsufficient = paymentMethod === 'CASH' && cashReceived > 0 && cashReceived < finalTotal;
 
   // Nilai khusus pencatatan Google Sheets (selalu menggunakan harga biasa)
-  const sheetsRegularSubtotal = cart.reduce((sum, item) => {
+  const sheetsRegularSubtotal = regularItems.reduce((sum, item) => {
     const reg = item.regularPrice || item.originalPrice || item.price;
     return sum + (reg * item.qty);
   }, 0);
-  const sheetsRegularTotal = Math.max(0, sheetsRegularSubtotal - discount + shippingFee);
+  const sheetsRegularTotal = Math.max(0, (sheetsRegularSubtotal > 0 ? sheetsRegularSubtotal : subtotal) - effectiveDiscount + shippingFee);
 
   // Quick cash options
   const quickCashOptions = [
@@ -176,7 +373,34 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
     if (isSubmitting || cart.length === 0 || isCashInsufficient) return;
     setIsSubmitting(true);
     try {
-      onProcessCheckout();
+      const parts = txDate.split('-').map(Number);
+      const d = String(parts[2]).padStart(2, '0');
+      const m = String(parts[1]).padStart(2, '0');
+      const y = String(parts[0]);
+      const dateStr = `${d}/${m}/${y}`;
+      let finalTime = '';
+      if (txDate === todayYmd) {
+        // Hari ini: buat sesuai jam input saat ini (real-time saat kasir proses transaksi)
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        finalTime = `${hh}:${mm}:${ss}`;
+      } else {
+        // Kecuali hari ini: Logika Otomatis Jam (+1 Menit dari Nota Terakhir pada tanggal tersebut)
+        const calc = computeAutoTimeForDate(txDate, transactions, todayYmd);
+        finalTime = calc.timeStr || txTime || '10:00:00';
+      }
+
+      const timeStr = finalTime || '00:00:00';
+      const dateTimeStr = `${dateStr} ${timeStr}`;
+
+      onProcessCheckout({
+        dateStr,
+        timeStr,
+        dateTimeStr,
+        dateYmd: txDate,
+      });
       setIsCartSheetOpen(false);
     } finally {
       setTimeout(() => setIsSubmitting(false), 1200);
@@ -185,7 +409,13 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
 
   const getCartOrderShareText = () => {
     const itemLines = cart
-      .map((i) => `• ${i.name} (${formatRupiah(i.price)}/btl) x${i.qty} = ${formatRupiah(i.subtotal)}${i.isRedPrice ? ' [Harga Merah]' : ''}`)
+      .map((i) => {
+        const isPromo = i.price < 0 || String(i.sku || '').toUpperCase().includes('PROMO');
+        if (isPromo) {
+          return `• [PROMO] ${i.name} (SKU: ${i.sku}) x${i.qty} = -${formatRupiah(Math.abs(i.subtotal))}`;
+        }
+        return `• ${i.name} (${formatRupiah(i.price)}/btl) x${i.qty} = ${formatRupiah(i.subtotal)}${i.isRedPrice ? ' [Harga Merah]' : ''}`;
+      })
       .join('\n');
 
     return encodeURIComponent(
@@ -197,7 +427,7 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
       `${itemLines}\n` +
       `--------------------------------\n` +
       `Subtotal: ${formatRupiah(subtotal)}\n` +
-      (discount > 0 ? `Diskon: -${formatRupiah(discount)}\n` : '') +
+      (effectiveDiscount > 0 ? `Diskon: -${formatRupiah(effectiveDiscount)}\n` : '') +
       (shippingFee > 0 ? `Ongkir: +${formatRupiah(shippingFee)}\n` : '') +
       `*TOTAL: ${formatRupiah(finalTotal)}*\n` +
       (paymentMethod === 'CASH' && cashReceived ? `Tunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(change)}\n` : '') +
@@ -450,7 +680,7 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
           </div>
 
           {/* High-Contrast Sub-Metric Tiles (Clean, un-nested) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
             <div className="bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 rounded-2xl p-3 transition-colors">
               <p className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">
                 Estimasi Laba
@@ -469,7 +699,24 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
               </p>
             </div>
 
-            <div className="col-span-2 sm:col-span-1 bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 rounded-2xl p-3 flex items-center justify-between sm:flex-col sm:items-start transition-colors">
+            <div className="bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 rounded-2xl p-3 transition-colors">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">
+                  Botol Keluar
+                </p>
+                <span className="text-[9px] font-black text-amber-300 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded-md" title="Minuman di atas Rp 30.000 non-bir">
+                  ≥30rb
+                </span>
+              </div>
+              <p className="text-base sm:text-lg font-black text-amber-400 mt-0.5">
+                {todayCount > 0 ? `${computedFilteredBottleQty} Botol` : '0 Botol'}
+              </p>
+              <p className="text-[9px] text-stone-400 mt-0.5 truncate" title="Kecuali bir, promo, dan semua harga minuman di bawah 30rb">
+                Excl. Bir, Promo & &lt;30rb
+              </p>
+            </div>
+
+            <div className="bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 rounded-2xl p-3 flex items-center justify-between sm:flex-col sm:items-start transition-colors">
               <p className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">
                 Status Operasional
               </p>
@@ -529,6 +776,27 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
             {totalQty > 0 && (
               <span className="bg-[#FF5E36] text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
                 {totalQty}
+              </span>
+            )}
+          </button>
+
+          {/* Quick Service: Daftar Promo */}
+          <button
+            type="button"
+            onClick={() => setIsPromoModalOpen(true)}
+            className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-xs border border-stone-200/70 hover:border-stone-300 hover:bg-stone-50 active:scale-95 transition-all cursor-pointer whitespace-nowrap text-xs font-bold text-stone-800"
+          >
+            <div className="w-6 h-6 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
+              <Gift className="w-3.5 h-3.5" />
+            </div>
+            <span>Daftar Promo</span>
+            {promoCode ? (
+              <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                {promoCode}
+              </span>
+            ) : (
+              <span className="bg-stone-100 text-stone-500 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                {availablePromos.length}
               </span>
             )}
           </button>
@@ -723,19 +991,131 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
       <section>
         <div className="flex items-center justify-between mb-2 px-1">
           <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-            Daftar Minuman ({filteredProducts.length})
+            {selectedCategory === 'Daftar Promo' 
+              ? `Daftar Promo (${availablePromos.length})` 
+              : `Daftar Minuman (${filteredProducts.length})`}
           </p>
           {selectedCategory !== 'ALL' && (
             <button
               onClick={() => setSelectedCategory('ALL')}
               className="text-xs text-[#FF5E36] font-semibold hover:underline"
             >
-              Lihat Semua
+              Lihat Semua Minuman
             </button>
           )}
         </div>
 
-        {filteredProducts.length === 0 ? (
+        {selectedCategory === 'Daftar Promo' ? (
+          /* TAMPILAN KHUSUS KATEGORI DAFTAR PROMO - BISA PILIH QUANTITY SEPERTI PRODUK */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {availablePromos.map((promo) => {
+              const promoProduct: Product = {
+                id: promo.id,
+                sku: promo.code,
+                name: promo.name,
+                stock: 99999,
+                price: -Math.abs(promo.value),
+                cost: 0,
+                category: 'Daftar Promo',
+              };
+              const inCart = cart.find((i) => i.productId === promo.id || i.sku === promo.code);
+              const discountEach = Math.abs(promo.value);
+              const totalDiscount = inCart ? Math.abs(inCart.subtotal) : discountEach;
+
+              return (
+                <div
+                  key={promo.id}
+                  id={`promo-card-${promo.code.replace(/[^a-zA-Z0-9]/g, '-')}`}
+                  className={`bg-white rounded-[24px] p-4 sm:p-4.5 border transition-all select-none shadow-xs flex flex-col justify-between ${
+                    inCart
+                      ? 'border-rose-500 ring-2 ring-rose-400/30 bg-rose-50/25 shadow-xs'
+                      : 'border-stone-200/80 hover:border-stone-300'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1 mb-2.5">
+                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Tag className="w-3 h-3" />
+                        <span>Voucher Promo</span>
+                      </span>
+                      <span className="text-xs font-black font-mono text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
+                        {promo.type === 'PERCENT' ? `Diskon ${promo.value}%` : `-${formatRupiah(promo.value)}/pcs`}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-extrabold text-stone-900 leading-snug">
+                      {promo.name}
+                    </h3>
+                    <p className="text-[11px] font-mono font-bold text-stone-500 mt-0.5">
+                      SKU: {promo.code}
+                    </p>
+                    {promo.description && (
+                      <p className="text-xs text-stone-500 mt-1 leading-relaxed">
+                        {promo.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-2 mt-4">
+                    <div>
+                      {inCart ? (
+                        <p className="text-xs font-black text-rose-600 font-mono">
+                          Total: -{formatRupiah(totalDiscount)}
+                        </p>
+                      ) : (
+                        <span className="text-[11px] text-stone-400">
+                          {promo.minOrder ? `Min. ${formatRupiah(promo.minOrder)}` : 'Tanpa min. order'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Interactive Qty Stepper - Sama persis seperti memasukkan produk */}
+                    <div>
+                      {inCart ? (
+                        <div className="flex items-center gap-1.5 bg-[#1E232D] text-white px-2 py-1 rounded-full shadow-xs">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUpdateQty(inCart.productId, inCart.qty - 1);
+                            }}
+                            className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-90 transition-all text-white cursor-pointer"
+                            title="Kurangi kuantitas promo"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-xs font-black px-1 min-w-[16px] text-center font-mono">
+                            {inCart.qty}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUpdateQty(inCart.productId, inCart.qty + 1);
+                            }}
+                            className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-90 transition-all text-white cursor-pointer"
+                            title="Tambah kuantitas promo"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onAddToCart(promoProduct)}
+                          className="px-3.5 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer min-h-[36px]"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Pilih</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="bg-white rounded-3xl p-10 text-center border border-stone-200/80 shadow-xs space-y-2">
             <div className="w-12 h-12 rounded-2xl bg-stone-100 text-stone-400 flex items-center justify-center mx-auto">
               <Search className="w-6 h-6" />
@@ -886,6 +1266,144 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
             })}
           </div>
         )}
+
+        {/* DAFTAR PROMO DI LIST BAWAH (PROMO 5RB DENGAN SKU PROMO 5RB) */}
+        {selectedCategory !== 'Daftar Promo' && (
+          <div className="mt-8 bg-gradient-to-r from-rose-50/80 via-orange-50/50 to-amber-50/80 rounded-[28px] p-4.5 sm:p-5 border border-rose-200/80 shadow-xs space-y-3.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500 to-[#FF5E36] text-white flex items-center justify-center shadow-xs">
+                  <Gift className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-black text-stone-900">Daftar Promo</h4>
+                    <span className="text-[10px] font-black bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full border border-rose-200">
+                      Diskon Kasir
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-500">Pilih potongan promo langsung untuk transaksi keranjang</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('Daftar Promo')}
+                className="text-xs font-bold text-[#FF5E36] hover:underline flex items-center gap-1 cursor-pointer bg-white px-3 py-1.5 rounded-full border border-stone-200 hover:border-[#FF5E36] transition-colors"
+              >
+                <span>Lihat Semua Promo</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* List Promo: PROMO 5RB dengan SKU PROMO 5RB - Bisa Pilih Quantity Seperti Produk */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+              {availablePromos.slice(0, 3).map((p) => {
+                const promoProduct: Product = {
+                  id: p.id,
+                  sku: p.code,
+                  name: p.name,
+                  stock: 99999,
+                  price: -Math.abs(p.value),
+                  cost: 0,
+                  category: 'Daftar Promo',
+                };
+                const inCart = cart.find((i) => i.productId === p.id || i.sku === p.code);
+                const discountEach = Math.abs(p.value);
+                const totalDiscount = inCart ? Math.abs(inCart.subtotal) : discountEach;
+
+                return (
+                  <div 
+                    key={p.id}
+                    id={`promo-card-bottom-${p.code.replace(/[^a-zA-Z0-9]/g, '-')}`}
+                    className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between ${
+                      inCart 
+                        ? 'bg-rose-50/90 border-rose-400 ring-2 ring-rose-400/30 shadow-xs' 
+                        : 'bg-white border-stone-200/90 hover:border-rose-300 shadow-2xs'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs ${
+                            inCart ? 'bg-rose-600 text-white' : 'bg-rose-100 text-rose-600'
+                          }`}>
+                            %
+                          </div>
+                          <div>
+                            <h5 className="text-xs sm:text-sm font-black text-stone-900">{p.name}</h5>
+                            <p className="text-[11px] font-mono font-bold text-stone-400">SKU: {p.code}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200 font-mono">
+                          {p.type === 'PERCENT' ? `-${p.value}%` : `-${formatRupiah(p.value)}/pcs`}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-stone-500 mb-3">{p.description || `Potongan ${formatRupiah(p.value)}/pcs`}</p>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-stone-100">
+                      <div>
+                        {inCart ? (
+                          <p className="text-xs font-black text-rose-600 font-mono">
+                            Total: -{formatRupiah(totalDiscount)}
+                          </p>
+                        ) : (
+                          <span className="text-[10px] text-stone-400">
+                            {p.minOrder ? `Min. ${formatRupiah(p.minOrder)}` : 'Tanpa min. belanja'}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Interactive Qty Stepper: sama seperti memasukkan produk */}
+                      <div>
+                        {inCart ? (
+                          <div className="flex items-center gap-1.5 bg-[#1E232D] text-white px-2 py-1 rounded-full shadow-xs">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateQty(inCart.productId, inCart.qty - 1);
+                              }}
+                              className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-90 transition-all text-white cursor-pointer"
+                              title="Kurangi kuantitas promo"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-xs font-black px-1 min-w-[16px] text-center font-mono">
+                              {inCart.qty}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateQty(inCart.productId, inCart.qty + 1);
+                              }}
+                              className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-90 transition-all text-white cursor-pointer"
+                              title="Tambah kuantitas promo"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onAddToCart(promoProduct)}
+                            className="text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:scale-95 px-3 py-1.5 rounded-full transition-all shadow-xs cursor-pointer flex items-center gap-1 min-h-[36px]"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Pilih</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 5. KERANJANG SEBAGAI STICKY FLOATING PILL BAR (Saat ada item) */}
@@ -972,56 +1490,184 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
 
             {/* Scrollable Cart Content */}
             <div className="overflow-y-auto flex-1 py-3 divide-y divide-stone-100 space-y-3">
-              {/* Mode Reseller Quick Toggle Inside Cart Drawer */}
-              <div className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                isRedPriceMode 
-                  ? 'bg-rose-50 border-rose-200 text-rose-950' 
-                  : 'bg-stone-50 border-stone-200/80 text-stone-800'
-              }`}>
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    isRedPriceMode ? 'bg-rose-600 text-white' : 'bg-stone-200 text-stone-600'
-                  }`}>
-                    <Tag className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-xs font-bold">Harga Jual Merah (Reseller)</span>
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase ${
-                        isRedPriceMode ? 'bg-rose-600 text-white' : 'bg-stone-200 text-stone-600'
+              {/* TOP CONTROLS IN POP UP KERANJANG KASIR: HARGA JUAL MERAH (RESELLER) + DATE PICKER */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* 1. Card Harga Jual Merah (Reseller) - Diperkecil */}
+                <div className={`p-2.5 sm:p-3 rounded-2xl border transition-all flex flex-col justify-between ${
+                  isRedPriceMode 
+                    ? 'bg-rose-50/90 border-rose-300 text-rose-950 shadow-xs' 
+                    : 'bg-stone-50 border-stone-200/90 text-stone-800'
+                }`}>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        isRedPriceMode ? 'bg-rose-600 text-white shadow-xs' : 'bg-stone-200 text-stone-600'
                       }`}>
-                        {isRedPriceMode ? 'Aktif' : 'Off'}
-                      </span>
+                        <Tag className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold truncate block">Harga Jual Merah</span>
+                        <span className="text-[10px] text-stone-400 block truncate">Reseller make up</span>
+                      </div>
                     </div>
-                    <p className="text-[10px] text-stone-500 truncate">
-                      {isRedPriceMode 
-                        ? 'Harga dihitung make up reseller. Sheets dicatat harga biasa.' 
-                        : 'Klik untuk ubah seluruh item ke harga merah reseller.'}
-                    </p>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isRedPriceMode}
+                      onClick={() => onToggleRedPriceMode?.(!isRedPriceMode)}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                        isRedPriceMode ? 'bg-rose-600' : 'bg-stone-300'
+                      }`}
+                      title="Toggle harga jual merah reseller"
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
+                          isRedPriceMode ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] pt-1 border-t border-stone-200/50">
+                    <span className="text-stone-500">Status Reseller:</span>
+                    <span className={`font-black px-1.5 py-0.2 rounded-full uppercase text-[9px] ${
+                      isRedPriceMode ? 'bg-rose-600 text-white' : 'bg-stone-200 text-stone-600'
+                    }`}>
+                      {isRedPriceMode ? 'Aktif' : 'Normal'}
+                    </span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={isRedPriceMode}
-                  onClick={() => onToggleRedPriceMode?.(!isRedPriceMode)}
-                  className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors cursor-pointer ${
-                    isRedPriceMode ? 'bg-rose-600' : 'bg-stone-300'
-                  }`}
-                  title="Toggle harga jual merah"
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
-                      isRedPriceMode ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+
+                {/* 2. Card Date Picker di sebelah card Harga Jual Merah */}
+                <div className="p-2.5 sm:p-3 rounded-2xl border border-stone-200/90 bg-stone-50 flex flex-col justify-between shadow-xs">
+                  <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-7 h-7 rounded-xl bg-orange-100 text-[#FF5E36] flex items-center justify-center flex-shrink-0">
+                        <CalendarDays className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-stone-900 truncate block">Pilih Tanggal</span>
+                        <span className="text-[10px] text-stone-400 block truncate">
+                          {txDate === todayYmd ? 'Hari Ini' : 'Tanggal Lampau'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {txDate !== todayYmd && (
+                      <button
+                        type="button"
+                        onClick={() => setTxDate(todayYmd)}
+                        className="text-[9px] font-bold text-[#FF5E36] hover:text-[#e04f29] bg-[#FFF2ED] px-1.5 py-0.5 rounded-md border border-[#FF5E36]/30 cursor-pointer flex-shrink-0"
+                        title="Kembali ke hari ini"
+                      >
+                        Hari Ini
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <input
+                      type="date"
+                      value={txDate}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val) setTxDate(val);
+                      }}
+                      className="w-full px-2 py-1 bg-white border border-stone-200 rounded-lg text-xs font-bold text-stone-900 focus:outline-none focus:ring-1 focus:ring-[#FF5E36] cursor-pointer"
+                    />
+
+                    {/* Logic detail jam: {kecuali hari ini} +1 menit dari nota terakhir, kalau hari ini sesuai jam input */}
+                    <div className="text-[9.5px] truncate pt-0.5">
+                      {txDate === todayYmd ? (
+                        <span className="text-emerald-700 font-semibold flex items-center gap-1 truncate" title="Jam nota otomatis mengikuti jam input saat ini">
+                          <Clock className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                          <span>Jam input: {liveClock} (Live)</span>
+                        </span>
+                      ) : (
+                        <span className="text-amber-800 font-semibold flex items-center gap-1 truncate" title={timeExplanation}>
+                          <Sparkles className="w-3 h-3 text-amber-600 flex-shrink-0" />
+                          <span>Jam nota: {txTime} (+1 mnt nota terakhir)</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Items List */}
               <div className="space-y-2.5">
                 {cart.map((item) => {
-                  const isCustomPrice = item.originalPrice !== undefined && item.price !== item.originalPrice;
+                  const isPromoItem = item.price < 0 || String(item.sku || '').toUpperCase().includes('PROMO');
+                  const isCustomPrice = !isPromoItem && item.originalPrice !== undefined && item.price !== item.originalPrice;
+
+                  if (isPromoItem) {
+                    return (
+                      <div key={item.productId} className="p-3 rounded-2xl border border-rose-300 bg-rose-50/70 space-y-2.5 shadow-2xs">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] font-bold bg-rose-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                                <Gift className="w-2.5 h-2.5" />
+                                <span>Promo Diskon</span>
+                              </span>
+                              <p className="text-xs sm:text-sm font-extrabold text-stone-900 leading-tight">
+                                {item.name}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-stone-500">
+                              <span>SKU: {item.sku}</span>
+                              <span>•</span>
+                              <span className="text-rose-600 font-bold">Potongan {formatRupiah(Math.abs(item.price))}/pcs</span>
+                            </div>
+                          </div>
+
+                          {/* Subtotal & Delete */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <p className="text-xs sm:text-sm font-black text-rose-600 font-mono">
+                              -{formatRupiah(Math.abs(item.subtotal))}
+                            </p>
+                            <button
+                              onClick={() => onRemoveFromCart(item.productId)}
+                              className="text-stone-400 hover:text-rose-600 p-1 transition-colors cursor-pointer"
+                              title="Hapus promo dari keranjang"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Promo Quantity Stepper */}
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-rose-200/60">
+                          <span className="text-xs text-rose-800 font-semibold">
+                            Jumlah Kupon ({item.qty}x):
+                          </span>
+
+                          {/* Qty +/- */}
+                          <div className="flex items-center gap-1 bg-white border border-rose-300 rounded-xl p-0.5 shadow-xs">
+                            <button
+                              onClick={() => onUpdateQty(item.productId, item.qty - 1)}
+                              className="w-7 h-7 flex items-center justify-center text-stone-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              title="Kurangi kuantitas"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="font-black text-xs text-rose-700 px-2 min-w-[20px] text-center font-mono">
+                              {item.qty}
+                            </span>
+                            <button
+                              onClick={() => onUpdateQty(item.productId, item.qty + 1)}
+                              className="w-7 h-7 flex items-center justify-center text-stone-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              title="Tambah kuantitas"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div key={item.productId} className={`p-3 rounded-2xl border space-y-2.5 ${
                       item.isRedPrice ? 'bg-rose-50/40 border-rose-200' : 'bg-stone-50 border-stone-200/70'
@@ -1406,16 +2052,20 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
             {/* Bottom Checkout Action */}
             <div className="pt-3 border-t border-stone-100 flex-shrink-0 space-y-2.5">
               <div className="flex items-center justify-between text-xs text-stone-500">
-                <span>Subtotal ({totalQty} botol):</span>
+                <span>Subtotal ({totalBottleQty} botol):</span>
                 <span className="font-mono font-medium">{formatRupiah(subtotal)}</span>
               </div>
-              {discount > 0 && (
+              {effectiveDiscount > 0 && (
                 <div className="flex items-center justify-between text-xs text-rose-500">
                   <span className="flex items-center gap-1">
                     <Gift className="w-3.5 h-3.5" />
-                    <span>Diskon {promoName ? `(${promoName})` : ''}:</span>
+                    <span>
+                      Diskon {promoCartItems.length > 0 
+                        ? `(${promoCartItems.map((p) => `${p.name} x${p.qty}`).join(', ')})` 
+                        : promoName ? `(${promoName})` : ''}:
+                    </span>
                   </span>
-                  <span className="font-mono font-medium">-{formatRupiah(discount)}</span>
+                  <span className="font-mono font-bold text-rose-600">-{formatRupiah(effectiveDiscount)}</span>
                 </div>
               )}
               {shippingFee > 0 && (

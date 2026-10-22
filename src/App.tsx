@@ -8,6 +8,7 @@ import { ShiftClosingView } from './components/ShiftClosingView';
 import { GasIntegrationView } from './components/GasIntegrationView';
 import { ReceiptModal } from './components/ReceiptModal';
 import { BottomNavigation } from './components/BottomNavigation';
+import { AiCopilotModal } from './components/AiCopilotModal';
 import { 
   Product, 
   CartItem, 
@@ -22,7 +23,7 @@ import {
 } from './types';
 import { StorageService, formatRupiah } from './services/storageService';
 import { GasApiService } from './services/gasApiService';
-import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, Sparkles } from 'lucide-react';
 
 export default function App() {
   // Navigation
@@ -75,21 +76,52 @@ export default function App() {
   const [activeReceipt, setActiveReceipt] = useState<TransactionReceipt | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
-  // Google Sheets Synchronization State
+  // AI Copilot Modal
+  const [isAiCopilotOpen, setIsAiCopilotOpen] = useState(false);
+
+  // Handle actions executed by AI Copilot (Add stock, create receipt, expense, void)
+  const handleExecuteAiAction = (action: { type: string; payload: any; result: any }) => {
+    if (action.type === 'CREATE_SALE_RECEIPT' && action.payload?.receipt) {
+      const receipt = action.payload.receipt;
+      StorageService.saveTransaction(receipt);
+      refreshAllData();
+      setActiveReceipt(receipt);
+      setIsReceiptOpen(true);
+      showToast(`✓ Struk #${receipt.id} dibuat oleh AI Copilot!`, 'success');
+    } else if (action.type === 'ADD_STOCK' && action.payload) {
+      const p = action.payload;
+      const prods = StorageService.getProducts();
+      const target = prods.find((prod) => prod.id === p.productId || prod.sku === p.sku);
+      if (target) {
+        target.stock = p.newStock;
+        target.totalAsset = target.stock * (target.cost || 0);
+        StorageService.saveProducts(prods, 'POS', `Restock AI: ${p.name} (+${p.addedQty})`);
+      }
+      refreshAllData();
+      showToast(`✓ Stok ${p.name} ditambah +${p.addedQty} botol!`, 'success');
+    } else if (action.type === 'RECORD_EXPENSE' && action.payload?.record) {
+      StorageService.saveFinanceRecord(action.payload.record);
+      refreshAllData();
+      showToast(`✓ Pengeluaran "${action.payload.record.description}" dicatat!`, 'success');
+    } else if (action.type === 'VOID_RECEIPT' && action.payload?.transactionId) {
+      handleVoidTransaction(action.payload.transactionId, action.payload.reason || 'Dibatalkan AI Copilot');
+    }
+  };
   const [isConnectedGas, setIsConnectedGas] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info', duration: number = 4000) => {
     setToast({ message, type });
     setTimeout(() => {
       setToast((prev) => (prev?.message === message ? null : prev));
-    }, 4000);
+    }, duration);
   };
 
   // Load state from StorageService
   const refreshAllData = () => {
+    StorageService.purgeAllVoidedTransactions();
     const prods = StorageService.getProducts();
     const allTrx = StorageService.getTransactions();
     const todayTrx = StorageService.getTodayTransactions();
@@ -174,7 +206,11 @@ export default function App() {
     // Update seluruh barang yang saat ini sudah ada di keranjang
     setCart((prevCart) =>
       prevCart.map((item) => {
-        const prod = products.find((p) => p.id === item.productId);
+        const isPromoItem = item.price < 0 || String(item.sku || '').toUpperCase().includes('PROMO');
+        if (isPromoItem) {
+          return item; // Item promo tidak diubah oleh mode reseller
+        }
+        const prod = products.find((p) => p.id === item.productId || p.sku === item.sku);
         const regularPrice = item.regularPrice || (prod ? prod.price : item.price);
         const redPrice = (prod && prod.redPrice && prod.redPrice > 0) ? prod.redPrice : regularPrice;
         const targetPrice = enabled ? redPrice : regularPrice;
@@ -203,22 +239,24 @@ export default function App() {
 
   // Cart operations
   const handleAddToCart = (product: Product) => {
-    if (product.stock <= 0) return;
+    const isPromo = product.category === 'Daftar Promo' || product.price < 0 || String(product.sku || '').toUpperCase().includes('PROMO');
+    if (!isPromo && product.stock <= 0) return;
 
     const regularPrice = product.price;
-    const redPrice = (product.redPrice && product.redPrice > 0) ? product.redPrice : regularPrice;
-    const effectivePrice = isRedPriceMode ? redPrice : regularPrice;
+    const redPrice = (!isPromo && product.redPrice && product.redPrice > 0) ? product.redPrice : regularPrice;
+    const effectivePrice = (isRedPriceMode && !isPromo) ? redPrice : regularPrice;
 
     setCart((prev) => {
-      const existing = prev.find((item) => item.productId === product.id);
+      const existing = prev.find((item) => item.productId === product.id || item.sku === product.sku);
       if (existing) {
-        if (existing.qty >= product.stock) return prev; // Cannot exceed available stock
+        if (!isPromo && existing.qty >= product.stock) return prev; // Cannot exceed available stock
         return prev.map((item) =>
-          item.productId === product.id
+          (item.productId === product.id || item.sku === product.sku)
             ? {
                 ...item,
                 qty: item.qty + 1,
                 subtotal: (item.qty + 1) * item.price,
+                total: (item.qty + 1) * item.price,
                 margin: (item.qty + 1) * (item.price - item.cost),
               }
             : item
@@ -234,12 +272,12 @@ export default function App() {
             originalPrice: regularPrice,
             regularPrice: regularPrice,
             redPrice: redPrice,
-            cost: product.cost,
+            cost: product.cost || 0,
             qty: 1,
             subtotal: effectivePrice,
             total: effectivePrice,
-            margin: effectivePrice - product.cost,
-            isRedPrice: isRedPriceMode,
+            margin: effectivePrice - (product.cost || 0),
+            isRedPrice: isRedPriceMode && !isPromo,
           },
         ];
       }
@@ -247,10 +285,10 @@ export default function App() {
   };
 
   const handleUpdateItemPrice = (productId: string, newPrice: number) => {
-    const validPrice = Math.max(0, newPrice);
     setCart((prev) =>
       prev.map((item) => {
-        if (item.productId === productId) {
+        if (item.productId === productId || item.sku === productId) {
+          const validPrice = item.price < 0 ? -Math.abs(newPrice) : Math.max(0, newPrice);
           const itemSubtotal = item.qty * validPrice;
           return {
             ...item,
@@ -271,21 +309,22 @@ export default function App() {
       return;
     }
 
-    const prod = products.find((p) => p.id === productId);
-    if (prod && qty > prod.stock) {
+    const prod = products.find((p) => p.id === productId || p.sku === productId);
+    const isPromo = prod?.category === 'Daftar Promo' || String(prod?.sku || '').toUpperCase().includes('PROMO') || productId.startsWith('promo-');
+    if (prod && !isPromo && qty > prod.stock && prod.stock > 0) {
       qty = prod.stock;
     }
 
     setCart((prev) =>
       prev.map((item) => {
-        if (item.productId === productId) {
+        if (item.productId === productId || item.sku === productId) {
           const itemSubtotal = qty * item.price;
           return {
             ...item,
             qty,
             subtotal: itemSubtotal,
             total: itemSubtotal,
-            margin: qty * (item.price - item.cost),
+            margin: qty * (item.price - (item.cost || 0)),
           };
         }
         return item;
@@ -294,7 +333,7 @@ export default function App() {
   };
 
   const handleRemoveFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.productId !== productId));
+    setCart((prev) => prev.filter((item) => item.productId !== productId && item.sku !== productId));
   };
 
   const handleClearCart = () => {
@@ -307,39 +346,64 @@ export default function App() {
     setCustomerName('');
   };
 
-  // Checkout process
-  const handleProcessCheckout = () => {
+  // Checkout process (Mendukung custom date & time dari date picker keranjang)
+  const handleProcessCheckout = (customDateOption?: { dateStr: string; timeStr: string; dateTimeStr: string; dateYmd?: string }) => {
     if (cart.length === 0) return;
 
-    const subtotal = cart.reduce((sum, i) => sum + i.subtotal, 0);
-    const totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
-    const totalMargin = cart.reduce((sum, i) => sum + i.margin, 0) - discount;
-    const finalTotal = Math.max(0, subtotal - discount + shippingFee);
+    const regularItems = cart.filter((i) => i.price >= 0 && !String(i.sku || '').toUpperCase().includes('PROMO'));
+    const promoItems = cart.filter((i) => i.price < 0 || String(i.sku || '').toUpperCase().includes('PROMO'));
+
+    const grossSubtotal = regularItems.reduce((sum, i) => sum + i.subtotal, 0);
+    const promoDiscountsTotal = Math.abs(promoItems.reduce((sum, i) => sum + i.subtotal, 0));
+    const combinedDiscount = discount + promoDiscountsTotal;
+    const finalTotal = Math.max(0, (grossSubtotal > 0 ? grossSubtotal : cart.reduce((sum, i) => sum + i.subtotal, 0)) - combinedDiscount + shippingFee);
+    const totalBottleQty = regularItems.reduce((sum, i) => sum + i.qty, 0);
+    const totalMargin = regularItems.reduce((sum, i) => sum + i.margin, 0) - combinedDiscount;
 
     if (paymentMethod === 'CASH' && cashReceived < finalTotal) {
       return;
     }
 
     const now = new Date();
-    const d = String(now.getDate()).padStart(2, '0');
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const y = now.getFullYear();
-    const dateFormatted = `${d}/${m}/${y}`;
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const timeFormatted = `${hours}:${minutes}:${seconds}`;
+    let dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+    let timeFormatted = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    let dateTimeFormatted = `${dateFormatted} ${timeFormatted}`;
+    let epochTime = now.getTime();
+
+    if (customDateOption) {
+      if (customDateOption.dateStr) dateFormatted = customDateOption.dateStr;
+      if (customDateOption.timeStr) timeFormatted = customDateOption.timeStr;
+      if (customDateOption.dateTimeStr) dateTimeFormatted = customDateOption.dateTimeStr;
+      if (customDateOption.dateYmd && customDateOption.timeStr) {
+        const [y, m, d] = customDateOption.dateYmd.split('-').map(Number);
+        const [hh, mm, ss] = customDateOption.timeStr.split(':').map(Number);
+        const parsedEpoch = new Date(y, m - 1, d, hh || 0, mm || 0, ss || 0).getTime();
+        if (!isNaN(parsedEpoch)) {
+          epochTime = parsedEpoch;
+        }
+      }
+    }
+
+    const ymdCompact = customDateOption?.dateYmd
+      ? customDateOption.dateYmd.replace(/-/g, '')
+      : `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    const timeCompact = timeFormatted.replace(/[^0-9]/g, '');
+    const random = Math.floor(100 + Math.random() * 900);
+    const generatedId = `TRX-${ymdCompact}-${timeCompact}-${random}`;
+
+    const promoCodeFinal = appliedPromoCode || (promoItems.length > 0 ? promoItems.map((p) => p.sku).join(', ') : undefined);
+    const promoNameFinal = appliedPromoName || (promoItems.length > 0 ? promoItems.map((p) => `${p.name} (x${p.qty})`).join(', ') : undefined);
 
     const newReceipt: TransactionReceipt = {
-      id: StorageService.generateTransactionId(),
+      id: generatedId,
       date: dateFormatted,
-      transactionDate: `${dateFormatted} ${timeFormatted}`,
+      transactionDate: dateTimeFormatted,
       websiteTime: timeFormatted,
-      createdAt: now.getTime(),
+      createdAt: epochTime,
       customerName: customerName.trim() || undefined,
       paymentMethod,
-      promoCode: appliedPromoCode || undefined,
-      promoName: appliedPromoName || undefined,
+      promoCode: promoCodeFinal,
+      promoName: promoNameFinal,
       isResellerMode: isRedPriceMode,
       items: cart.map((item) => {
         const itemTotal = item.subtotal || (item.qty * item.price);
@@ -351,19 +415,19 @@ export default function App() {
           qty: item.qty,
           price: item.price,
           regularPrice: regularPrice,
-          cost: item.cost,
+          cost: item.cost || 0,
           subtotal: itemTotal,
           total: itemTotal,
           margin: item.margin,
           isRedPrice: item.isRedPrice,
         };
       }),
-      subtotal,
-      discount,
+      subtotal: grossSubtotal > 0 ? grossSubtotal : cart.reduce((sum, i) => sum + i.subtotal, 0),
+      discount: combinedDiscount,
       shippingFee: shippingFee > 0 ? shippingFee : undefined,
       total: finalTotal,
       margin: Math.max(0, totalMargin),
-      totalQty,
+      totalQty: totalBottleQty > 0 ? totalBottleQty : cart.reduce((sum, i) => sum + i.qty, 0),
       cashReceived: paymentMethod === 'CASH' ? cashReceived : undefined,
       cashChange: paymentMethod === 'CASH' ? Math.max(0, cashReceived - finalTotal) : undefined,
       cashier: currentShift.cashierName || 'Kasir',
@@ -416,52 +480,110 @@ export default function App() {
     setIsReceiptOpen(true);
   };
 
-  // Void Transaction & Delete from Google Sheets
-  const handleVoidTransaction = (id: string, reason: string) => {
+  // Void Transaction & Delete from Google Sheets (Mirroring basumurti/ortukill-pos Code.gs v3.5)
+  const handleVoidTransaction = async (id: string, reason: string) => {
+    // 1. Optimistic removal seketika di kasir (kembalikan stok & hapus dari tampilan)
     StorageService.voidTransaction(id, reason);
+    const cleanId = String(id || '').trim().toUpperCase();
+    const bareId = cleanId.replace(/^#/, '').replace(/^VOIDED-/, '');
+    const isSame = (tId: string) => {
+      const c = String(tId || '').trim().toUpperCase();
+      const b = c.replace(/^#/, '').replace(/^VOIDED-/, '');
+      return c === cleanId || b === bareId;
+    };
+    setTransactions((prev) => prev.filter((t) => !isSame(t.id)));
+    setTodayTransactions((prev) => prev.filter((t) => !isSame(t.id)));
     refreshAllData();
 
-    GasApiService.pushVoidTransaction(id, reason)
-      .then((res) => {
-        if (res.success) {
-          const detail = res.totalDeleted ? ` (${res.totalDeleted} baris dihapus di Sheets)` : '';
-          showToast(`✓ Struk #${id} di-VOID${detail}`, 'success');
-          // Sinkronisasi ulang data terbaru dari Google Sheets
-          GasApiService.fetchAndSyncAll()
-            .then(() => refreshAllData())
-            .catch(() => {});
-        } else {
-          showToast(`Transaksi #${id} di-VOID lokal. (${res.message || 'Sheets offline'})`, 'info');
-        }
-      })
-      .catch((err) => {
-        console.warn(err);
-        showToast(`Transaksi #${id} di-VOID lokal`, 'info');
-      });
+    showToast(`Menghapus transaksi #${id} di Google Sheet…`, 'info', 2500);
+
+    let res;
+    try {
+      res = await GasApiService.pushVoidTransaction(id, reason);
+    } catch (err) {
+      console.warn(err);
+      res = { success: false, deletedRows: 0, reachable: false, message: 'Gagal menghubungi server.' };
+    }
+
+    const deleted = res?.deletedRows || 0;
+    const isAlreadyGone = res?.alreadyDeletedOnSheet ||
+      String(res?.message || '').toLowerCase().includes('tidak ditemukan') ||
+      String(res?.message || '').toLowerCase().includes('sudah terhapus');
+
+    if ((res?.success && deleted > 0) || isAlreadyGone) {
+      refreshAllData();
+      if (deleted > 0) {
+        showToast(`✓ Struk #${id} berhasil di-void & terhapus dari Google Sheet (${deleted} baris LOG_PENJUALAN).`, 'success', 6000);
+      } else {
+        showToast(`✓ Struk #${id} sudah tidak ada di Google Sheet dan telah dibersihkan dari kasir.`, 'success', 6000);
+      }
+      return;
+    }
+
+    if (!res?.reachable) {
+      showToast(
+        `✓ Struk #${id} berhasil dibatalkan & dibersihkan dari kasir (Google Sheet offline).`,
+        'info',
+        6000
+      );
+      return;
+    }
+
+    // Sheet menjawab tapi ada kendala (misal baris dilindungi)
+    showToast(
+      `⚠️ Transaksi dibatalkan di kasir, namun di Google Sheet: ${res?.message || 'Transaksi tidak terhapus.'}`,
+      'error',
+      9000
+    );
   };
 
-  // Delete Transaction permanently & Delete from Google Sheets
-  const handleDeleteTransaction = (id: string) => {
-    StorageService.deleteTransaction(id, true);
+  // Delete Transaction permanently & Delete from Google Sheets (Code.gs v3.5)
+  const handleDeleteTransaction = async (id: string) => {
+    // 1. Optimistic removal seketika di kasir
+    StorageService.deleteTransaction(id, false);
+    const cleanId = String(id || '').trim().toUpperCase();
+    const bareId = cleanId.replace(/^#/, '').replace(/^VOIDED-/, '');
+    const isSame = (tId: string) => {
+      const c = String(tId || '').trim().toUpperCase();
+      const b = c.replace(/^#/, '').replace(/^VOIDED-/, '');
+      return c === cleanId || b === bareId;
+    };
+    setTransactions((prev) => prev.filter((t) => !isSame(t.id)));
+    setTodayTransactions((prev) => prev.filter((t) => !isSame(t.id)));
     refreshAllData();
 
-    GasApiService.deleteTransactionFromGas(id)
-      .then((res) => {
-        if (res.success) {
-          const detail = res.totalDeleted ? ` (${res.totalDeleted} baris dihapus di Sheets)` : '';
-          showToast(`✓ Struk #${id} berhasil dihapus permanen${detail}`, 'success');
-          // Sinkronisasi ulang data terbaru dari Google Sheets
-          GasApiService.fetchAndSyncAll()
-            .then(() => refreshAllData())
-            .catch(() => {});
-        } else {
-          showToast(`Struk #${id} dihapus dari riwayat lokal`, 'info');
-        }
-      })
-      .catch((err) => {
-        console.warn(err);
-        showToast(`Struk #${id} dihapus dari riwayat lokal`, 'info');
-      });
+    showToast(`Menghapus struk #${id} permanen di Google Sheet…`, 'info', 2500);
+
+    let res: any;
+    try {
+      res = await GasApiService.deleteTransactionFromGas(id);
+    } catch (err) {
+      console.warn(err);
+      res = { success: false, deletedRows: 0, reachable: false, message: 'Gagal menghubungi server.' };
+    }
+
+    const deleted = res?.deletedRows || 0;
+    const isAlreadyGone = res?.alreadyDeletedOnSheet ||
+      String(res?.message || '').toLowerCase().includes('tidak ditemukan') ||
+      String(res?.message || '').toLowerCase().includes('sudah terhapus');
+
+    if ((res?.success && deleted > 0) || isAlreadyGone || !res?.reachable) {
+      refreshAllData();
+      if (deleted > 0) {
+        showToast(`✓ Struk #${id} berhasil dihapus permanen (${deleted} baris di Google Sheets)`, 'success', 6000);
+      } else if (isAlreadyGone) {
+        showToast(`✓ Struk #${id} sudah tidak ada di Google Sheets dan telah dihapus dari kasir`, 'success', 6000);
+      } else {
+        showToast(`✓ Struk #${id} berhasil dihapus dari kasir (Google Sheet offline)`, 'info', 6000);
+      }
+      return;
+    }
+
+    showToast(
+      `⚠️ Transaksi dihapus di kasir, namun di Google Sheet: ${res?.message || 'Error'}`,
+      'error',
+      9000
+    );
   };
 
   // Product & Stock Management
@@ -594,6 +716,7 @@ export default function App() {
         lastUpdateInfo={lastUpdateInfo}
         onSyncData={() => handleSyncSpreadsheet(false)}
         onResetData={handleResetData}
+        onOpenAiCopilot={() => setIsAiCopilotOpen(true)}
       />
 
       {/* Floating Status Toast */}
@@ -619,6 +742,7 @@ export default function App() {
         {activeTab === 'pos' && (
           <PosRegisterView
             products={products}
+            transactions={transactions}
             cart={cart}
             customerName={customerName}
             setCustomerName={setCustomerName}
@@ -644,6 +768,7 @@ export default function App() {
             todayOmset={todaySummary.totalOmset}
             todayMargin={todaySummary.totalMargin}
             todayCount={todaySummary.totalTransactions}
+            todayFilteredBottleQty={todaySummary.filteredBottleQty}
             isConnectedGas={isConnectedGas}
             onNavigateTab={setActiveTab}
             isRedPriceMode={isRedPriceMode}
@@ -678,6 +803,7 @@ export default function App() {
             onSaveSalesTarget={handleSaveSalesTarget}
             onSyncSpreadsheet={() => handleSyncSpreadsheet(false)}
             isSyncing={isSyncing}
+            showToast={showToast}
           />
         )}
 
@@ -743,7 +869,20 @@ export default function App() {
         cartCount={cartCount}
         isConnectedGas={isConnectedGas}
         onResetData={handleResetData}
+        onOpenAiCopilot={() => setIsAiCopilotOpen(true)}
       />
+
+      {/* Floating AI Copilot Trigger Button (Always visible on mobile & desktop) */}
+      <button
+        onClick={() => setIsAiCopilotOpen(true)}
+        type="button"
+        aria-label="Buka AI Copilot Kasir"
+        title="AI Copilot Kasir (Otomasi Suara & Teks)"
+        className="fixed bottom-22 md:bottom-8 right-4 md:right-8 z-40 bg-gradient-to-r from-[#FF643D] via-[#FF5E36] to-amber-500 hover:from-[#e04f29] hover:to-[#FF5E36] text-white p-3.5 sm:px-4 sm:py-3.5 rounded-full shadow-xl shadow-[#FF5E36]/35 flex items-center gap-2 font-black text-xs sm:text-sm transition-all hover:scale-105 active:scale-95 cursor-pointer ring-4 ring-white/90"
+      >
+        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
+        <span className="hidden sm:inline font-extrabold tracking-wide">AI Copilot</span>
+      </button>
 
       {/* Thermal Receipt Modal */}
       <ReceiptModal
@@ -753,6 +892,18 @@ export default function App() {
         onClose={() => setIsReceiptOpen(false)}
         onVoidTransaction={handleVoidTransaction}
         onDeleteTransaction={handleDeleteTransaction}
+      />
+
+      {/* AI Copilot Kasir Modal (Voice & Text Automated Assistant) */}
+      <AiCopilotModal
+        isOpen={isAiCopilotOpen}
+        onClose={() => setIsAiCopilotOpen(false)}
+        products={products}
+        todayTransactions={todayTransactions}
+        cashierName={currentShift.cashierName || 'Kasir'}
+        brand={brand}
+        onExecuteAction={handleExecuteAiAction}
+        onViewReceipt={handleViewReceipt}
       />
     </div>
   );

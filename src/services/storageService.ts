@@ -56,13 +56,13 @@ const DEMO_TRANSACTION_IDS = new Set([
 
 export const INITIAL_PROMOS: PromoRule[] = [
   {
-    id: 'promo-5k',
-    code: 'PROMO-5K',
-    name: 'Diskon Langsung Rp 5.000',
+    id: 'promo-5rb',
+    code: 'PROMO 5RB',
+    name: 'PROMO 5RB',
     type: 'FIXED',
     value: 5000,
     minOrder: 0,
-    description: 'Potongan Rp 5.000 tanpa minimal belanja',
+    description: 'Potongan diskon Rp 5.000 (SKU: PROMO 5RB)',
     isActive: true,
   },
   {
@@ -127,11 +127,115 @@ export function normalizeDateToYmd(s: string): string {
       return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
     }
     if (parts[2].length === 4) {
-      // DD-MM-YYYY
-      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      const p0 = parseInt(parts[0], 10);
+      const p1 = parseInt(parts[1], 10);
+      // Jika p0 <= 12 dan p1 > 12, ini format MM-DD-YYYY (seperti 10/17/2026)
+      if (p0 <= 12 && p1 > 12) {
+        return `${parts[2]}-${String(p0).padStart(2, '0')}-${String(p1).padStart(2, '0')}`;
+      }
+      // Default: DD-MM-YYYY
+      return `${parts[2]}-${String(p1).padStart(2, '0')}-${String(p0).padStart(2, '0')}`;
     }
   }
   return clean;
+}
+
+/**
+ * Konversi tanggal (string seperti "10/17/2026 0:00:00" atau Date object)
+ * menjadi format standar inputan Google Sheets untuk regional Indonesia (GMT+7 / Asia/Jakarta).
+ *
+ * Contoh:
+ * - "10/17/2026 0:00:00" -> "17/10/2026 00:00:00" (dengan waktu) atau "17/10/2026" (hanya tanggal)
+ */
+export function formatDateForGoogleSheet(
+  inputDate: string | Date | number,
+  includeTime = true
+): { dateStr: string; timeStr: string; fullSheetStr: string; ymd: string; wibDisplay: string } {
+  if (!inputDate) {
+    inputDate = new Date();
+  }
+
+  // Jika input adalah string yang mengandung format MM/DD/YYYY atau DD/MM/YYYY
+  if (typeof inputDate === 'string') {
+    const raw = inputDate.trim();
+    const timeMatch = raw.match(/(\d{1,2})[:.](\d{1,2})(?:[:.](\d{1,2}))?/);
+    const timeStr = timeMatch
+      ? `${timeMatch[1].padStart(2, '0')}:${timeMatch[2].padStart(2, '0')}:${(timeMatch[3] || '00').padStart(2, '0')}`
+      : '00:00:00';
+
+    const datePart = raw.split(' ')[0];
+    const parts = datePart.replace(/[/.]/g, '-').split('-');
+    if (parts.length === 3) {
+      let y = '', m = '', d = '';
+      if (parts[0].length === 4) {
+        // YYYY-MM-DD
+        y = parts[0];
+        m = parts[1].padStart(2, '0');
+        d = parts[2].padStart(2, '0');
+      } else if (parts[2].length === 4) {
+        y = parts[2];
+        const p0 = parseInt(parts[0], 10);
+        const p1 = parseInt(parts[1], 10);
+        if (p0 <= 12 && p1 > 12) {
+          // Format MM/DD/YYYY (seperti 10/17/2026)
+          m = String(p0).padStart(2, '0');
+          d = String(p1).padStart(2, '0');
+        } else {
+          // Format DD/MM/YYYY
+          d = String(p0).padStart(2, '0');
+          m = String(p1).padStart(2, '0');
+        }
+      }
+
+      if (y && m && d) {
+        const dateStr = `${d}/${m}/${y}`;
+        const fullSheetStr = includeTime ? `${dateStr} ${timeStr}` : dateStr;
+        const ymd = `${y}-${m}-${d}`;
+        const bulanIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][parseInt(m, 10) - 1] || m;
+        const wibDisplay = `${d} ${bulanIndo} ${y}, ${timeStr} WIB`;
+        return { dateStr, timeStr, fullSheetStr, ymd, wibDisplay };
+      }
+    }
+  }
+
+  // Jika berupa Date object atau timestamp, format ke timezone Asia/Jakarta (GMT+7)
+  const dateObj = typeof inputDate === 'object' && inputDate instanceof Date
+    ? inputDate
+    : new Date(inputDate);
+
+  const validDate = isNaN(dateObj.getTime()) ? new Date() : dateObj;
+
+  // Format GMT+7 via Intl
+  const formatter = new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(validDate);
+  const partMap: Record<string, string> = {};
+  parts.forEach((p) => { partMap[p.type] = p.value; });
+
+  const d = partMap['day'] || '01';
+  const m = partMap['month'] || '01';
+  const y = partMap['year'] || '2026';
+  const hh = (partMap['hour'] || '00').padStart(2, '0');
+  const mm = (partMap['minute'] || '00').padStart(2, '0');
+  const ss = (partMap['second'] || '00').padStart(2, '0');
+
+  const dateStr = `${d}/${m}/${y}`;
+  const timeStr = `${hh}:${mm}:${ss}`;
+  const fullSheetStr = includeTime ? `${dateStr} ${timeStr}` : dateStr;
+  const ymd = `${y}-${m}-${d}`;
+  const bulanIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][parseInt(m, 10) - 1] || m;
+  const wibDisplay = `${d} ${bulanIndo} ${y}, ${timeStr} WIB`;
+
+  return { dateStr, timeStr, fullSheetStr, ymd, wibDisplay };
 }
 
 export function isSameDay(date1: string, date2: string): boolean {
@@ -141,30 +245,21 @@ export function isSameDay(date1: string, date2: string): boolean {
 }
 
 export function isDateToday(dateStr: string): boolean {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  const todayYmd = `${y}-${m}-${d}`;
-  return normalizeDateToYmd(dateStr) === todayYmd;
+  const { ymd } = formatDateForGoogleSheet(new Date(), false);
+  return normalizeDateToYmd(dateStr) === ymd;
 }
 
 export function getTodayDateString(): string {
-  const now = new Date();
-  const d = String(now.getDate()).padStart(2, '0');
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const y = now.getFullYear();
-  return `${d}/${m}/${y}`;
+  const { dateStr } = formatDateForGoogleSheet(new Date(), false);
+  return dateStr;
 }
 
 export function getFormattedNow(): { full: string; date: string; time: string } {
-  const now = new Date();
-  const date = getTodayDateString();
-  const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const { dateStr, timeStr, fullSheetStr } = formatDateForGoogleSheet(new Date(), true);
   return {
-    full: `${date} ${time}`,
-    date,
-    time,
+    full: fullSheetStr,
+    date: dateStr,
+    time: timeStr.slice(0, 5), // "HH:mm"
   };
 }
 
@@ -298,6 +393,92 @@ export function classifyProduct(sku: string = '', name: string = ''): string {
   }
 
   return 'ANGGUR';
+}
+
+/**
+ * Memeriksa apakah suatu item transaksi termasuk botol minuman yang dihitung.
+ * Aturan pengecualian (KECUALI):
+ * 1. Bir: Kategori BIR/BEER, SKU bir, nama bir (Prost, Bintang, Singaraja, dll)
+ * 2. Promo: SKU/Nama PROMO/POTONGAN/DISKON/VOUCHER atau harga negatif
+ * 3. Semua harga minuman di bawah 30rb (harga satuan < 30.000)
+ */
+export function isEligibleBottleItem(item: {
+  sku?: string;
+  name?: string;
+  price?: number;
+  regularPrice?: number;
+  originalPrice?: number;
+  category?: string;
+}): boolean {
+  if (!item) return false;
+  const sku = (item.sku || '').trim().toUpperCase();
+  const name = (item.name || '').trim().toUpperCase();
+  const cat = (item.category || '').trim().toUpperCase();
+
+  // 1. Pengecualian Promo
+  if (
+    sku.includes('PROMO') ||
+    name.includes('PROMO') ||
+    name.includes('POTONGAN') ||
+    name.includes('DISKON') ||
+    name.includes('VOUCHER') ||
+    cat === 'PROMO' ||
+    (typeof item.price === 'number' && item.price < 0)
+  ) {
+    return false;
+  }
+
+  // 2. Pengecualian Bir
+  if (
+    cat === 'BIR' ||
+    cat === 'BEER' ||
+    classifyProduct(item.sku, item.name) === 'BIR' ||
+    /^(PL-|BP-|SK5-|PALM-|PAL-|KDS-|SAJM-|SA-OT-|S-OT-)/.test(sku) ||
+    name.includes('BIR') ||
+    name.includes('BEER') ||
+    name.includes('PROST') ||
+    name.includes('BINTANG') ||
+    name.includes('SINGARAJA') ||
+    name.includes('PILSENER') ||
+    name.includes('STOUT') ||
+    name.includes('ALSTER') ||
+    name.includes('KONIG') ||
+    name.includes('HEINEKEN') ||
+    name.includes('GUINNESS') ||
+    name.includes('ANKER') ||
+    name.includes('CARLSBERG') ||
+    name.includes('BALI HAI')
+  ) {
+    return false;
+  }
+
+  // 3. Pengecualian Semua harga minuman di bawah 30rb (< 30.000)
+  const unitPrice = item.price ?? item.regularPrice ?? item.originalPrice ?? 0;
+  if (unitPrice < 30000) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Menghitung total botol yang keluar dari daftar transaksi
+ * dengan mengecualikan bir, promo, dan semua minuman di bawah 30rb.
+ */
+export function calculateFilteredBottleCount(transactions: TransactionReceipt[]): number {
+  if (!transactions || !Array.isArray(transactions)) return 0;
+  let count = 0;
+  transactions.forEach((t) => {
+    if (t.status === 'VOIDED') return;
+    if (Array.isArray(t.items)) {
+      t.items.forEach((item) => {
+        if (isEligibleBottleItem(item)) {
+          count += Number(item.qty) || 0;
+        }
+      });
+    }
+  });
+  return count;
 }
 
 export function normalizeTransactionsByDate(rawList: TransactionReceipt[]): TransactionReceipt[] {
@@ -441,10 +622,13 @@ export class StorageService {
       if (bmSource) {
         try {
           const parsedBm = JSON.parse(bmSource);
-          if (Array.isArray(parsedBm)) {
+          if (Array.isArray(parsedBm) && parsedBm.length > 0) {
             cleanBm = parsedBm.filter((b) => !b.id?.startsWith('BM-10'));
           }
         } catch (e) {}
+      }
+      if (cleanBm.length === 0 && Array.isArray(INITIAL_BARANG_MASUK) && INITIAL_BARANG_MASUK.length > 0) {
+        cleanBm = [...INITIAL_BARANG_MASUK];
       }
       localStorage.setItem(STORAGE_KEYS.BARANG_MASUK, JSON.stringify(cleanBm));
 
@@ -559,16 +743,73 @@ export class StorageService {
     return new Set<string>();
   }
 
+  static isTransactionDeleted(id: string, deletedSet: Set<string>): boolean {
+    if (!id) return false;
+    const raw = String(id).trim();
+    const noHash = raw.replace(/^#/, '').trim();
+    const bare = noHash.replace(/^VOIDED-/i, '').trim();
+    return (
+      deletedSet.has(raw) ||
+      deletedSet.has(noHash) ||
+      deletedSet.has(bare) ||
+      deletedSet.has(`VOIDED-${bare}`) ||
+      deletedSet.has(`#${bare}`) ||
+      deletedSet.has(`#VOIDED-${bare}`)
+    );
+  }
+
   static markTransactionAsDeleted(trxId: string): void {
     if (!trxId) return;
     try {
       const deletedSet = this.getDeletedTransactionIds();
-      deletedSet.add(trxId);
-      deletedSet.add(trxId.replace(/^#/, ''));
+      const raw = String(trxId).trim();
+      const noHash = raw.replace(/^#/, '').trim();
+      const bare = noHash.replace(/^VOIDED-/i, '').trim();
+
+      deletedSet.add(raw);
+      deletedSet.add(noHash);
+      deletedSet.add(bare);
+      deletedSet.add(`VOIDED-${bare}`);
+      deletedSet.add(`#${raw}`);
+      deletedSet.add(`#${bare}`);
+      deletedSet.add(`#VOIDED-${bare}`);
+
       localStorage.setItem(STORAGE_KEYS.DELETED_TRX, JSON.stringify(Array.from(deletedSet)));
     } catch (e) {
       console.error(e);
     }
+  }
+
+  // Bersihkan semua transaksi berawalan VOIDED- lama dari memori kasir
+  static purgeAllVoidedTransactions(): TransactionReceipt[] {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+      if (stored) {
+        const parsed: TransactionReceipt[] = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const deletedSet = this.getDeletedTransactionIds();
+          const cleaned: TransactionReceipt[] = [];
+
+          for (const t of parsed) {
+            const rawId = String(t.id || '').trim();
+            const isVoidedPrefix = rawId.toUpperCase().startsWith('VOIDED-') || rawId.toUpperCase().startsWith('#VOIDED-');
+            if (isVoidedPrefix || this.isTransactionDeleted(rawId, deletedSet)) {
+              this.markTransactionAsDeleted(rawId);
+            } else {
+              cleaned.push(t);
+            }
+          }
+
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(cleaned));
+          }
+          return cleaned;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to purge voided transactions', e);
+    }
+    return this.getTransactions();
   }
 
   // Transactions - Memorized riil, TIDAK PERNAH memuat demo awal
@@ -580,7 +821,12 @@ export class StorageService {
         const parsed: TransactionReceipt[] = JSON.parse(stored);
         if (Array.isArray(parsed)) {
           const deletedSet = this.getDeletedTransactionIds();
-          const activeOnly = parsed.filter((t) => !deletedSet.has(t.id) && !deletedSet.has(t.id.replace(/^#/, '')));
+          const activeOnly = parsed.filter((t) => {
+            const rawId = String(t.id || '').trim();
+            if (this.isTransactionDeleted(rawId, deletedSet)) return false;
+            if (rawId.toUpperCase().startsWith('VOIDED-') || rawId.toUpperCase().startsWith('#VOIDED-')) return false;
+            return true;
+          });
           const normalized = normalizeTransactionsByDate(activeOnly);
           if (normalized !== parsed) {
             localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(normalized));
@@ -597,8 +843,13 @@ export class StorageService {
   static saveTransactions(transactions: TransactionReceipt[], source: 'GOOGLE_SHEETS' | 'POS' | 'LOCAL' = 'LOCAL', details?: string): void {
     this.ensureDemoPurged();
     const deletedSet = this.getDeletedTransactionIds();
-    // Filter transaksi yang sudah dihapus secara permanen
-    const filtered = transactions.filter((t) => !deletedSet.has(t.id) && !deletedSet.has(t.id.replace(/^#/, '')));
+    // Filter transaksi yang sudah dihapus secara permanen atau berawalan VOIDED-
+    const filtered = transactions.filter((t) => {
+      const rawId = String(t.id || '').trim();
+      if (this.isTransactionDeleted(rawId, deletedSet)) return false;
+      if (rawId.toUpperCase().startsWith('VOIDED-') || rawId.toUpperCase().startsWith('#VOIDED-')) return false;
+      return true;
+    });
     const normalized = normalizeTransactionsByDate(filtered);
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(normalized));
     this.setLastUpdateInfo({
@@ -678,8 +929,10 @@ export class StorageService {
       }
     }
 
-    // Deduct stock locally from DASHBOARD_MUTASI_&_PROFIT
+    // Deduct stock locally from DASHBOARD_MUTASI_&_PROFIT (khusus produk fisik minuman, abaikan item promo)
     enrichedTrx.items.forEach((item) => {
+      const isPromo = item.price < 0 || String(item.sku || '').toUpperCase().includes('PROMO') || String(item.category || '').toUpperCase().includes('PROMO');
+      if (isPromo) return;
       const prod = products.find((p) => p.id === item.productId || p.sku === item.sku);
       if (prod) {
         prod.stock = Math.max(0, prod.stock - item.qty);
@@ -698,44 +951,72 @@ export class StorageService {
   }
 
   static voidTransaction(trxId: string, reason: string): TransactionReceipt[] {
+    // Sesuai aturan mutlak Code.gs v3.5: VOID = HAPUS PERMANEN + KEMBALIKAN STOK
+    this.markTransactionAsDeleted(trxId);
     const list = this.getTransactions();
     const products = this.getProducts();
 
-    const updated = list.map((t) => {
-      if (t.id === trxId && t.status !== 'VOIDED') {
-        t.items.forEach((item) => {
-          const prod = products.find((p) => p.id === item.productId || p.sku === item.sku);
-          if (prod) {
-            prod.stock += item.qty;
-            prod.totalAsset = prod.stock * (prod.cost || 0);
-          }
-        });
-        return {
-          ...t,
-          status: 'VOIDED' as const,
-          voidReason: reason || 'Dibatalkan oleh kasir',
-        };
-      }
-      return t;
+    const rawTarget = String(trxId).trim().toUpperCase();
+    const bareTarget = rawTarget.replace(/^#/, '').replace(/^VOIDED-/, '');
+
+    const target = list.find((t) => {
+      const curRaw = String(t.id).trim().toUpperCase();
+      const curBare = curRaw.replace(/^#/, '').replace(/^VOIDED-/, '');
+      return curRaw === rawTarget || curBare === bareTarget;
     });
 
-    this.saveProducts(products, 'POS', `Stok dikembalikan nota VOID ${trxId}`);
+    // Kembalikan stok barang yang dibatalkan
+    if (target && target.status !== 'VOIDED') {
+      target.items.forEach((item) => {
+        const prod = products.find((p) => p.id === item.productId || p.sku === item.sku);
+        if (prod) {
+          prod.stock += item.qty;
+          prod.totalAsset = prod.stock * (prod.cost || 0);
+        }
+      });
+      this.saveProducts(products, 'POS', `Stok dikembalikan nota VOID ${trxId}`);
+    }
+
+    // Hapus total dari transaksi lokal
+    const updated = list.filter((t) => {
+      const curRaw = String(t.id).trim().toUpperCase();
+      const curBare = curRaw.replace(/^#/, '').replace(/^VOIDED-/, '');
+      return curRaw !== rawTarget && curBare !== bareTarget;
+    });
+
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
+
+    // Bersihkan juga catatan keuangan ongkir jika ada
+    try {
+      const finances = this.getFinanceRecords();
+      const updatedFinances = finances.filter((f) => !f.description.includes(bareTarget) && !f.description.includes(trxId));
+      if (updatedFinances.length !== finances.length) {
+        localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(updatedFinances));
+      }
+    } catch (e) {}
 
     this.setLastUpdateInfo({
       source: 'POS',
-      sourceLabel: 'Void Transaksi',
-      details: `Nota ${trxId} dibatalkan (VOID)`,
+      sourceLabel: 'Void & Hapus Permanen',
+      details: `Nota ${trxId} dibatalkan & dihapus permanen (${reason || 'VOID'})`,
     });
 
     return updated;
   }
 
-  static deleteTransaction(trxId: string, restoreStock = true): TransactionReceipt[] {
+  static deleteTransaction(trxId: string, restoreStock = false): TransactionReceipt[] {
     this.markTransactionAsDeleted(trxId);
     const list = this.getTransactions();
     const products = this.getProducts();
-    const target = list.find((t) => t.id === trxId);
+
+    const rawTarget = String(trxId).trim().toUpperCase();
+    const bareTarget = rawTarget.replace(/^#/, '').replace(/^VOIDED-/, '');
+
+    const target = list.find((t) => {
+      const curRaw = String(t.id).trim().toUpperCase();
+      const curBare = curRaw.replace(/^#/, '').replace(/^VOIDED-/, '');
+      return curRaw === rawTarget || curBare === bareTarget;
+    });
 
     if (target && restoreStock && target.status !== 'VOIDED') {
       target.items.forEach((item) => {
@@ -748,13 +1029,17 @@ export class StorageService {
       this.saveProducts(products, 'POS', `Stok dikembalikan nota dihapus ${trxId}`);
     }
 
-    const updated = list.filter((t) => t.id !== trxId);
+    const updated = list.filter((t) => {
+      const curRaw = String(t.id).trim().toUpperCase();
+      const curBare = curRaw.replace(/^#/, '').replace(/^VOIDED-/, '');
+      return curRaw !== rawTarget && curBare !== bareTarget;
+    });
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
 
     // Hapus juga catatan keuangan ongkir jika ada yang terikat nomor struk ini
     try {
       const finances = this.getFinanceRecords();
-      const updatedFinances = finances.filter((f) => !f.description.includes(trxId));
+      const updatedFinances = finances.filter((f) => !f.description.includes(bareTarget) && !f.description.includes(trxId));
       if (updatedFinances.length !== finances.length) {
         localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(updatedFinances));
       }
@@ -772,7 +1057,11 @@ export class StorageService {
   // Today's Transactions using flexible date matcher
   static getTodayTransactions(): TransactionReceipt[] {
     const all = this.getTransactions();
-    return all.filter((t) => isDateToday(t.date));
+    return all.filter((t) => {
+      const rawId = String(t.id || '').trim();
+      if (rawId.toUpperCase().startsWith('VOIDED-') || rawId.toUpperCase().startsWith('#VOIDED-')) return false;
+      return isDateToday(t.date);
+    });
   }
 
   static getDailySummary(): DailySummary {
@@ -788,11 +1077,20 @@ export class StorageService {
     let totalOmset = 0;
     let totalMargin = 0;
     let totalQty = 0;
+    let filteredBottleQty = 0;
 
     todayList.forEach((t) => {
       totalOmset += t.total;
       totalMargin += t.margin || 0;
       totalQty += t.totalQty || 0;
+
+      if (Array.isArray(t.items)) {
+        t.items.forEach((item) => {
+          if (isEligibleBottleItem(item)) {
+            filteredBottleQty += Number(item.qty) || 0;
+          }
+        });
+      }
 
       const method = t.paymentMethod;
       if (paymentBreakdown[method]) {
@@ -807,6 +1105,7 @@ export class StorageService {
       totalOmset,
       totalMargin,
       totalQty,
+      filteredBottleQty,
       avgBasketSize: todayList.length > 0 ? Math.round(totalOmset / todayList.length) : 0,
       paymentBreakdown,
     };
@@ -819,12 +1118,12 @@ export class StorageService {
       const stored = localStorage.getItem(STORAGE_KEYS.BARANG_MASUK);
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
       console.error(e);
     }
-    return [];
+    return Array.isArray(INITIAL_BARANG_MASUK) ? INITIAL_BARANG_MASUK : [];
   }
 
   static saveBarangMasukList(list: BarangMasukRecord[]): void {
@@ -980,7 +1279,28 @@ export class StorageService {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.PROMOS);
       if (stored) {
-        return JSON.parse(stored);
+        const list: PromoRule[] = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          const hasPromo5rb = list.some(
+            (p) => String(p.code || '').toUpperCase() === 'PROMO 5RB' || String(p.name || '').toUpperCase() === 'PROMO 5RB'
+          );
+          if (!hasPromo5rb) {
+            const promo5rb: PromoRule = {
+              id: 'promo-5rb',
+              code: 'PROMO 5RB',
+              name: 'PROMO 5RB',
+              type: 'FIXED',
+              value: 5000,
+              minOrder: 0,
+              description: 'Potongan diskon Rp 5.000 (SKU: PROMO 5RB)',
+              isActive: true,
+            };
+            const updated = [promo5rb, ...list];
+            localStorage.setItem(STORAGE_KEYS.PROMOS, JSON.stringify(updated));
+            return updated;
+          }
+          return list;
+        }
       }
     } catch (e) {
       console.error('Failed to parse promos:', e);

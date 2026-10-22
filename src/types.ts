@@ -108,6 +108,7 @@ export interface DailySummary {
   totalOmset: number;
   totalMargin: number;
   totalQty: number;
+  filteredBottleQty?: number; // Total botol keluar kecuali bir, promo, dan harga minuman di bawah 30rb
   avgBasketSize: number;
   paymentBreakdown: {
     CASH: { count: number; total: number };

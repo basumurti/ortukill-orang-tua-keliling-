@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -37,7 +37,13 @@ import {
   CircleDollarSign,
   Trash2,
   Ban,
-  X
+  X,
+  Filter,
+  Copy,
+  Check,
+  FileText,
+  MessageSquare,
+  Share2
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -54,6 +60,7 @@ import {
 import { TransactionReceipt, Product, FinanceRecord, SalesTarget } from '../types';
 import { formatRupiah, isDateToday, normalizeDateToYmd, classifyProduct } from '../services/storageService';
 import { FinanceManagementView } from './FinanceManagementView';
+import { AnalyticsDashboard } from './AnalyticsDashboard';
 
 interface SalesHistoryViewProps {
   transactions: TransactionReceipt[];
@@ -68,6 +75,7 @@ interface SalesHistoryViewProps {
   onSaveSalesTarget: (targetAmount: number, month?: string) => void;
   onSyncSpreadsheet?: () => void;
   isSyncing?: boolean;
+  showToast?: (message: string, type?: 'success' | 'error' | 'info', duration?: number) => void;
 }
 
 interface FlattenedSaleItem {
@@ -118,6 +126,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
   onSaveSalesTarget,
   onSyncSpreadsheet,
   isSyncing,
+  showToast,
 }) => {
   // Main Tab Navigation inside Laporan
   const [activeSubTab, setActiveSubTab] = useState<'ANALYTICS' | 'FINANCE_KAS' | 'SALES_LOG'>('ANALYTICS');
@@ -135,6 +144,33 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
   const [paymentFilter, setPaymentFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
+
+  // Daily Report WhatsApp Card State (Sesuai formula Google Sheets)
+  const [selectedReportDate, setSelectedReportDate] = useState<string>(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  });
+  const [showReportText, setShowReportText] = useState<boolean>(true);
+  const [isCopiedReport, setIsCopiedReport] = useState<boolean>(false);
+
+  // Target Editing State
+  const [isEditingTarget, setIsEditingTarget] = useState(false);
+  const [targetInput, setTargetInput] = useState(String(salesTarget.targetAmount || 50000000));
+
+  // Keyboard shortcut: Esc to close modal or cancel target edit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (deletingTrx) setDeletingTrx(null);
+        if (isEditingTarget) setIsEditingTarget(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [deletingTrx, isEditingTarget]);
 
   // Available unique YYYY-MM months derived from transactions & current month
   const availableMonths = useMemo(() => {
@@ -164,20 +200,168 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
     return d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   };
 
-  // Target Editing State
-  const [isEditingTarget, setIsEditingTarget] = useState(false);
-  const [targetInput, setTargetInput] = useState(String(salesTarget.targetAmount || 50000000));
-
-  // Handle target submit
+  // Handle target submit with validation
   const handleTargetSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const val = Math.max(0, parseFloat(targetInput) || 0);
-    onSaveSalesTarget(val);
+    const cleanNum = parseFloat(String(targetInput).replace(/[^0-9]/g, ''));
+    if (isNaN(cleanNum) || cleanNum <= 0) {
+      showToast?.('Mohon masukkan nominal target yang valid (lebih dari 0).', 'error');
+      return;
+    }
+    onSaveSalesTarget(cleanNum, selectedMonth !== 'ALL' ? selectedMonth : undefined);
     setIsEditingTarget(false);
+    showToast?.(`✓ Target penjualan disimpan: ${formatRupiah(cleanNum)}`, 'success');
+  };
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setSelectedMonth('ALL');
+    setTimeFilter('ALL');
+    setCategoryFilter('ALL');
+    setPaymentFilter('ALL');
+    setSearchQuery('');
+    showToast?.('Semua filter periode dan pencarian telah direset.', 'info');
+  };
+
+  // Navigasi tanggal report harian
+  const handleShiftReportDate = (deltaDays: number) => {
+    const [y, m, d] = selectedReportDate.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + deltaDays);
+    const nextYmd = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    setSelectedReportDate(nextYmd);
+  };
+
+  // Logika Generator Report Harian sesuai formula Google Sheets LET(...)
+  const dailyReportData = useMemo(() => {
+    const targetYmd = selectedReportDate;
+    const parts = targetYmd.split('-').map(Number);
+    const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+
+    const namaHari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][dateObj.getDay()] || 'Hari';
+    const namaBulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][parts[1] - 1] || String(parts[1]);
+    const formattedDateHeader = `${namaHari}, ${String(parts[2]).padStart(2, '0')} ${namaBulan} ${parts[0]}`;
+
+    // Filter transaksi untuk tanggal yang dipilih (abaikan VOIDED)
+    const dayTrx = transactions.filter((t) => {
+      const rawId = String(t.id || '').trim();
+      if (rawId.toUpperCase().startsWith('VOIDED-') || rawId.toUpperCase().startsWith('#VOIDED-') || t.status === 'VOIDED') {
+        return false;
+      }
+      const ymd = normalizeDateToYmd(t.date || t.transactionDate || '');
+      return ymd === targetYmd;
+    });
+
+    const productQtyMap = new Map<string, number>();
+    let totalBtl = 0;
+    let totalOmset = 0;
+    let totalMargin = 0;
+
+    dayTrx.forEach((t) => {
+      totalOmset += Number(t.subtotal || t.total || 0);
+      totalMargin += Number(t.margin || 0);
+
+      (t.items || []).forEach((item) => {
+        const rawName = String(item.name || item.sku || '').trim();
+        const upperName = rawName.toUpperCase();
+
+        // Formula rule: col_d <> "PROMO 5RB"
+        if (upperName === 'PROMO 5RB' || upperName.includes('PROMO 5RB')) {
+          return;
+        }
+
+        const qty = Number(item.qty) || 0;
+        // Total botol fisik
+        if (qty > 0 && !upperName.startsWith('PROMO:') && !upperName.startsWith('DISKON:')) {
+          totalBtl += qty;
+        }
+
+        if (rawName) {
+          productQtyMap.set(rawName, (productQtyMap.get(rawName) || 0) + qty);
+        }
+      });
+    });
+
+    // Baris teks: [Nama Produk] \t - [Qty]
+    const barisTeks: string[] = [];
+    productQtyMap.forEach((qty, name) => {
+      barisTeks.push(`${name}\t- ${qty}`);
+    });
+
+    // Urutkan berdasarkan panjang karakter baris teks (LEN) menurun, persis formula SORT(baris_teks, LEN, FALSE)
+    barisTeks.sort((a, b) => b.length - a.length);
+
+    const daftar = barisTeks.length > 0 ? barisTeks.join('\n') : '(Tidak ada transaksi)';
+
+    // Format angka ribuan #,##0
+    const fmtNumber = (num: number) => new Intl.NumberFormat('en-US').format(Math.round(num));
+
+    const fullReportText = [
+      'REPORT HARIAN',
+      formattedDateHeader,
+      '',
+      '----------------------------------',
+      '',
+      daftar,
+      '',
+      '-------------------------------',
+      '',
+      `QTY BTL : ${totalBtl}`,
+      `OMSET : ${fmtNumber(totalOmset)}`,
+      `CUAN : ${fmtNumber(totalMargin)}`
+    ].join('\n');
+
+    return {
+      targetYmd,
+      formattedDateHeader,
+      totalBtl,
+      totalOmset,
+      totalMargin,
+      itemCount: barisTeks.length,
+      trxCount: dayTrx.length,
+      barisTeks,
+      daftar,
+      fullReportText,
+    };
+  }, [transactions, selectedReportDate]);
+
+  const handleCopyReportText = async () => {
+    try {
+      await navigator.clipboard.writeText(dailyReportData.fullReportText);
+      setIsCopiedReport(true);
+      showToast?.('✓ Teks Report Harian berhasil disalin ke clipboard!', 'success');
+      setTimeout(() => setIsCopiedReport(false), 2000);
+    } catch {
+      try {
+        const tArea = document.createElement('textarea');
+        tArea.value = dailyReportData.fullReportText;
+        document.body.appendChild(tArea);
+        tArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(tArea);
+        setIsCopiedReport(true);
+        showToast?.('✓ Teks Report Harian berhasil disalin ke clipboard!', 'success');
+        setTimeout(() => setIsCopiedReport(false), 2000);
+      } catch {
+        showToast?.('Gagal menyalin teks report harian.', 'error');
+      }
+    }
   };
 
   const toggleDateExpand = (dateKey: string) => {
     setExpandedDates((prev) => ({ ...prev, [dateKey]: !prev[dateKey] }));
+  };
+
+  const expandAllDates = (allKeys: string[]) => {
+    const next: Record<string, boolean> = {};
+    allKeys.forEach((k) => { next[k] = true; });
+    setExpandedDates(next);
+  };
+
+  const collapseAllDates = (allKeys: string[]) => {
+    const next: Record<string, boolean> = {};
+    allKeys.forEach((k) => { next[k] = false; });
+    setExpandedDates(next);
   };
 
   // Flatten items for analysis and logging
@@ -185,6 +369,10 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
     const list: FlattenedSaleItem[] = [];
 
     transactions.forEach((t) => {
+      const rawId = String(t.id || '').trim();
+      if (rawId.toUpperCase().startsWith('VOIDED-') || rawId.toUpperCase().startsWith('#VOIDED-')) {
+        return;
+      }
       const dateStr = t.date || (t.transactionDate ? t.transactionDate.split(' ')[0] : 'Lainnya');
       const dateYmd = normalizeDateToYmd(t.date || t.transactionDate || '') || dateStr;
       const dateTimeStr = t.transactionDate || dateStr;
@@ -297,7 +485,13 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
   }, [transactions, selectedMonth]);
 
   // Today's total sales
-  const todayYmd = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todayYmd = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, []);
   const todayOmset = useMemo(() => {
     return transactions
       .filter((t) => {
@@ -443,7 +637,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
       for (let i = 13; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(d.getDate() - i);
-        const ymd = d.toISOString().slice(0, 10);
+        const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const label = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
         map.set(ymd, { dateYmd: ymd, dateLabel: label, omset: 0, margin: 0, financeIncome: 0, financeExpense: 0 });
       }
@@ -541,8 +735,8 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
 
   // Filtered Items for Sales Log View
   const filteredItems = useMemo(() => {
-    const todayYmd = new Date().toISOString().slice(0, 10);
     const now = new Date();
+    const todayYmd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     return allFlattenedItems.filter((item) => {
       if (selectedMonth !== 'ALL') {
@@ -577,7 +771,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
 
       return true;
     });
-  }, [allFlattenedItems, timeFilter, categoryFilter, paymentFilter, searchQuery]);
+  }, [allFlattenedItems, timeFilter, categoryFilter, paymentFilter, searchQuery, selectedMonth]);
 
   // Group items by date for BY_DATE view
   const dateGroups = useMemo(() => {
@@ -830,396 +1024,203 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
         )}
       </div>
 
-      {/* SUB TAB 1: ANALYTICS & GRAPH DASHBOARD */}
-      {activeSubTab === 'ANALYTICS' && (
-        <div className="space-y-6">
-          {/* Target Penjualan Bulanan Card */}
-          <div className="bg-gradient-to-br from-[#1E232D] via-stone-900 to-stone-800 text-white rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
-            <div className="absolute -right-8 -top-8 w-40 h-40 bg-[#FF5E36]/10 rounded-full blur-2xl pointer-events-none" />
-
-            <div className="relative z-10 space-y-4">
-              {/* Target Header */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#FF5E36] flex items-center justify-center text-white shadow-lg flex-shrink-0">
-                    <Target className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black tracking-tight">
-                      {targetProgress.grainTitle}
-                    </h3>
-                    <p className="text-xs text-stone-300">
-                      {targetProgress.grainSubtitle}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Grain Switcher Buttons: Harian, Mingguan, Bulanan */}
-                  <div className="flex items-center bg-white/10 p-1 rounded-2xl border border-white/15">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTargetGrain('HARIAN');
-                        setTimeFilter('TODAY');
-                      }}
-                      className={`px-3 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                        targetGrain === 'HARIAN'
-                          ? 'bg-[#FF5E36] text-white shadow-md'
-                          : 'text-stone-300 hover:text-white hover:bg-white/10'
-                      }`}
-                    >
-                      Harian
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTargetGrain('MINGGUAN');
-                        setTimeFilter('7DAYS');
-                      }}
-                      className={`px-3 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                        targetGrain === 'MINGGUAN'
-                          ? 'bg-[#FF5E36] text-white shadow-md'
-                          : 'text-stone-300 hover:text-white hover:bg-white/10'
-                      }`}
-                    >
-                      Mingguan
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTargetGrain('BULANAN');
-                        setTimeFilter('30DAYS');
-                      }}
-                      className={`px-3 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                        targetGrain === 'BULANAN'
-                          ? 'bg-[#FF5E36] text-white shadow-md'
-                          : 'text-stone-300 hover:text-white hover:bg-white/10'
-                      }`}
-                    >
-                      Bulanan
-                    </button>
-                  </div>
-
-                  {/* Advance 1 Day Button (+1) */}
-                  <button
-                    type="button"
-                    onClick={() => setDayOffset((prev) => (prev === 1 ? 0 : 1))}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-black border transition-all cursor-pointer ${
-                      dayOffset === 1
-                        ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-md ring-2 ring-amber-400/30'
-                        : 'bg-white/10 text-stone-200 border-white/20 hover:bg-white/20'
-                    }`}
-                    title="Maju 1 hari untuk target & progress yang ditujukan buat hari ini"
-                  >
-                    <Clock className="w-3.5 h-3.5 text-amber-900" />
-                    <span>{dayOffset === 1 ? '⏩ Maju +1 Hari' : '▶️ Hari Ini (+0)'}</span>
-                  </button>
-
-                  {/* Target Edit Button or Inline Form */}
-                  {isEditingTarget ? (
-                    <form onSubmit={handleTargetSubmit} className="flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        step="1000000"
-                        value={targetInput}
-                        onChange={(e) => setTargetInput(e.target.value)}
-                        className="px-3 py-1 rounded-xl bg-white text-stone-900 font-bold text-xs w-32 focus:outline-none"
-                      />
-                      <button
-                        type="submit"
-                        className="px-2.5 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs"
-                      >
-                        Simpan
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingTarget(false)}
-                        className="px-2.5 py-1 rounded-xl bg-stone-700 text-stone-300 font-bold text-xs"
-                      >
-                        Batal
-                      </button>
-                    </form>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setTargetInput(String(salesTarget.targetAmount || 50000000));
-                        setIsEditingTarget(true);
-                      }}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all cursor-pointer"
-                    >
-                      <Edit3 className="w-3.5 h-3.5 text-[#FF5E36]" />
-                      <span>Edit Base</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Progress Bar & Key Numbers */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
-                <div className="md:col-span-8 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold">
-                    <span className="text-stone-300">
-                      Capaian: <span className="text-white text-sm font-black">{formatRupiah(targetProgress.achieved)}</span>
-                    </span>
-                    <span className="text-[#FF5E36] font-black text-base">
-                      {targetProgress.percent}% Tercapai
-                    </span>
-                  </div>
-
-                  {/* Animated Progress Bar */}
-                  <div className="w-full h-4 bg-white/10 rounded-full overflow-hidden p-0.5 border border-white/10">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#FF643D] via-[#FF5E36] to-emerald-400 transition-all duration-1000 shadow-[0_0_12px_rgba(255,94,54,0.6)]"
-                      style={{ width: `${targetProgress.percent}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-stone-400 pt-0.5">
-                    <span>Target: {formatRupiah(targetProgress.target)}</span>
-                    <span>Sisa Target: {formatRupiah(targetProgress.remaining)}</span>
-                  </div>
-                </div>
-
-                {/* Insight & Run-Rate Box */}
-                <div className="md:col-span-4 bg-white/5 border border-white/10 rounded-2xl p-3.5 space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
-                    <Flame className="w-4 h-4 text-amber-400 animate-bounce" />
-                    <span>Analisis Proyeksi</span>
-                  </div>
-                  <p className="text-[11px] text-stone-200 leading-snug">
-                    {targetProgress.remaining <= 0 ? (
-                      <span className="text-emerald-400 font-bold">
-                        🎉 Luar Biasa! Target omzet bulan ini sudah 100% TERCAPAI!
-                      </span>
-                    ) : (
-                      <>
-                        Butuh rata-rata <span className="font-extrabold text-white">{formatRupiah(targetProgress.requiredDailyRate)}/hari</span> selama {targetProgress.daysRemaining} hari ke depan untuk capai target.
-                      </>
-                    )}
-                  </p>
-                </div>
-              </div>
+      {/* KARTU REPORT HARIAN (TEKS & SALIN REPORT WA) SESUAI FORMULA GOOGLE SHEETS */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-stone-200/90 space-y-4">
+        {/* Header Kartu: Judul di kiri & Pilihan Tanggal di sebelah kanan judul */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 pb-4 border-b border-stone-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 shadow-xs border border-emerald-100">
+              <FileText className="w-5 h-5" />
             </div>
-          </div>
-
-          {/* MoM Growth Cards (Month-over-Month Comparison) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* MoM Omzet */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-stone-200/80 space-y-2">
-              <div className="flex items-center justify-between text-stone-500 text-xs font-bold">
-                <span>Omzet Bulan Ini (MoM)</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-0.5 ${
-                  monthlyComparison.omsetGrowth >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                }`}>
-                  {monthlyComparison.omsetGrowth >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                  {monthlyComparison.omsetGrowth >= 0 ? `+${monthlyComparison.omsetGrowth}%` : `${monthlyComparison.omsetGrowth}%`}
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black text-stone-900 tracking-tight">
+                  Report Harian (Teks & WA)
+                </h3>
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
+                  Formula Sheets
                 </span>
               </div>
-              <p className="text-xl font-black text-stone-900 tracking-tight">
-                {formatRupiah(monthlyComparison.curOmset)}
-              </p>
-              <p className="text-[11px] text-stone-400">
-                vs Bulan Lalu: {formatRupiah(monthlyComparison.prevOmset)}
-              </p>
-            </div>
-
-            {/* MoM Keuntungan / Margin */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-stone-200/80 space-y-2">
-              <div className="flex items-center justify-between text-stone-500 text-xs font-bold">
-                <span>Margin Keuntungan (MoM)</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-0.5 ${
-                  monthlyComparison.marginGrowth >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                }`}>
-                  {monthlyComparison.marginGrowth >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                  {monthlyComparison.marginGrowth >= 0 ? `+${monthlyComparison.marginGrowth}%` : `${monthlyComparison.marginGrowth}%`}
-                </span>
-              </div>
-              <p className="text-xl font-black text-emerald-700 tracking-tight">
-                {formatRupiah(monthlyComparison.curMargin)}
-              </p>
-              <p className="text-[11px] text-stone-400">
-                vs Bulan Lalu: {formatRupiah(monthlyComparison.prevMargin)}
-              </p>
-            </div>
-
-            {/* MoM Jumlah Transaksi */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-stone-200/80 space-y-2">
-              <div className="flex items-center justify-between text-stone-500 text-xs font-bold">
-                <span>Total Transaksi (MoM)</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-0.5 ${
-                  monthlyComparison.trxGrowth >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                }`}>
-                  {monthlyComparison.trxGrowth >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                  {monthlyComparison.trxGrowth >= 0 ? `+${monthlyComparison.trxGrowth}%` : `${monthlyComparison.trxGrowth}%`}
-                </span>
-              </div>
-              <p className="text-xl font-black text-stone-900 tracking-tight">
-                {monthlyComparison.curTrxCount} Nota
-              </p>
-              <p className="text-[11px] text-stone-400">
-                vs Bulan Lalu: {monthlyComparison.prevTrxCount} Nota
+              <p className="text-xs text-stone-500">
+                Format teks rekap botol, omset, dan cuan siap kirim ke WhatsApp / Catatan.
               </p>
             </div>
           </div>
 
-          {/* Ringkasan Arus Kas Lengkap (Net Cash Flow Overview) */}
-          <div className="bg-stone-900 text-white rounded-3xl p-5 sm:p-6 shadow-lg space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <CircleDollarSign className="w-5 h-5 text-emerald-400" />
-                <h3 className="font-extrabold text-base">Ringkasan Arus Kas & Saldo Bersih</h3>
+          {/* Pilihan Tanggal di Sebelah Judul Kartu & Tombol Aksi */}
+          <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+            {/* Navigasi Cepat Tanggal: <, Picker, > */}
+            <div className="flex items-center bg-stone-50 border border-stone-200 rounded-2xl p-1 gap-1">
+              <button
+                type="button"
+                onClick={() => handleShiftReportDate(-1)}
+                className="w-7 h-7 flex items-center justify-center rounded-xl text-stone-500 hover:text-stone-900 hover:bg-stone-200/70 transition-colors cursor-pointer text-xs font-bold"
+                title="Hari Sebelumnya"
+              >
+                ◀
+              </button>
+
+              <div className="relative flex items-center">
+                <input
+                  type="date"
+                  value={selectedReportDate}
+                  onChange={(e) => e.target.value && setSelectedReportDate(e.target.value)}
+                  className="bg-transparent text-xs font-extrabold text-stone-800 px-2 py-1 focus:outline-none cursor-pointer"
+                  title="Pilih tanggal report"
+                />
               </div>
-              <span className="text-[11px] text-stone-400 bg-white/10 px-3 py-1 rounded-full font-medium">
-                Sistem Terpadu
+
+              <button
+                type="button"
+                onClick={() => handleShiftReportDate(1)}
+                className="w-7 h-7 flex items-center justify-center rounded-xl text-stone-500 hover:text-stone-900 hover:bg-stone-200/70 transition-colors cursor-pointer text-xs font-bold"
+                title="Hari Berikutnya"
+              >
+                ▶
+              </button>
+            </div>
+
+            {/* Tombol Cepat: Hari Ini */}
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                const y = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const d = String(now.getDate()).padStart(2, '0');
+                setSelectedReportDate(`${y}-${m}-${d}`);
+              }}
+              className="px-2.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold transition-all cursor-pointer min-h-[38px]"
+            >
+              Hari Ini
+            </button>
+
+            {/* Tombol Text (Toggle Tampilkan / Sembunyikan Teks) */}
+            <button
+              type="button"
+              onClick={() => setShowReportText((prev) => !prev)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold border transition-all cursor-pointer min-h-[38px] ${
+                showReportText
+                  ? 'bg-stone-800 text-white border-stone-800 shadow-xs'
+                  : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-50'
+              }`}
+              title="Tampilkan / Sembunyikan preview teks report"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>{showReportText ? 'Tutup Teks' : 'Lihat Teks'}</span>
+            </button>
+
+            {/* Tombol Copy Text */}
+            <button
+              type="button"
+              onClick={handleCopyReportText}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black shadow-xs transition-all cursor-pointer min-h-[38px] ${
+                isCopiedReport
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-[#FF5E36] hover:bg-[#F24E24] text-white active:scale-95'
+              }`}
+              title="Salin isi teks report ke clipboard"
+            >
+              {isCopiedReport ? (
+                <>
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>Tersalin!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  <span>Salin Teks</span>
+                </>
+              )}
+            </button>
+
+            {/* Tombol Kirim WhatsApp */}
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(dailyReportData.fullReportText)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-[#25D366] hover:bg-[#20ba5a] text-white shadow-xs transition-all cursor-pointer min-h-[38px]"
+              title="Kirim langsung teks report ke WhatsApp"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">WhatsApp</span>
+            </a>
+          </div>
+        </div>
+
+        {/* 3 Metric Summary: QTY BTL, OMSET, CUAN */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+          <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/70">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+              QTY BTL (Total Botol)
+            </p>
+            <p className="text-lg sm:text-xl font-black text-stone-900 mt-0.5">
+              {dailyReportData.totalBtl} <span className="text-xs font-bold text-stone-500">Btl</span>
+            </p>
+          </div>
+
+          <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/70">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+              OMSET
+            </p>
+            <p className="text-lg sm:text-xl font-black text-stone-900 mt-0.5">
+              Rp {new Intl.NumberFormat('en-US').format(Math.round(dailyReportData.totalOmset))}
+            </p>
+          </div>
+
+          <div className="bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-100">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+              CUAN (Margin Profit)
+            </p>
+            <p className="text-lg sm:text-xl font-black text-emerald-800 mt-0.5">
+              Rp {new Intl.NumberFormat('en-US').format(Math.round(dailyReportData.totalMargin))}
+            </p>
+          </div>
+        </div>
+
+        {/* Text Preview Box jika showReportText aktif */}
+        {showReportText && (
+          <div className="space-y-2 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between text-xs text-stone-500 px-1">
+              <span className="font-semibold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Format teks siap kirim ({dailyReportData.formattedDateHeader}):
+              </span>
+              <span className="text-[11px] font-mono text-stone-400">
+                {dailyReportData.itemCount} jenis produk • {dailyReportData.trxCount} nota
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                <p className="text-[10px] text-stone-400 font-bold uppercase">Omzet Penjualan</p>
-                <p className="text-sm sm:text-base font-black text-white mt-1">
-                  {formatRupiah(totalSalesOmset)}
-                </p>
-              </div>
+            <div className="relative group">
+              <pre className="w-full p-4 bg-stone-900 text-stone-100 rounded-2xl text-xs sm:text-sm font-mono leading-relaxed overflow-x-auto whitespace-pre select-all shadow-inner border border-stone-800 max-h-72">
+                {dailyReportData.fullReportText}
+              </pre>
 
-              <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                <p className="text-[10px] text-stone-400 font-bold uppercase">Profit Margin</p>
-                <p className="text-sm sm:text-base font-black text-emerald-400 mt-1">
-                  {formatRupiah(totalSalesMargin)}
-                </p>
-              </div>
-
-              <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                <p className="text-[10px] text-stone-400 font-bold uppercase">Total Uang Masuk (+)</p>
-                <p className="text-sm sm:text-base font-black text-emerald-300 mt-1">
-                  {formatRupiah(totalUangMasuk)}
-                </p>
-              </div>
-
-              <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                <p className="text-[10px] text-stone-400 font-bold uppercase">Total Uang Keluar (-)</p>
-                <p className="text-sm sm:text-base font-black text-rose-400 mt-1">
-                  {formatRupiah(totalUangKeluar)}
-                </p>
-              </div>
-
-              <div className="col-span-2 sm:col-span-1 bg-[#FF5E36]/20 p-3 rounded-2xl border border-[#FF5E36]/40">
-                <p className="text-[10px] text-[#FFA07A] font-bold uppercase">Arus Kas Bersih</p>
-                <p className="text-sm sm:text-base font-black text-white mt-1">
-                  {formatRupiah(netCashFlow)}
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={handleCopyReportText}
+                className="absolute top-3 right-3 bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl backdrop-blur-xs transition-all cursor-pointer opacity-90 hover:opacity-100"
+                title="Salin Teks"
+              >
+                {isCopiedReport ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+              </button>
             </div>
           </div>
+        )}
+      </div>
 
-          {/* Recharts Area Chart: Trend Perkembangan Omzet & Keuntungan */}
-          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-stone-200/80 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-stone-100">
-              <div>
-                <h3 className="font-extrabold text-stone-900 text-base flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-[#FF5E36]" />
-                  <span>Grafik Perkembangan Omzet & Keuntungan</span>
-                </h3>
-                <p className="text-xs text-stone-500">Tren harian omzet penjualan vs margin profit bersih</p>
-              </div>
-            </div>
-
-            {/* Recharts AreaChart Container */}
-            <div className="w-full h-72 pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartTrendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorOmset" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#FF5E36" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#FF5E36" stopOpacity={0.0} />
-                    </linearGradient>
-                    <linearGradient id="colorMargin" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                  <XAxis dataKey="dateLabel" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} />
-                  <YAxis 
-                    tick={{ fontSize: 10, fill: '#6B7280' }} 
-                    axisLine={false}
-                    tickFormatter={(v) => `${v / 1000}k`}
-                  />
-                  <Tooltip 
-                    formatter={(value: any) => [formatRupiah(Number(value) || 0), '']}
-                    contentStyle={{ borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                  />
-                  <Legend verticalAlign="top" height={36} />
-                  <Area type="monotone" dataKey="omset" name="Omzet Penjualan" stroke="#FF5E36" strokeWidth={3} fillOpacity={1} fill="url(#colorOmset)" />
-                  <Area type="monotone" dataKey="margin" name="Profit Margin" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorMargin)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Top Selling Products Section */}
-          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-stone-200/80 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-                  <Trophy className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-stone-900 text-base">Produk Terlaris & Kontribusi Omzet</h3>
-                  <p className="text-xs text-stone-500">Peringkat produk berdasarkan total quantity terjual</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {topProducts.map((p) => {
-                const rankBadges = ['🥇 #1', '🥈 #2', '🥉 #3'];
-                const rankColor = p.rank === 1 
-                  ? 'bg-amber-100 text-amber-800 border-amber-300' 
-                  : p.rank === 2 
-                  ? 'bg-stone-200 text-stone-800 border-stone-300' 
-                  : p.rank === 3 
-                  ? 'bg-orange-100 text-orange-800 border-orange-300' 
-                  : 'bg-stone-100 text-stone-600 border-stone-200';
-
-                return (
-                  <div
-                    key={p.sku}
-                    className="p-3.5 rounded-2xl border border-stone-100 hover:border-stone-200 bg-stone-50/50 space-y-2 transition-all hover:shadow-xs"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full border ${rankColor}`}>
-                          {rankBadges[p.rank - 1] || `#${p.rank}`}
-                        </span>
-                        <span className="text-xs font-bold text-stone-900 truncate">
-                          {p.name}
-                        </span>
-                      </div>
-                      <span className="text-xs font-black text-[#FF5E36] bg-[#FFF2ED] px-2.5 py-0.5 rounded-full">
-                        {p.qty} Terjual
-                      </span>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#FF5E36] rounded-full transition-all duration-500"
-                        style={{ width: `${p.percentOfTop}%` }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-stone-500">
-                      <span>Omzet: <strong className="text-stone-900">{formatRupiah(p.revenue)}</strong></span>
-                      <span>Margin: <strong className="text-emerald-700">{formatRupiah(p.margin)}</strong></span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+      {/* SUB TAB 1: ANALYTICS & GRAPH DASHBOARD */}
+      {activeSubTab === 'ANALYTICS' && (
+        <AnalyticsDashboard
+          transactions={transactions}
+          financeRecords={financeRecords}
+          salesTarget={salesTarget}
+          selectedMonth={selectedMonth}
+          targetGrain={targetGrain}
+          onSaveSalesTarget={onSaveSalesTarget}
+          showToast={showToast}
+          onGoToKas={() => setActiveSubTab('FINANCE_KAS')}
+        />
       )}
 
       {/* SUB TAB 2: CATATAN KEUANGAN NON-PENJUALAN */}

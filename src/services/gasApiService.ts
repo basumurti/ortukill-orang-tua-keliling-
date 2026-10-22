@@ -48,7 +48,19 @@ export interface GasAllDataResponse {
   };
 }
 
-export const DEFAULT_GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz3ETMp4XjXq7Qi2zdGuMNr9EVjZGrU5UTuT6g93nXNH3SyZSmIa6sys4Jrd8nNAJFiAA/exec';
+export interface VoidTransactionResult {
+  success: boolean;
+  deletedRows?: number;
+  reachable?: boolean;
+  message?: string;
+  attemptedIds?: Array<{ transactionId: string; success: boolean; deletedRows: number; message?: string }>;
+  deletedSalesRows?: number;
+  deletedLainRows?: number;
+  totalDeleted?: number;
+  [key: string]: any;
+}
+
+export const DEFAULT_GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx4NPmzfYJbGAXmgBM4KvRT4V9vN3CnWL3klU1xtYoW3pOxgVCVGVIm1YFLpSOJRTvBxw/exec';
 
 export class GasApiService {
   private static STORAGE_URL_KEY = 'ortukill_pos_gas_url_v2';
@@ -232,6 +244,34 @@ export class GasApiService {
     return { success: false, message: 'Tidak dapat menghubungi server.' };
   }
 
+  // Cek versi Apps Script yang benar-benar terpasang di Google Sheets.
+  // Kalau yang terpasang masih versi lama (mis. v3.2), tombol void tidak akan
+  // menghapus baris — jadi aplikasi perlu memberi tahu pengguna.
+  static async checkScriptVersion(): Promise<{
+    success: boolean;
+    message?: string;
+    installedVersion?: string | null;
+    expectedVersion?: string;
+    upToDate?: boolean;
+  }> {
+    try {
+      const res = await fetch('/api/gas/ping');
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          success: true,
+          message: data.message,
+          installedVersion: data.installedVersion,
+          expectedVersion: data.expectedVersion,
+          upToDate: data.upToDate === true,
+        };
+      }
+    } catch (err) {
+      console.warn('Gagal cek versi Apps Script:', err);
+    }
+    return { success: false, message: 'Tidak bisa memeriksa versi Apps Script.' };
+  }
+
   // Fetch ALL live data from Google Sheets and synchronize to local state
   static async fetchAndSyncAll(): Promise<GasAllDataResponse> {
     let result: GasAllDataResponse;
@@ -359,11 +399,31 @@ export class GasApiService {
     try {
       const webAppUrl = this.getSavedWebAppUrl();
 
-      // Siapkan data transaksi khusus Google Sheets menggunakan HARGA BIASA
+      // Siapkan data transaksi khusus Google Sheets (sheet LOG_PENJUALAN)
+      // Produk fisik minuman menggunakan HARGA BIASA, sedangkan item PROMO menggunakan harga minus & kuantitas terpilih
       const sheetItems = trx.items.map((item) => {
+        const isPromo = item.price < 0 || String(item.sku || '').toUpperCase().includes('PROMO') || String(item.name || '').toUpperCase().includes('PROMO');
+        const qty = Number(item.qty) || 1;
+
+        if (isPromo) {
+          const promoUnit = -Math.abs(Number(item.price) || (Number(item.subtotal) / qty) || 5000);
+          return {
+            ...item,
+            sku: item.sku || 'PROMO 5RB',
+            name: item.name || 'PROMO 5RB',
+            price: promoUnit,
+            regularPrice: promoUnit,
+            qty: qty,
+            total: promoUnit * qty,
+            subtotal: promoUnit * qty,
+            margin: promoUnit * qty,
+            cost: 0,
+          };
+        }
+
         const regularPrice = Number(item.regularPrice ?? item.price) || 0;
-        const regularTotal = regularPrice * item.qty;
-        const regularMargin = (regularPrice - (item.cost || 0)) * item.qty;
+        const regularTotal = regularPrice * qty;
+        const regularMargin = (regularPrice - (item.cost || 0)) * qty;
 
         return {
           ...item,
@@ -375,13 +435,19 @@ export class GasApiService {
         };
       });
 
-      // PENTING: Jika ada diskon/promo, masukkan sebagai baris potongan PROMO-DISKON
-      // agar kolom G (Total Penjualan) di Google Sheets klop 100% dengan omset kasir
-      if (trx.discount && trx.discount > 0) {
-        const promoSku = (trx.promoCode ? trx.promoCode.trim().toUpperCase() : 'PROMO-DISKON');
-        const promoLabel = trx.promoName
-          ? `PROMO: ${trx.promoName}`
-          : 'POTONGAN PROMO / DISKON';
+      // PENTING: Jika ada voucher diskon yang belum tercantum sebagai item transaksi,
+      // tambahkan 1 baris promo agar kolom G di sheet LOG_PENJUALAN selalu klop 100%
+      const alreadyHasPromo = sheetItems.some(
+        (i) => i.price < 0 || String(i.sku || '').toUpperCase().includes('PROMO') || String(i.name || '').toUpperCase().includes('PROMO')
+      );
+      if (!alreadyHasPromo && trx.discount && trx.discount > 0) {
+        const promoSku = trx.promoCode ? trx.promoCode.trim().toUpperCase() : 'PROMO 5RB';
+        let promoLabel = trx.promoName ? trx.promoName.trim() : 'PROMO 5RB';
+        if (promoSku === 'PROMO 5RB' || promoLabel.toUpperCase() === 'PROMO 5RB') {
+          promoLabel = 'PROMO 5RB';
+        } else if (!promoLabel.toUpperCase().startsWith('PROMO')) {
+          promoLabel = `PROMO: ${promoLabel}`;
+        }
 
         sheetItems.push({
           productId: promoSku,
@@ -760,8 +826,15 @@ export class GasApiService {
     return { success: false, message: 'Gagal update stok ke spreadsheet' };
   }
 
+  private static deletedRowsFrom(data: any): number {
+    if (!data) return 0;
+    const raw = data.deletedRows ?? data.totalDeleted ?? data.deletedSalesRows ?? data.matchedRows ?? 0;
+    const val = Number(raw);
+    return Number.isFinite(val) && val > 0 ? val : 0;
+  }
+
   // Push void & hapus transaksi dari Google Sheets
-  static async pushVoidTransaction(transactionId: string, reason?: string): Promise<{ success: boolean; message?: string; deletedSalesRows?: number; deletedLainRows?: number; totalDeleted?: number }> {
+  static async pushVoidTransaction(transactionId: string, reason?: string): Promise<VoidTransactionResult> {
     this.releaseTransactionKey(transactionId);
     const webAppUrl = this.getSavedWebAppUrl();
 
@@ -771,7 +844,20 @@ export class GasApiService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transactionId, reason: reason || 'Dibatalkan oleh kasir' }),
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        const deleted = this.deletedRowsFrom(data);
+        const alreadyDeleted = data.alreadyDeletedOnSheet ||
+          String(data.message || '').toLowerCase().includes('tidak ditemukan') ||
+          String(data.message || '').toLowerCase().includes('sudah terhapus');
+        return {
+          ...data,
+          success: (data.success && deleted > 0) || alreadyDeleted,
+          deletedRows: deleted,
+          alreadyDeletedOnSheet: alreadyDeleted,
+          reachable: true
+        };
+      }
     } catch (err) {
       console.warn('Backend proxy /api/gas/void error:', err);
     }
@@ -783,17 +869,29 @@ export class GasApiService {
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'voidTransaction', transactionId, reason: reason || 'Dibatalkan oleh kasir' }),
         });
-        if (direct.ok) return await direct.json();
+        if (direct.ok) {
+          const data = await direct.json();
+          const deleted = this.deletedRowsFrom(data);
+          const alreadyDeleted = String(data.message || '').toLowerCase().includes('tidak ditemukan') ||
+            String(data.message || '').toLowerCase().includes('sudah terhapus');
+          return {
+            ...data,
+            success: (data.success && deleted > 0) || alreadyDeleted,
+            deletedRows: deleted,
+            alreadyDeletedOnSheet: alreadyDeleted,
+            reachable: true
+          };
+        }
       } catch (e) {
         console.warn('Direct GAS void failed:', e);
       }
     }
 
-    return { success: false, message: 'Google Apps Script belum terhubung atau offline.' };
+    return { success: false, deletedRows: 0, reachable: false, message: 'Google Apps Script belum terhubung atau offline.' };
   }
 
   // Hapus transaksi secara permanen dari Google Sheets
-  static async deleteTransactionFromGas(transactionId: string, reason?: string): Promise<{ success: boolean; message?: string; deletedSalesRows?: number; deletedLainRows?: number; totalDeleted?: number }> {
+  static async deleteTransactionFromGas(transactionId: string, reason?: string): Promise<VoidTransactionResult> {
     this.releaseTransactionKey(transactionId);
     const webAppUrl = this.getSavedWebAppUrl();
 
@@ -806,7 +904,17 @@ export class GasApiService {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.success) return data;
+        const deleted = this.deletedRowsFrom(data);
+        const alreadyDeleted = data.alreadyDeletedOnSheet ||
+          String(data.message || '').toLowerCase().includes('tidak ditemukan') ||
+          String(data.message || '').toLowerCase().includes('sudah terhapus');
+        return {
+          ...data,
+          success: (data.success && deleted > 0) || alreadyDeleted,
+          deletedRows: deleted,
+          alreadyDeletedOnSheet: alreadyDeleted,
+          reachable: true
+        };
       }
     } catch (err) {
       console.warn('Backend proxy /api/gas/delete-transaction error:', err);
@@ -821,7 +929,17 @@ export class GasApiService {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.success) return data;
+        const deleted = this.deletedRowsFrom(data);
+        const alreadyDeleted = data.alreadyDeletedOnSheet ||
+          String(data.message || '').toLowerCase().includes('tidak ditemukan') ||
+          String(data.message || '').toLowerCase().includes('sudah terhapus');
+        return {
+          ...data,
+          success: (data.success && deleted > 0) || alreadyDeleted,
+          deletedRows: deleted,
+          alreadyDeletedOnSheet: alreadyDeleted,
+          reachable: true
+        };
       }
     } catch (err) {
       console.warn('Backend proxy /api/gas/void error:', err);
@@ -837,24 +955,44 @@ export class GasApiService {
         });
         if (direct.ok) {
           const data = await direct.json();
-          if (data.success) return data;
+          const deleted = this.deletedRowsFrom(data);
+          const alreadyDeleted = String(data.message || '').toLowerCase().includes('tidak ditemukan') ||
+            String(data.message || '').toLowerCase().includes('sudah terhapus');
+          return {
+            ...data,
+            success: (data.success && deleted > 0) || alreadyDeleted,
+            deletedRows: deleted,
+            alreadyDeletedOnSheet: alreadyDeleted,
+            reachable: true
+          };
         }
       } catch (e) {
-        // Coba action voidTransaction
         try {
           const directVoid = await fetch(webAppUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'voidTransaction', transactionId, reason: reason || 'Dihapus permanen oleh kasir' }),
           });
-          if (directVoid.ok) return await directVoid.json();
-        } catch {
-          // ignore
+          if (directVoid.ok) {
+            const data = await directVoid.json();
+            const deleted = this.deletedRowsFrom(data);
+            const alreadyDeleted = String(data.message || '').toLowerCase().includes('tidak ditemukan') ||
+              String(data.message || '').toLowerCase().includes('sudah terhapus');
+            return {
+              ...data,
+              success: (data.success && deleted > 0) || alreadyDeleted,
+              deletedRows: deleted,
+              alreadyDeletedOnSheet: alreadyDeleted,
+              reachable: true
+            };
+          }
+        } catch (err2) {
+          console.warn('Direct GAS delete fallback failed:', err2);
         }
       }
     }
 
-    return { success: false, message: 'Google Apps Script belum terhubung atau offline.' };
+    return { success: false, deletedRows: 0, reachable: false, message: 'Google Apps Script belum terhubung atau offline.' };
   }
 
   // Uji coba Tulis dan Hapus di LOG_PENJUALAN secara langsung

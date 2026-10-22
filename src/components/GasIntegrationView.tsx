@@ -49,6 +49,27 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [testingWriteDelete, setTestingWriteDelete] = useState(false);
+  const [scriptVersion, setScriptVersion] = useState<{
+    installedVersion?: string | null;
+    expectedVersion?: string;
+    upToDate?: boolean;
+    message?: string;
+  } | null>(null);
+  const [checkingVersion, setCheckingVersion] = useState(false);
+
+  const checkScriptVersion = async () => {
+    setCheckingVersion(true);
+    try {
+      const res = await GasApiService.checkScriptVersion();
+      setScriptVersion(res.success ? res : null);
+    } finally {
+      setCheckingVersion(false);
+    }
+  };
+
+  useEffect(() => {
+    checkScriptVersion();
+  }, []);
   const [writeDeleteResult, setWriteDeleteResult] = useState<{
     success: boolean;
     message: string;
@@ -322,9 +343,31 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
               <h2 className="text-base sm:text-lg font-extrabold text-stone-900 tracking-tight">
                 Integrasi Google Spreadsheet
               </h2>
-              <span className="bg-[#FFF2ED] text-[#FF5E36] text-[10px] px-2 py-0.5 rounded-full font-bold">
-                v3.2 Apps Script
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                  scriptVersion?.upToDate
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-300'
+                }`}
+                title={scriptVersion?.message || 'Versi Apps Script yang sedang terpasang di Google Sheets'}
+              >
+                {checkingVersion
+                  ? 'Cek versi script…'
+                  : scriptVersion
+                  ? scriptVersion.upToDate
+                    ? `Script ${scriptVersion.installedVersion} ✓ terbaru`
+                    : `Script ${scriptVersion.installedVersion || '?'} — perlu diperbarui`
+                  : 'Versi script tidak diketahui'}
               </span>
+              <button
+                type="button"
+                onClick={checkScriptVersion}
+                disabled={checkingVersion}
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-500 cursor-pointer disabled:opacity-50"
+                title="Periksa ulang versi Apps Script yang terpasang"
+              >
+                Cek ulang
+              </button>
             </div>
             <p className="text-xs text-stone-500">
               Sinkronisasi data real-time: Master Produk B70:H (Read-Only) & Log Penjualan B7:M (Harga Biasa)
@@ -341,6 +384,25 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
           <span>{copied ? 'Tersalin ke Clipboard!' : 'Salin Kode .gs Terbaru'}</span>
         </button>
       </div>
+
+      {/* PERINGATAN: script di Google Sheets masih versi lama */}
+      {scriptVersion && scriptVersion.upToDate === false && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 text-xs text-amber-900 space-y-1.5">
+          <div className="font-extrabold flex items-center gap-1.5">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            Script yang terpasang di Google Sheets masih <span className="font-black">{scriptVersion.installedVersion || 'versi lama'}</span>, sedangkan aplikasi ini memakai <span className="font-black">{scriptVersion.expectedVersion}</span>.
+          </div>
+          <div className="leading-relaxed">
+            Akibatnya tombol <strong>VOID / Hapus</strong> hanya <strong>menandai</strong> transaksi jadi <code className="bg-amber-100 px-1 rounded">VOIDED-…</code> dan <strong>barisnya tetap ada</strong> di Google Sheets.
+          </div>
+          <div className="leading-relaxed">
+            <strong>Cara memperbaiki:</strong> klik <strong>“Salin Kode .gs Terbaru”</strong> di atas → di editor Apps Script tekan <strong>Ctrl+A</strong> lalu <strong>Ctrl+V</strong> (timpa semua) → <strong>Simpan</strong> → <strong>Deploy → Manage deployments → ikon pensil → Version: “New version” → Deploy</strong>.
+          </div>
+          <div className="text-[11px] text-amber-800/80">
+            Sesudah deploy, klik <strong>Cek ulang</strong> di atas — kalau sudah hijau, tombol VOID akan benar-benar menghapus barisnya.
+          </div>
+        </div>
+      )}
 
       {/* Unified Logic: Penulisan Bersih & Hapus/VOID Otomatis Tanpa Benturan */}
       <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 rounded-2xl p-4 border border-teal-200/80 shadow-xs space-y-3">
@@ -405,7 +467,7 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
                   Uji Coba Otomatis: Tulis & Hapus LOG_PENJUALAN
                 </h3>
                 <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
-                  v3.4 Siap Diuji
+                  v3.5 Siap Diuji
                 </span>
               </div>
               <p className="text-xs text-stone-500 mt-0.5">

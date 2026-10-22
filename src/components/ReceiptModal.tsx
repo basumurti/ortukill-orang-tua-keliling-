@@ -81,6 +81,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     const itemLines = receipt.items
       .map((i) => {
         const itemSubtotal = i.total ?? i.subtotal ?? (i.qty * i.price);
+        const isPromo = i.price < 0 || String(i.sku || '').toUpperCase().includes('PROMO');
+        if (isPromo) {
+          return `• [PROMO] ${i.name} (SKU: ${i.sku})\n  ${i.qty} x -${formatRupiah(Math.abs(i.price))} = -${formatRupiah(Math.abs(itemSubtotal))}`;
+        }
         return `• ${i.name}\n  ${i.qty} x ${formatRupiah(i.price)} = ${formatRupiah(itemSubtotal)}`;
       })
       .join('\n');
@@ -615,17 +619,19 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <div className="py-2 border-b border-dashed border-stone-300 space-y-1.5">
               {receipt.items.map((item, idx) => {
                 const itemSubtotal = item.total ?? item.subtotal ?? (item.qty * item.price);
+                const isPromo = item.price < 0 || String(item.sku || '').toUpperCase().includes('PROMO');
                 return (
-                  <div key={idx} className="space-y-0.5">
-                    <div className="font-semibold text-stone-900 leading-tight">
-                      {item.name}
+                  <div key={idx} className={`space-y-0.5 ${isPromo ? 'text-rose-600' : ''}`}>
+                    <div className={`font-semibold leading-tight flex items-center justify-between ${isPromo ? 'text-rose-600' : 'text-stone-900'}`}>
+                      <span>{item.name} {isPromo ? '(PROMO)' : ''}</span>
+                      {isPromo && <span className="text-[9px] font-mono text-rose-500 font-normal">SKU: {item.sku}</span>}
                     </div>
                     <div className="flex justify-between text-stone-500 text-[11px]">
-                      <span>
-                        {item.qty} x {formatRupiah(item.price)}
+                      <span className={isPromo ? 'text-rose-600 font-medium' : ''}>
+                        {item.qty} x {isPromo ? `-${formatRupiah(Math.abs(item.price))}` : formatRupiah(item.price)}
                       </span>
-                      <span className="font-bold text-stone-900">
-                        {formatRupiah(itemSubtotal)}
+                      <span className={`font-bold ${isPromo ? 'text-rose-600 font-mono' : 'text-stone-900'}`}>
+                        {isPromo ? `-${formatRupiah(Math.abs(itemSubtotal))}` : formatRupiah(itemSubtotal)}
                       </span>
                     </div>
                   </div>

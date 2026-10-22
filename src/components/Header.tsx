@@ -24,6 +24,7 @@ interface HeaderProps {
   lastUpdateInfo?: LastUpdateInfo | null;
   onSyncData: () => void;
   onResetData: () => void;
+  onOpenAiCopilot?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -38,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
   lastSynced,
   lastUpdateInfo,
   onSyncData,
+  onOpenAiCopilot,
 }) => {
   const [currentTime, setCurrentTime] = useState('');
 
@@ -140,6 +142,20 @@ export const Header: React.FC<HeaderProps> = ({
               {isSyncing ? 'Sinkron...' : isConnectedGas ? 'Sinkron' : 'Hubungkan'}
             </span>
           </button>
+
+          {/* AI Copilot Trigger Button */}
+          {onOpenAiCopilot && (
+            <button
+              onClick={onOpenAiCopilot}
+              type="button"
+              aria-label="Buka AI Copilot Kasir"
+              title="Buka AI Copilot Kasir (Suara & Otomasi)"
+              className="px-3.5 py-2 rounded-full bg-gradient-to-r from-[#FF643D] to-[#FF5E36] hover:from-[#e04f29] hover:to-[#FF5E36] text-white flex items-center gap-1.5 text-xs font-black shadow-md shadow-[#FF5E36]/25 transition-all cursor-pointer active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              <span className="hidden sm:inline">AI Kasir</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
