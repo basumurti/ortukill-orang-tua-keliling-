@@ -1,15 +1,23 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-serif: 'Playfair Display', Georgia, serif;
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --color-coral-primary: #FF5E36;
-  --color-coral-hover: #F24E24;
-  --color-coral-light: #FFF2ED;
-  --color-peach-accent: #FFA07A;
-  --color-surface-warm: #EEF1F6;
-  --color-surface-card: #FFFFFF;
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-canvas: #F6F7F9;
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #F1F5F9;
+  --color-border-hairline: #E2E8F0;
+  --color-ink: #0F172A;
+  --color-ink-muted: #475569;
+  --color-ink-subtle: #64748B;
+
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-positive: #059669;
+  --color-warning: #D97706;
+  --color-negative: #DC2626;
 }
 
 :root {
@@ -17,22 +25,52 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.dark {
+  color-scheme: dark;
+}
+
+html,
 body {
-  background-color: #EEF1F6;
-  color: #1A1D20;
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background-color: #F6F7F9;
+  color: #0F172A;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   touch-action: manipulation;
 }
 
-/* Custom scrollbar for mobile feel */
+.dark,
+.dark body {
+  background-color: #121215;
+  color: #F4F4F6;
+}
+
+/* Cegah auto-zoom iOS Safari saat input fokus (< 640px) */
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+.font-display {
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Tabular numbers for financial & quantity alignment */
+.num-tabular, .tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Clean subtle scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #F1F5F9;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -44,20 +82,19 @@ body {
   background: #94A3B8;
 }
 
-/* Soft Neumorphic & Tactile Card Shadows */
-.shadow-soft-card {
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
+.dark ::-webkit-scrollbar-track {
+  background: #1B1B20;
 }
 
-.shadow-floating-nav {
-  box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+.dark ::-webkit-scrollbar-thumb {
+  background: #343440;
 }
 
-.shadow-glow-coral {
-  box-shadow: 0 12px 28px -6px rgba(255, 94, 54, 0.28);
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #A855F7;
 }
 
-/* Hide scrollbar for category horizontal chips */
+/* Hide scrollbar for horizontal chip strips */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -66,18 +103,45 @@ body {
   scrollbar-width: none;
 }
 
-/* Smooth transitions */
-@media (prefers-reduced-motion: no-preference) {
-  .transition-spring {
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+/* Safe area insets for mobile devices */
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Umpan balik singkat penambahan item keranjang (maks 180ms, hanya transform) */
+@keyframes cart-pop {
+  0% {
+    transform: scale(0.86);
+  }
+  55% {
+    transform: scale(1.16);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
-/* Safe area insets for mobile devices */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 1.25rem);
+.animate-cart-pop {
+  animation: cart-pop 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Hormati prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Thermal Print format untouched */
 @media print {
   body {
     background: white !important;
@@ -92,6 +156,7 @@ body {
     width: 100% !important;
     max-width: 100% !important;
     padding: 0 !important;
+    background: white !important;
+    color: black !important;
   }
 }
-

@@ -13,6 +13,10 @@ export interface Product {
   category: string;
   minStockAlert?: number;
   rowNumber?: number;
+  botolPerKrat?: number;
+  hargaPerKrat?: number;
+  initialStock?: number;
+  notes?: string;
 }
 
 export interface BarangMasukRecord {
@@ -205,3 +209,18 @@ export interface LastUpdateInfo {
     barangMasuk?: number;
   };
 }
+
+export interface StockAuditRecord {
+  id: string;
+  timestamp: string; // ISO
+  dateStr: string;   // DD/MM/YYYY HH:mm:ss
+  sku: string;
+  productName: string;
+  action: 'TAMBAH_PRODUK' | 'EDIT_PRODUK' | 'KOREKSI_STOK' | 'RESTOCK';
+  details: string;
+  oldValue?: string | number;
+  newValue?: string | number;
+  source: 'GOOGLE_SHEETS' | 'POS';
+  operator?: string;
+}
+

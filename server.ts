@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
@@ -358,6 +359,12 @@ app.post('/api/gas/transaction', async (req, res) => {
       const discountVal = (Number(transaction.discount) || 0);
       const effectiveDiscount = Math.max(discountVal, promoTotalDiscount);
 
+      // KUNCI DEDUPLIKASI: Jika items sudah mengandung baris promo/potongan harga,
+      // nolkan transaction.discount agar Google Apps Script tidak menambahkan baris diskon untuk kedua kalinya.
+      if (promoItems.length > 0) {
+        transaction.discount = 0;
+      }
+
       // Catatan: Ongkir cukup dicatat di website (keuangan/kas atau sheet LAIN-LAIN) dan jangan dimasukkan ke kolom penjualan
       transaction.total = Math.max(0, subtotal - effectiveDiscount);
       transaction.margin = Math.max(0, regularItems.reduce((sum: number, it: any) => sum + (it.margin || 0), 0) - effectiveDiscount);
@@ -418,6 +425,56 @@ app.post('/api/gas/barang-masuk', async (req, res) => {
     const response = await callGas(url, 'POST', {
       action: 'recordBarangMasuk',
       entry,
+    });
+
+    res.json(response);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 8b. Add Product to DATABASE_PRODUK (B:L)
+app.post('/api/gas/add-product', async (req, res) => {
+  try {
+    const config = loadGasConfig();
+    const url = config.webAppUrl;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google Apps Script belum dikonfigurasi.',
+      });
+    }
+
+    const product = req.body;
+    const response = await callGas(url, 'POST', {
+      action: 'addProduct',
+      product,
+    });
+
+    res.json(response);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 8c. Update Product in DATABASE_PRODUK (B:L)
+app.post('/api/gas/update-product', async (req, res) => {
+  try {
+    const config = loadGasConfig();
+    const url = config.webAppUrl;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google Apps Script belum dikonfigurasi.',
+      });
+    }
+
+    const product = req.body;
+    const response = await callGas(url, 'POST', {
+      action: 'updateProduct',
+      product,
     });
 
     res.json(response);
@@ -1576,9 +1633,14 @@ Gunakan bahasa Indonesia yang santun, praktis, ramah khas kasir toko ORTUKILL. R
  * ============================================================ */
 
 async function startServer() {
+  const httpServer = http.createServer(app);
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: { server: httpServer },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -1590,7 +1652,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`ORTUKILL POS Server running on http://0.0.0.0:${PORT}`);
   });
 }

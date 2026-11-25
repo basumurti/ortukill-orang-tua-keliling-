@@ -1,11 +1,11 @@
 /**
- * Enhanced Google Apps Script Code Generator for ORTUKILL POS (V3.5 - HAPUS PERMANEN & VERIFIKASI NYATA)
+ * Enhanced Google Apps Script Code Generator for ORTUKILL POS (V3.6 - UPDATE MANAJEMEN STOK & KOREKSI OPNAME)
  * 
  * Sesuai kode Apps Script resmi pengguna:
- * 1. DASHBOARD_MUTASI_&_PROFIT (B70:J) -> MASTER PRODUK (READ-ONLY / REFERENSI)
- *    - B: SKU  C: Nama  D: Stok Akhir  E: Harga Jual
- *    - F: Harga Beli  G: Harga Merah  H: Total Aset  I: Extra  J: KATEGORI
- *    - ATURAN: Web App membaca data termasuk Kolom J (KATEGORI).
+ * 1. DATABASE_PRODUK / DASHBOARD_MUTASI_&_PROFIT -> MASTER PRODUK
+ *    - B: SKU  C: Nama  D: Kategori ... Stok Akhir dihitung formula dari Stok Awal + Masuk - Keluar
+ *    - ATURAN MUTLAK: DILARANG menulis atau menimpa Kolom M:Q (Stok Akhir formula & harga kompetitor).
+ *    - Operasi tulis produk hanya ke Kolom B:L.
  * 
  * 2. LOG_PENJUALAN (B7:M, 12 Kolom) -> RIWAYAT PENJUALAN KASIR (WRITE & DELETE)
  *    - B: Tanggal (dd/MM/yyyy)         G: Total Penjualan     L: No. HP
@@ -13,10 +13,9 @@
  *    - D: Nama Produk                  I: Metode bayar
  *    - E: Harga Jual (HARGA BIASA)     J: (kosong)
  *    - F: Jumlah (Qty)                 K: Nama
- *    - ATURAN KHUSUS: Penulisan di Google Sheets selalu menggunakan HARGA BIASA, bukan harga jual merah!
  *    - PENGHAPUSAN: voidTransaction / deleteTransaction menghapus baris transaksi secara permanen (deleteRow)
  * 
- * 3. LOG_BARANG_MASUK (B4:H, 7 Kolom) -> LOG RESTOCK (WRITE)
+ * 3. LOG_BARANG_MASUK (B4:H, 7 Kolom) -> LOG RESTOCK & KOREKSI STOK (WRITE)
  *    - B: Tanggal  C: SKU  D: Nama Produk  E: Qty/Krat
  *    - F: Kuantitas Masuk  G: Supplier  H: Total Biaya
  */
@@ -24,25 +23,22 @@
 export function generateEnhancedGoogleAppsScriptCode(): string {
   return `/**
  * ============================================================
- * ORTUKILL POS - GOOGLE APPS SCRIPT WEB APP (V3.5)
+ * ORTUKILL POS - GOOGLE APPS SCRIPT WEB APP (V3.6)
  * ============================================================
  * Database Google Sheets:
- *   1. DASHBOARD_MUTASI_&_PROFIT (B70:H) -> MASTER PRODUK (READ-ONLY / REFERENSI)
- *   2. LOG_PENJUALAN (B7:M)              -> Riwayat Penjualan Kasir (WRITE & DELETE)
- *   3. LOG_BARANG_MASUK (B4:H)           -> Log Restock (WRITE)
- *   4. LAIN-LAIN (A4:F)                  -> PENGELUARAN LAIN-LAIN (READ & WRITE)
+ *   1. DATABASE_PRODUK / DASHBOARD_MUTASI_&_PROFIT -> MASTER PRODUK (WRITE B:L HANYA, M:Q FORMULA READ-ONLY)
+ *   2. LOG_PENJUALAN (B7:M)                        -> Riwayat Penjualan Kasir (WRITE & DELETE PERMANEN)
+ *   3. LOG_BARANG_MASUK (B4:H)                     -> Log Restock & Koreksi Opname (WRITE)
+ *   4. LAIN-LAIN (A4:F)                            -> PENGELUARAN LAIN-LAIN (READ & WRITE)
  *
- * PERBAIKAN PENTING V3.5 (ganti dari v3.2/v3.4):
- *   - VOID = HAPUS BARIS PERMANEN. v3.2 hanya mengganti kolom M menjadi
- *     "VOIDED-<nomor transaksi>" sehingga baris tetap ada di sheet. Sejak v3.5
- *     barisnya benar-benar dihapus (sheet.deleteRow), termasuk baris LAIN-LAIN terkait.
- *   - VERIFIKASI NYATA: setelah menghapus, sheet dibaca ulang untuk memastikan
- *     barisnya sudah hilang. Kalau masih ada, script membalas GAGAL + alasannya
- *     (biasanya baris dilindungi) — tidak pernah lagi mengaku sukses padahal tidak terhapus.
- *   - Bisa dipanggil dari editor: hapusBarisUjiCoba() dan cekKesiapanScript().
- *   - Memperbaiki bug lock concurrency: menggunakan tryLock() sehingga penulisan
- *     dan penghapusan ke LOG_PENJUALAN tidak gagal dengan pesan "sistem sibuk".
- *   - Mendukung penuh aksi WRITE (saveTransaction) dan DELETE (deleteTransaction / voidTransaction).
+ * PERBAIKAN PENTING V3.6:
+ *   - DUKUNGAN RESMI DATABASE_PRODUK (B:L): Tambah produk (addProduct) dan edit info (updateProduct)
+ *     hanya menulis Kolom B:L dan DILARANG KERAS menyentuh Kolom M:Q (Stok Akhir formula & kompetitor).
+ *   - KOREKSI STOK OPNAME: Dicatat satu transaksi ke LOG_BARANG_MASUK (positif/negatif) sehingga formula
+ *     stok akhir di Google Sheets otomatis terbarui tanpa merusak formula master.
+ *   - PERTAHANKAN VOID TETAP PERMANEN: Fungsi voidTransaction tetap menghapus baris secara permanen
+ *     (sheet.deleteRow) dengan verifikasi nyata re-read sheet dan hapus ongkir di LAIN-LAIN.
+ *   - DETEKSI SPREADSHEET FLEKSIBEL: Mendukung sheet bernama DATABASE_PRODUK maupun DASHBOARD_MUTASI_&_PROFIT.
  *   - Penulisan di LOG_PENJUALAN (Kolom E) selalu menggunakan HARGA BIASA, bukan harga merah.
  *   - Biaya ongkir dialihkan otomatis ke sheet LAIN-LAIN.
  *
@@ -129,7 +125,7 @@ function doGet(e) {
   let result = {};
   try {
     if (action === 'ping') {
-      result = { success: true, message: 'ORTUKILL POS GAS Online (v3.5)', timestamp: new Date().toISOString() };
+      result = { success: true, message: 'ORTUKILL POS GAS Online (v3.6)', timestamp: new Date().toISOString() };
     } else if (action === 'diagnose') {
       result = diagnoseSheets();
     } else if (action === 'getAllData') {
@@ -196,6 +192,10 @@ function doPost(e) {
       result = fillCategoriesColumnJ();
     } else if (action === 'cleanDuplicates') {
       result = cleanUpDuplicates();
+    } else if (action === 'addProduct') {
+      result = addProduct(payload.product || payload);
+    } else if (action === 'updateProduct') {
+      result = updateProduct(payload.product || payload);
     } else if (action === 'updateStock') {
       // Ditolak secara sengaja: DASHBOARD bersifat referensi (read-only)
       result = {
@@ -349,54 +349,121 @@ function classifyProduct(sku, name) {
 /* ============================================================
  * 1. AMBIL MASTER PRODUK (READ-ONLY)
  * ============================================================
- * Fungsi ini HANYA membaca DASHBOARD_MUTASI_&_PROFIT.
- * Tidak ada operasi tulis apapun ke sheet ini.
+ * Mendukung sheet DATABASE_PRODUK maupun DASHBOARD_MUTASI_&_PROFIT.
+ * Kolom M:Q (stok akhir formula & kompetitor) hanya dibaca, dilarang ditimpa.
  * ============================================================ */
-function getProducts() {
+function getProductSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(CONFIG.SHEETS.PRODUCTS);
+  let sheet = ss.getSheetByName('DATABASE_PRODUK');
+  if (sheet) return sheet;
+  sheet = ss.getSheetByName('DATABASE PRODUK');
+  if (sheet) return sheet;
+  sheet = ss.getSheetByName('DATA_PRODUK');
+  if (sheet) return sheet;
+  sheet = ss.getSheetByName(CONFIG.SHEETS.PRODUCTS);
+  if (sheet) return sheet;
+
+  const sheets = ss.getSheets();
+  for (let i = 0; i < sheets.length; i++) {
+    const rawName = sheets[i].getName().trim().toUpperCase().replace(/[-_ ]/g, '');
+    if (rawName.indexOf('DATABASEPRODUK') >= 0 || rawName.indexOf('DASHBOARDMUTASI') >= 0 || rawName === 'PRODUK') {
+      return sheets[i];
+    }
+  }
+  return null;
+}
+
+function getProducts() {
+  const sheet = getProductSheet();
   if (!sheet) {
-    return { success: false, message: 'Sheet tidak ditemukan: ' + CONFIG.SHEETS.PRODUCTS };
+    return { success: false, message: 'Sheet produk tidak ditemukan (DATABASE_PRODUK / DASHBOARD_MUTASI_&_PROFIT).' };
   }
 
   const lastRow = sheet.getLastRow();
-  if (lastRow < CONFIG.PRODUCT.DATA_START_ROW) {
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 2) {
     return { success: true, products: [], count: 0, message: 'Belum ada baris data produk.' };
   }
 
-  const numRows = lastRow - CONFIG.PRODUCT.DATA_START_ROW + 1;
-  // Membaca Kolom B sampai J (atau kolom terjauh yang ada)
-  const numColumns = Math.max(CONFIG.PRODUCT.NUM_COLUMNS, sheet.getLastColumn() - CONFIG.PRODUCT.START_COLUMN + 1);
-  const range = sheet.getRange(
-    CONFIG.PRODUCT.DATA_START_ROW,
-    CONFIG.PRODUCT.START_COLUMN,
-    numRows,
-    numColumns
-  );
+  // Cari letak baris header secara dinamis (misal baris 70 pada DASHBOARD atau baris 1-5 pada DATABASE_PRODUK)
+  let headerRow = CONFIG.PRODUCT.HEADER_ROW;
+  let dataStartRow = CONFIG.PRODUCT.DATA_START_ROW;
+  let startCol = CONFIG.PRODUCT.START_COLUMN; // Kolom B
+  let foundHeader = false;
+  let headerValues = [];
+
+  const maxScanHeader = Math.min(lastRow, 85);
+  const scanRange = sheet.getRange(1, 1, maxScanHeader, Math.min(Math.max(lastCol, 15), 20)).getValues();
+
+  for (let r = 0; r < scanRange.length; r++) {
+    const rowVals = scanRange[r].map(function(c) { return String(c || '').trim().toUpperCase(); });
+    for (let c = 0; c < rowVals.length; c++) {
+      if (rowVals[c] === 'SKU' || rowVals[c] === 'SKU/ID PRODUK' || rowVals[c] === 'ID PRODUK' || rowVals[c] === 'KODE PRODUK') {
+        headerRow = r + 1;
+        dataStartRow = headerRow + 1;
+        startCol = c + 1;
+        headerValues = rowVals.slice(c);
+        foundHeader = true;
+        break;
+      }
+    }
+    if (foundHeader) break;
+  }
+
+  if (lastRow < dataStartRow) {
+    return { success: true, products: [], count: 0, message: 'Belum ada baris data produk setelah baris ' + headerRow + '.' };
+  }
+
+  const numRows = lastRow - dataStartRow + 1;
+  const numColumns = Math.max(16, sheet.getLastColumn() - startCol + 1);
+  const range = sheet.getRange(dataStartRow, startCol, numRows, numColumns);
   const values = range.getValues();
+
+  // Deteksi kolom secara cerdas berdasarkan baris header
+  let colSku = 0;
+  let colName = 1;
+  let colStock = 2; // Default Kolom D untuk DASHBOARD_MUTASI_&_PROFIT
+  let colPrice = 3; // Default Kolom E
+  let colCost = 4;  // Default Kolom F
+  let colRed = 5;   // Default Kolom G
+  let colAsset = 6; // Default Kolom H
+  let colCategory = 8; // Default Kolom J
+
+  if (headerValues && headerValues.length > 0) {
+    for (let h = 0; h < headerValues.length; h++) {
+      const hv = headerValues[h];
+      if (!hv) continue;
+      if (hv === 'SKU' || hv.indexOf('SKU') >= 0 || hv === 'ID PRODUK') colSku = h;
+      else if (hv.indexOf('NAMA') >= 0) colName = h;
+      else if (hv === 'STOK AKHIR' || hv === 'SISA STOK' || (hv.indexOf('STOK') >= 0 && hv.indexOf('AWAL') < 0 && hv.indexOf('MASUK') < 0 && hv.indexOf('KELUAR') < 0)) colStock = h;
+      else if (hv.indexOf('HARGA JUAL') >= 0 || (hv.indexOf('JUAL') >= 0 && hv.indexOf('MERAH') < 0)) colPrice = h;
+      else if (hv.indexOf('HARGA BELI') >= 0 || hv.indexOf('HPP') >= 0 || hv.indexOf('MODAL') >= 0) colCost = h;
+      else if (hv.indexOf('MERAH') >= 0 || hv.indexOf('RESELLER') >= 0) colRed = h;
+      else if (hv.indexOf('ASET') >= 0 || hv.indexOf('NILAI') >= 0) colAsset = h;
+      else if (hv.indexOf('KATEGORI') >= 0 || hv.indexOf('JENIS') >= 0) colCategory = h;
+    }
+  }
 
   const products = [];
 
   for (let i = 0; i < values.length; i++) {
     const row = values[i];
-    const currentRowNumber = CONFIG.PRODUCT.DATA_START_ROW + i;
+    const currentRowNumber = dataStartRow + i;
 
-    const sku = String(row[0] || '').trim();
-    const name = String(row[1] || '').trim();
+    const sku = String(row[colSku] || '').trim();
+    const name = String(row[colName] || '').trim();
 
     if (!sku || !name || name.toUpperCase() === 'NAMA PRODUK' || sku.toUpperCase() === 'SKU/ID PRODUK') {
       continue;
     }
 
-    const stock = Number(row[2]) || 0;             // D: Stok Akhir (hanya dibaca)
-    const price = Number(row[3]) || 0;             // E: Harga Jual
-    const cost = Number(row[4]) || 0;              // F: Harga Beli
-    const redPrice = Number(row[5]) || price;      // G: Harga Merah (Make up price)
-    const totalAsset = Number(row[6]) || (stock * cost); // H: Total Aset
+    const stock = Number(row[colStock]) || 0;
+    const price = Number(row[colPrice]) || 0;
+    const cost = Number(row[colCost]) || 0;
+    const redPrice = Number(row[colRed]) || price;
+    const totalAsset = Number(row[colAsset]) || (stock * cost);
 
-    // Kolom J (index 8): KATEGORI PRODUK dari Google Sheets B70:J
-    const rawCategory = row.length > 8 ? String(row[8] || '').trim() : '';
-    // Jika diisi di Kolom J, gunakan kategori dari spreadsheet; jika belum, gunakan klasifikasi pintar
+    const rawCategory = row.length > colCategory ? String(row[colCategory] || '').trim() : '';
     const category = rawCategory || classifyProduct(sku, name);
 
     products.push({
@@ -419,9 +486,9 @@ function getProducts() {
     success: true,
     count: products.length,
     products: products,
-    sheetName: CONFIG.SHEETS.PRODUCTS,
+    sheetName: sheet.getName(),
     readOnly: true,
-    rangeRead: 'B' + CONFIG.PRODUCT.DATA_START_ROW + ':J' + lastRow
+    rangeRead: 'Baris ' + dataStartRow + ' - ' + lastRow
   };
 }
 
@@ -924,21 +991,22 @@ function saveTransaction(trx) {
       ]);
     }
 
-    // PENTING: Catat baris potongan promo ke sheet LOG_PENJUALAN jika ada diskon yang belum tercatat di item
+    // PENTING: Catat baris potongan promo ke sheet LOG_PENJUALAN HANYA jika belum ada promo di baris item
     const discountVal = Number(trx.discount) || 0;
     if (discountVal > 0) {
       const hasPromoRow = rowsToInsert.some(function(r) {
         const s = String(r[1] || '').toUpperCase();
         const n = String(r[2] || '').toUpperCase();
         const p = Number(r[3]) || 0;
-        return s.indexOf('PROMO') >= 0 || n.indexOf('PROMO') >= 0 || p < 0;
+        const tot = Number(r[5]) || 0;
+        return s.indexOf('PROMO') >= 0 || n.indexOf('PROMO') >= 0 || p < 0 || tot < 0;
       });
       if (!hasPromoRow) {
         const promoSku = trx.promoCode ? String(trx.promoCode).trim().toUpperCase() : 'PROMO 5RB';
         let promoName = trx.promoName ? String(trx.promoName).trim() : 'PROMO 5RB';
         if (promoSku === 'PROMO 5RB' || promoName.toUpperCase() === 'PROMO 5RB') {
           promoName = 'PROMO 5RB';
-        } else if (!promoName.toUpperCase().startsWith('PROMO')) {
+        } else if (!promoName.toUpperCase().includes('PROMO')) {
           promoName = 'PROMO: ' + promoName;
         }
         rowsToInsert.push([
@@ -1689,7 +1757,7 @@ function diagnoseSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheets = ss.getSheets().map(function(s) { return s.getName(); });
 
-  const prodSheet = ss.getSheetByName(CONFIG.SHEETS.PRODUCTS);
+  const prodSheet = getProductSheet();
   const salesSheet = getSalesLogSheet();
   const bmSheet = ss.getSheetByName(CONFIG.SHEETS.BARANG_MASUK);
   const plSheet = ss.getSheetByName(CONFIG.SHEETS.LAIN_LAIN);
@@ -1715,21 +1783,21 @@ function diagnoseSheets() {
     spreadsheetName: ss.getName(),
     timezone: ss.getSpreadsheetTimeZone(),
     writePolicy: {
-      DASHBOARD_MUTASI_AND_PROFIT: 'READ-ONLY (referensi)',
-      LOG_PENJUALAN: 'WRITE (Harga Biasa)',
-      LOG_BARANG_MASUK: 'WRITE',
+      DATABASE_PRODUK: 'WRITE (Kolom B:L saja, M:Q formula terlindungi)',
+      LOG_PENJUALAN: 'WRITE (Harga Biasa) & DELETE (Hapus Permanen)',
+      LOG_BARANG_MASUK: 'WRITE (Restock & Koreksi Stok)',
       LAIN_LAIN: 'READ & WRITE'
     },
     availableSheets: sheets,
     configuredRanges: {
-      products:        CONFIG.SHEETS.PRODUCTS        + ' (B70:J) [read-only master & kategori]',
-      salesLog:        CONFIG.SHEETS.SALES_LOG       + ' (B7:M)  [write]',
+      products:        (prodSheet ? prodSheet.getName() : CONFIG.SHEETS.PRODUCTS) + ' (B:L data produk, M:Q formula)',
+      salesLog:        CONFIG.SHEETS.SALES_LOG       + ' (B7:M)  [write & delete]',
       barangMasuk:     CONFIG.SHEETS.BARANG_MASUK    + ' (B4:H)  [write]',
       pengeluaranLain: CONFIG.SHEETS.LAIN_LAIN       + ' (A4:F)  [read & write]'
     },
     sheetsStatus: {
       productsSheetFound: prodStatus.found,
-      productsSheetName: CONFIG.SHEETS.PRODUCTS,
+      productsSheetName: prodSheet ? prodSheet.getName() : CONFIG.SHEETS.PRODUCTS,
       productsRowCount: prodStatus.rowCount,
       salesLogSheetFound: salesStatus.found,
       salesLogSheetName: salesSheet ? salesSheet.getName() : CONFIG.SHEETS.SALES_LOG,
@@ -1974,6 +2042,237 @@ function formatIndonesianSheetDate(d, includeTime) {
   }
   var pattern = includeTime ? 'dd/MM/yyyy HH:mm:ss' : 'dd/MM/yyyy';
   return Utilities.formatDate(dateObj, 'Asia/Jakarta', pattern);
+}
+
+/* ============================================================
+ * 10. TAMBAH & EDIT MASTER PRODUK (HANYA KOLOM B:L)
+ * ============================================================
+ * ATURAN MUTLAK SPREADSHEET:
+ * - Dilarang menulis atau menimpa Kolom M:Q (Stok Akhir formula & harga kompetitor).
+ * - Kolom B..L:
+ *     B: SKU (Unik, tidak boleh duplikat)
+ *     C: Nama Produk
+ *     D: Kategori
+ *     E: Qty/Krat (Botol per Krat)
+ *     F: Harga / Krat
+ *     G: Harga Beli (HPP) = Harga/Krat ÷ Botol/Krat
+ *     H: Harga Jual (Biasa)
+ *     I: Harga Merah (Reseller)
+ *     J: Margin = Harga Jual − Harga Beli
+ *     K: Stok Awal (HANYA ditulis di sini, TIDAK dicatat di LOG_BARANG_MASUK)
+ *     L: Catatan / Keterangan
+ * ============================================================ */
+function addProduct(prod) {
+  if (!prod || !prod.sku || !prod.name) {
+    return { success: false, message: 'SKU dan Nama Produk wajib diisi.' };
+  }
+
+  const lock = LockService.getScriptLock();
+  let hasLock = false;
+  try {
+    hasLock = lock.tryLock(10000);
+  } catch (e) {
+    hasLock = false;
+  }
+
+  try {
+    const sheet = getProductSheet();
+    if (!sheet) {
+      return { success: false, message: 'Sheet produk tidak ditemukan (DATABASE_PRODUK / DASHBOARD_MUTASI_&_PROFIT).' };
+    }
+
+    const sku = String(prod.sku).trim().toUpperCase();
+    const name = String(prod.name).trim();
+    const category = String(prod.category || classifyProduct(sku, name)).trim();
+    const botolPerKrat = Number(prod.botolPerKrat || prod.krat) || 12;
+    const hargaPerKrat = Number(prod.hargaPerKrat) || 0;
+    const cost = Number(prod.cost) || (hargaPerKrat > 0 ? Math.round(hargaPerKrat / botolPerKrat) : 0);
+    const price = Number(prod.price) || 0;
+    const redPrice = Number(prod.redPrice) || price;
+    const margin = Number(prod.margin) || (price - cost);
+    const stokAwal = Number(prod.initialStock || prod.stock || prod.stokAwal) || 0;
+    const notes = String(prod.notes || prod.keterangan || '').trim();
+
+    // Deteksi baris awal data produk secara otomatis
+    const lastRow = sheet.getLastRow();
+    let dataStartRow = CONFIG.PRODUCT.DATA_START_ROW;
+    const maxScan = Math.min(lastRow, 85);
+    if (maxScan >= 1) {
+      const scanVals = sheet.getRange(1, 2, maxScan, 1).getValues();
+      for (let r = 0; r < scanVals.length; r++) {
+        const v = String(scanVals[r][0] || '').trim().toUpperCase();
+        if (v === 'SKU' || v === 'ID PRODUK' || v === 'SKU/ID PRODUK' || v === 'KODE PRODUK') {
+          dataStartRow = r + 2;
+          break;
+        }
+      }
+    }
+
+    // Validasi SKU unik di database
+    if (lastRow >= dataStartRow) {
+      const numRows = lastRow - dataStartRow + 1;
+      const existingSkus = sheet.getRange(dataStartRow, 2, numRows, 1).getValues();
+      for (let i = 0; i < existingSkus.length; i++) {
+        const exSku = String(existingSkus[i][0] || '').trim().toUpperCase();
+        if (exSku === sku) {
+          return { success: false, message: 'SKU "' + sku + '" sudah terdaftar pada baris ' + (dataStartRow + i) + '. Gunakan SKU lain.' };
+        }
+      }
+    }
+
+    // Cari baris kosong pertama di Kolom B (SKU) & C (Nama)
+    const scanLimit = Math.max(lastRow, dataStartRow);
+    const rowCountToScan = Math.max(1, scanLimit - dataStartRow + 1);
+    const checkValues = sheet.getRange(dataStartRow, 2, rowCountToScan, 2).getValues();
+
+    let targetRow = dataStartRow;
+    let foundEmpty = false;
+    for (let i = 0; i < checkValues.length; i++) {
+      const sVal = String(checkValues[i][0] || '').trim();
+      const nVal = String(checkValues[i][1] || '').trim();
+      if (!sVal && !nVal) {
+        targetRow = dataStartRow + i;
+        foundEmpty = true;
+        break;
+      }
+    }
+    if (!foundEmpty) {
+      targetRow = dataStartRow + checkValues.length;
+    }
+
+    // Tulis HANYA B:L (11 kolom: Kolom 2 sampai Kolom 12). DILARANG MENYENTUH M:Q.
+    const rowData = [
+      sku,          // B
+      name,         // C
+      category,     // D
+      botolPerKrat, // E
+      hargaPerKrat, // F
+      cost,         // G (Harga Beli)
+      price,        // H (Harga Jual)
+      redPrice,     // I (Harga Merah)
+      margin,       // J (Margin)
+      stokAwal,     // K (Stok Awal)
+      notes         // L (Catatan)
+    ];
+
+    sheet.getRange(targetRow, 2, 1, 11).setValues([rowData]);
+
+    return {
+      success: true,
+      message: 'Produk ' + sku + ' (' + name + ') berhasil ditambahkan ke database pada baris ' + targetRow + ' (B:L).',
+      rowNumber: targetRow,
+      sku: sku,
+      stockTouched: false
+    };
+  } catch (err) {
+    return { success: false, message: 'Gagal menambah produk: ' + err.toString() };
+  } finally {
+    if (hasLock) {
+      try { lock.releaseLock(); } catch (e) {}
+    }
+  }
+}
+
+function updateProduct(prod) {
+  if (!prod || !prod.sku) {
+    return { success: false, message: 'SKU produk wajib diisi untuk pembaruan.' };
+  }
+
+  const lock = LockService.getScriptLock();
+  let hasLock = false;
+  try {
+    hasLock = lock.tryLock(10000);
+  } catch (e) {
+    hasLock = false;
+  }
+
+  try {
+    const sheet = getProductSheet();
+    if (!sheet) {
+      return { success: false, message: 'Sheet produk tidak ditemukan (DATABASE_PRODUK / DASHBOARD_MUTASI_&_PROFIT).' };
+    }
+
+    const sku = String(prod.sku).trim().toUpperCase();
+    const lastRow = sheet.getLastRow();
+
+    // Deteksi baris awal data produk secara otomatis
+    let dataStartRow = CONFIG.PRODUCT.DATA_START_ROW;
+    const maxScan = Math.min(lastRow, 85);
+    if (maxScan >= 1) {
+      const scanVals = sheet.getRange(1, 2, maxScan, 1).getValues();
+      for (let r = 0; r < scanVals.length; r++) {
+        const v = String(scanVals[r][0] || '').trim().toUpperCase();
+        if (v === 'SKU' || v === 'ID PRODUK' || v === 'SKU/ID PRODUK' || v === 'KODE PRODUK') {
+          dataStartRow = r + 2;
+          break;
+        }
+      }
+    }
+
+    if (lastRow < dataStartRow) {
+      return { success: false, message: 'Database produk masih kosong.' };
+    }
+
+    const numRows = lastRow - dataStartRow + 1;
+    const skuRange = sheet.getRange(dataStartRow, 2, numRows, 1).getValues();
+
+    let targetRow = -1;
+    for (let i = 0; i < skuRange.length; i++) {
+      if (String(skuRange[i][0] || '').trim().toUpperCase() === sku) {
+        targetRow = dataStartRow + i;
+        break;
+      }
+    }
+
+    if (targetRow === -1) {
+      return { success: false, message: 'Produk dengan SKU "' + sku + '" tidak ditemukan di database.' };
+    }
+
+    // Baca data baris saat ini (B:L) agar nilai yang tidak diubah tetap utuh
+    const currentRowVals = sheet.getRange(targetRow, 2, 1, 11).getValues()[0];
+
+    const name = prod.name !== undefined ? String(prod.name).trim() : currentRowVals[1];
+    const category = prod.category !== undefined ? String(prod.category).trim() : currentRowVals[2];
+    const botolPerKrat = prod.botolPerKrat !== undefined ? Number(prod.botolPerKrat) : currentRowVals[3];
+    const hargaPerKrat = prod.hargaPerKrat !== undefined ? Number(prod.hargaPerKrat) : currentRowVals[4];
+    const cost = prod.cost !== undefined ? Number(prod.cost) : currentRowVals[5];
+    const price = prod.price !== undefined ? Number(prod.price) : currentRowVals[6];
+    const redPrice = prod.redPrice !== undefined ? Number(prod.redPrice) : currentRowVals[7];
+    const margin = prod.margin !== undefined ? Number(prod.margin) : (price - cost);
+    const stokAwal = currentRowVals[9]; // Pertahankan stok awal asli
+    const notes = prod.notes !== undefined ? String(prod.notes).trim() : currentRowVals[10];
+
+    // Update B..L (SKU tetap di B, nilai baru di C..L)
+    const updatedRow = [
+      sku,
+      name,
+      category,
+      botolPerKrat,
+      hargaPerKrat,
+      cost,
+      price,
+      redPrice,
+      margin,
+      stokAwal,
+      notes
+    ];
+
+    sheet.getRange(targetRow, 2, 1, 11).setValues([updatedRow]);
+
+    return {
+      success: true,
+      message: 'Informasi produk ' + sku + ' (' + name + ') berhasil diperbarui di baris ' + targetRow + '.',
+      rowNumber: targetRow,
+      sku: sku,
+      stockTouched: false
+    };
+  } catch (err) {
+    return { success: false, message: 'Gagal memperbarui produk: ' + err.toString() };
+  } finally {
+    if (hasLock) {
+      try { lock.releaseLock(); } catch (e) {}
+    }
+  }
 }
 `;
 }

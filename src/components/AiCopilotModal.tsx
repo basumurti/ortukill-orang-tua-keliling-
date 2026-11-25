@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { Product, TransactionReceipt } from '../types';
 import { formatRupiah } from '../services/storageService';
+import { useOverlayHistory } from '../utils/useOverlayHistory';
+import { AppConfirmDialog } from './AppConfirmDialog';
 
 interface AiMessage {
   id: string;
@@ -44,6 +46,7 @@ interface AiCopilotModalProps {
   brand: any;
   onExecuteAction: (action: { type: string; payload: any; result: any }) => void;
   onViewReceipt: (receipt: TransactionReceipt) => void;
+  onShowToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
@@ -55,7 +58,11 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
   brand,
   onExecuteAction,
   onViewReceipt,
+  onShowToast,
 }) => {
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  useOverlayHistory(isOpen, onClose, 'ai-copilot-modal');
   const [messages, setMessages] = useState<AiMessage[]>([
     {
       id: 'welcome',
@@ -137,7 +144,20 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
-      alert('Browser Anda tidak mendukung pengenalan suara (Speech Recognition). Silakan gunakan Google Chrome.');
+      const msg = 'Browser Anda tidak mendukung pengenalan suara. Silakan gunakan Google Chrome.';
+      if (onShowToast) {
+        onShowToast(msg, 'info');
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `sys-${Date.now()}`,
+            role: 'assistant',
+            text: msg,
+            timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      }
       return;
     }
 
@@ -275,70 +295,62 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white w-full sm:max-w-xl h-[88vh] sm:h-[650px] rounded-t-[28px] sm:rounded-[32px] shadow-2xl flex flex-col border border-stone-200/90 overflow-hidden">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="AI Copilot Kasir"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
+    >
+      <div className="fixed inset-0 hidden sm:block" onClick={onClose} aria-hidden="true" />
+      <div className="relative z-10 bg-white dark:bg-[#1B1B20] w-full sm:max-w-xl h-dvh sm:h-[650px] sm:max-h-[90dvh] sm:rounded-2xl shadow-2xl flex flex-col border-0 sm:border border-slate-200 dark:border-[#2B2B33] overflow-hidden text-[#0F172A] dark:text-[#F4F4F6] animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
         {/* Header */}
-        <div className="px-5 py-3.5 bg-gradient-to-r from-stone-900 via-[#1E232D] to-stone-900 text-white flex items-center justify-between border-b border-white/10 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF643D] to-[#FF5E36] flex items-center justify-center text-white shadow-md shadow-[#FF5E36]/30">
-              <Sparkles className="w-5 h-5 animate-pulse" />
+        <div className="px-4 sm:px-5 pt-safe py-3 bg-slate-50 dark:bg-[#16161A] text-[#0F172A] dark:text-[#F4F4F6] flex items-center justify-between border-b border-slate-200 dark:border-[#2B2B33] shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] flex items-center justify-center text-white shrink-0">
+              <Sparkles className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-extrabold tracking-tight">AI Copilot Kasir</h3>
-                <span className="text-[10px] font-bold bg-[#FF5E36] text-white px-2 py-0.5 rounded-full">
-                  Gemini 3.8 Flash
-                </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-extrabold tracking-tight uppercase text-[#0F172A] dark:text-[#F4F4F6]">AI Copilot Kasir</h3>
               </div>
-              <p className="text-[11px] text-stone-400 flex items-center gap-1.5 mt-0.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Siap mengoperasikan POS & stok via suara/teks</span>
+              <p className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 mt-0.5 truncate">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="truncate">Asisten kasir & stok via suara/teks</span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            {/* Toggle Voice Readout */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={() => {
                 if (speechEnabled) window.speechSynthesis?.cancel();
                 setSpeechEnabled(!speechEnabled);
               }}
-              title={speechEnabled ? 'Suara aktif (klik untuk senyapkan)' : 'Suara nonaktif (klik untuk aktifkan)'}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-                speechEnabled ? 'text-amber-400 bg-white/10 hover:bg-white/20' : 'text-stone-400 hover:text-white'
+              aria-label={speechEnabled ? 'Senyapkan suara' : 'Aktifkan suara'}
+              className={`min-w-[44px] min-h-[44px] rounded-full border flex items-center justify-center transition-colors active:scale-[0.97] cursor-pointer ${
+                speechEnabled
+                  ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/35'
+                  : 'text-slate-500 dark:text-zinc-400 bg-white dark:bg-[#24242B] border-slate-200 dark:border-[#343440]'
               }`}
             >
               {speechEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
-            {/* Clear conversation */}
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm('Bersihkan riwayat percakapan AI?')) {
-                  setMessages([
-                    {
-                      id: 'new-start',
-                      role: 'assistant',
-                      text: 'Percakapan telah dibersihkan. Ada yang bisa saya bantu sekarang?',
-                      timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-                    },
-                  ]);
-                }
-              }}
-              title="Mulai percakapan baru"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-stone-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              onClick={() => setShowClearConfirm(true)}
+              aria-label="Mulai percakapan baru"
+              className="min-w-[44px] min-h-[44px] rounded-full bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] transition-colors active:scale-[0.97] cursor-pointer"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
 
-            {/* Close */}
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-stone-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Tutup AI Copilot"
+              className="min-w-[44px] min-h-[44px] rounded-full bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] transition-colors active:scale-[0.97] cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -346,39 +358,39 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
         </div>
 
         {/* Messages Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#FAF8F5]/80">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-4 bg-[#F6F7F9] dark:bg-[#121215]">
           {messages.map((msg) => {
             const isUser = msg.role === 'user';
             return (
               <div
                 key={msg.id}
-                className={`flex gap-3 max-w-[90%] sm:max-w-[85%] ${isUser ? 'ml-auto flex-row-reverse' : ''}`}
+                className={`flex gap-2.5 sm:gap-3 max-w-[92%] sm:max-w-[85%] ${isUser ? 'ml-auto flex-row-reverse' : ''}`}
               >
                 {/* Avatar */}
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
                     isUser
-                      ? 'bg-stone-900 text-white'
-                      : 'bg-gradient-to-br from-[#FF5E36] to-amber-500 text-white shadow-xs'
+                      ? 'bg-[#0F172A] dark:bg-[#24242B] dark:border dark:border-[#343440] text-white'
+                      : 'bg-[#2563EB] dark:bg-[#9333EA] text-white'
                   }`}
                 >
                   {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                 </div>
 
                 {/* Message Bubble */}
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <div
-                    className={`p-3.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-2xs ${
+                    className={`p-3.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed ${
                       isUser
-                        ? 'bg-stone-900 text-white rounded-tr-xs'
-                        : 'bg-white border border-stone-200/90 text-stone-800 rounded-tl-xs'
+                        ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white rounded-tr-xs'
+                        : 'bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#2B2B33] text-[#0F172A] dark:text-[#F4F4F6] rounded-tl-xs'
                     }`}
                   >
-                    <div className="whitespace-pre-line font-normal">{msg.text}</div>
+                    <div className="whitespace-pre-line font-normal break-words">{msg.text}</div>
 
                     <div
                       className={`text-[10px] mt-1.5 flex items-center justify-between gap-2 font-mono ${
-                        isUser ? 'text-stone-400' : 'text-stone-400'
+                        isUser ? 'text-blue-100 dark:text-purple-200' : 'text-slate-400 dark:text-zinc-500'
                       }`}
                     >
                       <span>{msg.timestamp}</span>
@@ -387,7 +399,7 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
                           type="button"
                           onClick={() => speakText(msg.text)}
                           title="Putar suara"
-                          className="hover:text-[#FF5E36] transition-colors cursor-pointer flex items-center gap-1"
+                          className="text-slate-500 dark:text-zinc-400 hover:text-[#2563EB] dark:hover:text-[#C084FC] transition-colors cursor-pointer flex items-center gap-1"
                         >
                           <Volume2 className="w-3 h-3" />
                           <span>Dengar</span>
@@ -406,37 +418,37 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
                           return (
                             <div
                               key={idx}
-                              className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-300/80 rounded-2xl p-3.5 shadow-xs space-y-2.5"
+                              className="bg-white dark:bg-[#1B1B20] border border-emerald-200 dark:border-emerald-500/35 rounded-2xl p-3.5 space-y-2.5"
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/35 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                                     <Receipt className="w-4 h-4" />
                                   </div>
-                                  <div>
-                                    <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
+                                  <div className="min-w-0">
+                                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
                                       Struk Berhasil Dibuat
                                     </span>
-                                    <p className="text-xs font-black font-mono text-emerald-950">#{r.id}</p>
+                                    <p className="text-xs font-extrabold font-mono text-[#0F172A] dark:text-[#F4F4F6] truncate">#{r.id}</p>
                                   </div>
                                 </div>
-                                <span className="text-xs font-black text-emerald-800 font-mono">
+                                <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 font-mono tabular-nums shrink-0">
                                   {formatRupiah(r.total)}
                                 </span>
                               </div>
 
-                              <div className="text-[11px] text-stone-600 bg-white/70 p-2 rounded-xl space-y-1 border border-emerald-100">
-                                <div className="flex justify-between">
+                              <div className="text-[11px] text-slate-600 dark:text-zinc-300 bg-slate-50 dark:bg-[#24242B] p-2.5 rounded-xl space-y-1 border border-slate-200 dark:border-[#343440]">
+                                <div className="flex justify-between gap-2">
                                   <span>Pelanggan:</span>
-                                  <span className="font-bold text-stone-800">{r.customerName || 'Umum'}</span>
+                                  <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6]">{r.customerName || 'Umum'}</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex justify-between gap-2">
                                   <span>Metode Bayar:</span>
-                                  <span className="font-bold text-stone-800">{r.paymentMethod}</span>
+                                  <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6]">{r.paymentMethod}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                  <span>Item ({r.items.length}):</span>
-                                  <span className="font-semibold text-stone-700">
+                                <div className="flex justify-between gap-2">
+                                  <span className="shrink-0">Item ({r.items.length}):</span>
+                                  <span className="font-semibold text-[#0F172A] dark:text-[#F4F4F6] text-right">
                                     {r.items.map((i: any) => `${i.qty}x ${i.name}`).join(', ')}
                                   </span>
                                 </div>
@@ -445,7 +457,7 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onViewReceipt(r)}
-                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-98"
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer min-h-[40px]"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
                                 <span>Buka Struk Kasir</span>
@@ -460,28 +472,28 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
                           return (
                             <div
                               key={idx}
-                              className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-300/80 rounded-2xl p-3 shadow-xs space-y-1.5"
+                              className="bg-white dark:bg-[#1B1B20] border border-amber-200 dark:border-amber-500/35 rounded-2xl p-3 space-y-2"
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-7 h-7 rounded-xl bg-[#FF5E36] text-white flex items-center justify-center">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                                     <Package className="w-4 h-4" />
                                   </div>
-                                  <div>
-                                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
+                                  <div className="min-w-0">
+                                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">
                                       Stok Diperbarui
                                     </span>
-                                    <p className="text-xs font-black text-stone-900">{p.name}</p>
+                                    <p className="text-xs font-extrabold text-[#0F172A] dark:text-[#F4F4F6] truncate">{p.name}</p>
                                   </div>
                                 </div>
-                                <span className="text-xs font-black bg-amber-200/80 text-amber-900 px-2.5 py-0.5 rounded-full font-mono">
+                                <span className="text-xs font-extrabold bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35 px-2.5 py-0.5 rounded-full font-mono shrink-0">
                                   +{p.addedQty} botol
                                 </span>
                               </div>
-                              <div className="flex items-center justify-between text-[11px] text-stone-600 pt-1 border-t border-amber-200/60 font-mono">
+                              <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-zinc-300 pt-1.5 border-t border-slate-200 dark:border-[#2B2B33] font-mono">
                                 <span>Stok Sebelumnya: {p.oldStock}</span>
-                                <ArrowRight className="w-3 h-3 text-stone-400" />
-                                <span className="font-bold text-emerald-700">Stok Baru: {p.newStock} botol</span>
+                                <ArrowRight className="w-3 h-3 text-slate-400 dark:text-zinc-500" />
+                                <span className="font-bold text-emerald-700 dark:text-emerald-400">Stok Baru: {p.newStock} botol</span>
                               </div>
                             </div>
                           );
@@ -493,18 +505,18 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
                           return (
                             <div
                               key={idx}
-                              className="bg-gradient-to-br from-rose-50 to-orange-50 border border-rose-300/80 rounded-2xl p-3 shadow-xs space-y-1"
+                              className="bg-white dark:bg-[#1B1B20] border border-red-200 dark:border-red-500/35 rounded-2xl p-3 space-y-1"
                             >
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-rose-700 uppercase">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-bold text-red-700 dark:text-red-400 uppercase">
                                   Pengeluaran Tercatat (Sheet LAIN-LAIN)
                                 </span>
-                                <span className="text-xs font-black text-rose-700 font-mono">
+                                <span className="text-xs font-extrabold text-red-600 dark:text-red-400 font-mono tabular-nums shrink-0">
                                   -{formatRupiah(rec.amount)}
                                 </span>
                               </div>
-                              <p className="text-xs font-bold text-stone-800">{rec.description}</p>
-                              <p className="text-[10px] text-stone-500">
+                              <p className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6]">{rec.description}</p>
+                              <p className="text-[10px] text-slate-500 dark:text-zinc-400">
                                 Dibayar via: {rec.paymentMethod} • Oleh: {rec.cashier}
                               </p>
                             </div>
@@ -517,31 +529,31 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
                           return (
                             <div
                               key={idx}
-                              className="bg-white border border-stone-200/90 rounded-2xl p-3 shadow-xs space-y-2"
+                              className="bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#2B2B33] rounded-2xl p-3 space-y-2"
                             >
-                              <div className="flex items-center gap-1.5 text-xs font-extrabold text-stone-900 border-b pb-1.5 border-stone-100">
-                                <TrendingUp className="w-4 h-4 text-[#FF5E36]" />
+                              <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#0F172A] dark:text-[#F4F4F6] border-b pb-1.5 border-slate-200 dark:border-[#2B2B33]">
+                                <TrendingUp className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
                                 <span>Ringkasan Penjualan Hari Ini</span>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div className="bg-stone-50 p-2 rounded-xl">
-                                  <span className="text-[10px] text-stone-400 block font-medium">Omset</span>
-                                  <span className="font-black text-stone-900 font-mono">{formatRupiah(s.totalOmset || 0)}</span>
+                                <div className="bg-slate-50 dark:bg-[#24242B] p-2 rounded-xl border border-slate-200 dark:border-[#343440]">
+                                  <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-medium">Omset</span>
+                                  <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] font-mono tabular-nums">{formatRupiah(s.totalOmset || 0)}</span>
                                 </div>
-                                <div className="bg-stone-50 p-2 rounded-xl">
-                                  <span className="text-[10px] text-stone-400 block font-medium">Margin Laba</span>
-                                  <span className="font-black text-emerald-700 font-mono">{formatRupiah(s.totalMargin || 0)}</span>
+                                <div className="bg-slate-50 dark:bg-[#24242B] p-2 rounded-xl border border-slate-200 dark:border-[#343440]">
+                                  <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-medium">Margin Laba</span>
+                                  <span className="font-extrabold text-emerald-700 dark:text-emerald-400 font-mono tabular-nums">{formatRupiah(s.totalMargin || 0)}</span>
                                 </div>
                               </div>
-                              <div className="text-[10px] text-stone-500 flex flex-col gap-1 px-1 pt-1 border-t border-stone-100">
+                              <div className="text-[10px] text-slate-600 dark:text-zinc-300 flex flex-col gap-1 px-0.5 pt-1 border-t border-slate-200 dark:border-[#2B2B33]">
                                 <div className="flex justify-between">
                                   <span>Transaksi: {s.totalTransactions} struk</span>
                                   <span>Total: {s.totalBottles} botol</span>
                                 </div>
                                 {typeof s.filteredBottles === 'number' && (
-                                  <div className="flex justify-between items-center font-bold text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-1 rounded-lg text-[10px]">
+                                  <div className="flex justify-between items-center font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 px-2 py-1 rounded-lg text-[10px]">
                                     <span>Botol Keluar (Excl. Bir/Promo/&lt;30k):</span>
-                                    <span className="font-mono text-amber-900 font-extrabold">{s.filteredBottles} btl</span>
+                                    <span className="font-mono text-amber-700 dark:text-amber-400 font-extrabold">{s.filteredBottles} btl</span>
                                   </div>
                                 )}
                               </div>
@@ -560,9 +572,9 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
 
           {/* Loading indicator */}
           {isLoading && (
-            <div className="flex items-center gap-2.5 text-stone-500 text-xs py-2 px-3 bg-white rounded-2xl w-fit border border-stone-200 shadow-2xs">
-              <Loader2 className="w-4 h-4 animate-spin text-[#FF5E36]" />
-              <span className="font-semibold">AI Copilot sedang menjalankan instruksi...</span>
+            <div className="flex items-center gap-2.5 text-slate-600 dark:text-zinc-300 text-xs py-2.5 px-3.5 bg-white dark:bg-[#1B1B20] rounded-2xl w-fit border border-slate-200 dark:border-[#2B2B33]">
+              <Loader2 className="w-4 h-4 animate-spin text-[#2563EB] dark:text-[#C084FC]" />
+              <span className="font-semibold text-[#0F172A] dark:text-[#F4F4F6]">AI Copilot sedang menjalankan instruksi...</span>
             </div>
           )}
 
@@ -570,13 +582,13 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
         </div>
 
         {/* Quick Suggestions Chips */}
-        <div className="px-4 py-2 bg-white border-t border-stone-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
+        <div className="px-3 sm:px-4 py-2 bg-white dark:bg-[#1B1B20] border-t border-slate-200 dark:border-[#2B2B33] flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
           {quickPrompts.map((q, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => handleSendMessage(q.text)}
-              className="text-[11px] font-bold text-stone-700 hover:text-[#FF5E36] bg-stone-100 hover:bg-[#FFF2ED] border border-stone-200 hover:border-[#FF5E36]/30 px-3 py-1.5 rounded-full whitespace-nowrap transition-colors cursor-pointer flex-shrink-0 active:scale-95"
+              className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] px-3 py-1.5 rounded-full whitespace-nowrap transition-colors cursor-pointer flex-shrink-0"
             >
               {q.label}
             </button>
@@ -585,7 +597,7 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
 
         {/* Voice Recognition Active Banner */}
         {isListening && (
-          <div className="px-4 py-2 bg-gradient-to-r from-[#FF5E36] to-amber-500 text-white text-xs font-bold flex items-center justify-between animate-pulse">
+          <div className="px-4 py-2 bg-[#2563EB] dark:bg-[#9333EA] text-white text-xs font-bold flex items-center justify-between animate-pulse">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
               <span>Mendengarkan suara kasir... Silakan bicara</span>
@@ -593,7 +605,7 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
             <button
               type="button"
               onClick={toggleListening}
-              className="bg-white/20 hover:bg-white/30 text-white px-2.5 py-0.5 rounded-full text-[10px]"
+              className="bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full text-[10px] cursor-pointer"
             >
               Berhenti
             </button>
@@ -601,19 +613,19 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
         )}
 
         {/* Input Bar */}
-        <div className="p-3 sm:p-4 bg-white border-t border-stone-200/80 flex items-center gap-2 flex-shrink-0">
+        <div className="p-3 sm:p-4 bg-white dark:bg-[#1B1B20] border-t border-slate-200 dark:border-[#2B2B33] flex items-center gap-2 flex-shrink-0 pb-safe">
           {/* Microphone button */}
           <button
             type="button"
             onClick={toggleListening}
             title={isListening ? 'Berhenti mendengarkan' : 'Bicara dengan suara (Voice)'}
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 shadow-xs ${
+            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer flex-shrink-0 ${
               isListening
-                ? 'bg-rose-600 text-white ring-4 ring-rose-200 animate-bounce'
-                : 'bg-stone-100 hover:bg-stone-200 text-stone-700 hover:text-stone-900'
+                ? 'bg-red-600 text-white ring-4 ring-red-200 dark:ring-red-500/30 animate-bounce'
+                : 'bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6]'
             }`}
           >
-            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5 text-[#FF5E36]" />}
+            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5 text-[#2563EB] dark:text-[#C084FC]" />}
           </button>
 
           {/* Text Input */}
@@ -627,9 +639,9 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
                 handleSendMessage();
               }
             }}
-            placeholder={isListening ? 'Sedang mendengarkan ucapan...' : 'Ketik perintah atau bicara (misal: "tambah stok amer 10")'}
+            placeholder={isListening ? 'Sedang mendengarkan ucapan...' : 'Ketik perintah atau bicara...'}
             disabled={isLoading}
-            className="flex-1 bg-stone-100/80 border border-stone-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#FF5E36] focus:border-transparent transition-all"
+            className="flex-1 min-w-0 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] focus:bg-white dark:focus:bg-[#1B1B20] transition-colors min-h-[44px]"
           />
 
           {/* Send Button */}
@@ -637,16 +649,37 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
             type="button"
             onClick={() => handleSendMessage()}
             disabled={!input.trim() || isLoading}
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white transition-all cursor-pointer flex-shrink-0 shadow-md ${
+            className={`w-11 h-11 rounded-xl flex items-center justify-center text-white transition-colors cursor-pointer flex-shrink-0 ${
               !input.trim() || isLoading
-                ? 'bg-stone-300 cursor-not-allowed shadow-none'
-                : 'bg-[#FF5E36] hover:bg-[#e04f29] active:scale-95 shadow-[#FF5E36]/30'
+                ? 'bg-slate-200 dark:bg-[#24242B] text-slate-400 dark:text-zinc-600 cursor-not-allowed'
+                : 'bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7]'
             }`}
           >
             <Send className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      <AppConfirmDialog
+        isOpen={showClearConfirm}
+        title="Bersihkan Percakapan AI?"
+        description="Riwayat obrolan di jendela AI Copilot saat ini akan dihapus."
+        confirmLabel="Ya, Bersihkan"
+        cancelLabel="Batal"
+        variant="warning"
+        onCancel={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          setShowClearConfirm(false);
+          setMessages([
+            {
+              id: 'new-start',
+              role: 'assistant',
+              text: 'Percakapan telah dibersihkan. Ada yang bisa saya bantu sekarang?',
+              timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            },
+          ]);
+        }}
+      />
     </div>
   );
 };

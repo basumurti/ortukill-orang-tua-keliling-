@@ -10,7 +10,8 @@ import {
   PromoRule,
   FinanceRecord,
   SalesTarget,
-  LastUpdateInfo
+  LastUpdateInfo,
+  StockAuditRecord
 } from '../types';
 import { 
   INITIAL_CONFIG, 
@@ -37,6 +38,7 @@ const STORAGE_KEYS = {
   LAST_UPDATE: 'ortukill_pos_last_update_v2',
   PURGE_FLAG: 'ortukill_pos_demo_purged_v2',
   DELETED_TRX: 'ortukill_pos_deleted_trx_v2',
+  STOCK_AUDIT: 'ortukill_pos_stock_audit_v1',
 };
 
 // Daftar ID transaksi demo dari initialData untuk mencegah demo muncul kembali
@@ -107,14 +109,33 @@ export const INITIAL_PROMOS: PromoRule[] = [
   },
 ];
 
+// Singleton formatters (hindari alokasi Intl berulang pada ribuan baris)
+const RUPIAH_FORMATTER = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  maximumFractionDigits: 0,
+});
+
+const JAKARTA_DATETIME_FORMATTER = new Intl.DateTimeFormat('id-ID', {
+  timeZone: 'Asia/Jakarta',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+});
+
+const WIB_TIME_SHORT_FORMATTER = new Intl.DateTimeFormat('id-ID', {
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
 // Format utilities
 export function formatRupiah(val: number | string): string {
   const num = typeof val === 'number' ? val : Number(val) || 0;
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(num);
+  return RUPIAH_FORMATTER.format(num);
 }
 
 export function normalizeDateToYmd(s: string): string {
@@ -205,19 +226,8 @@ export function formatDateForGoogleSheet(
 
   const validDate = isNaN(dateObj.getTime()) ? new Date() : dateObj;
 
-  // Format GMT+7 via Intl
-  const formatter = new Intl.DateTimeFormat('id-ID', {
-    timeZone: 'Asia/Jakarta',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(validDate);
+  // Format GMT+7 via singleton Intl formatter
+  const parts = JAKARTA_DATETIME_FORMATTER.formatToParts(validDate);
   const partMap: Record<string, string> = {};
   parts.forEach((p) => { partMap[p.type] = p.value; });
 
@@ -396,6 +406,39 @@ export function classifyProduct(sku: string = '', name: string = ''): string {
 }
 
 /**
+ * Memeriksa apakah suatu item transaksi merupakan item diskon/promo/potongan.
+ * Item promo TIDAK BOLEH dihitung ke dalam Volume Terjual (Total Qty Botol).
+ */
+export function isPromoItem(item: {
+  sku?: string;
+  name?: string;
+  price?: number;
+  regularPrice?: number;
+  originalPrice?: number;
+  category?: string;
+}): boolean {
+  if (!item) return false;
+  if (typeof item.price === 'number' && item.price < 0) return true;
+  const sku = (item.sku || '').trim().toUpperCase();
+  const name = (item.name || '').trim().toUpperCase();
+  const cat = (item.category || '').trim().toUpperCase();
+
+  return (
+    sku.includes('PROMO') ||
+    sku.includes('POTONGAN') ||
+    sku.includes('DISKON') ||
+    sku.includes('VOUCHER') ||
+    name.includes('PROMO') ||
+    name.includes('POTONGAN') ||
+    name.includes('DISKON') ||
+    name.includes('VOUCHER') ||
+    cat === 'PROMO' ||
+    cat.includes('PROMO') ||
+    cat === 'DAFTAR PROMO'
+  );
+}
+
+/**
  * Memeriksa apakah suatu item transaksi termasuk botol minuman yang dihitung.
  * Aturan pengecualian (KECUALI):
  * 1. Bir: Kategori BIR/BEER, SKU bir, nama bir (Prost, Bintang, Singaraja, dll)
@@ -415,16 +458,8 @@ export function isEligibleBottleItem(item: {
   const name = (item.name || '').trim().toUpperCase();
   const cat = (item.category || '').trim().toUpperCase();
 
-  // 1. Pengecualian Promo
-  if (
-    sku.includes('PROMO') ||
-    name.includes('PROMO') ||
-    name.includes('POTONGAN') ||
-    name.includes('DISKON') ||
-    name.includes('VOUCHER') ||
-    cat === 'PROMO' ||
-    (typeof item.price === 'number' && item.price < 0)
-  ) {
+  // 1. Pengecualian Promo (menggunakan aturan isPromoItem)
+  if (isPromoItem(item)) {
     return false;
   }
 
@@ -542,7 +577,9 @@ export function normalizeTransactionsByDate(rawList: TransactionReceipt[]): Tran
         margin: actualMargin,
       });
 
-      dateMap[key].totalQty += actualQty;
+      if (!isPromoItem({ sku: actualSku, name: actualName, price: actualPrice, category: cat })) {
+        dateMap[key].totalQty += actualQty;
+      }
       dateMap[key].subtotal += actualTotal;
       dateMap[key].total += actualTotal;
       dateMap[key].margin += actualMargin;
@@ -555,11 +592,77 @@ export function normalizeTransactionsByDate(rawList: TransactionReceipt[]): Tran
 }
 
 export class StorageService {
+  // In-memory cache untuk menghindari JSON.parse berulang pada data besar
+  private static memoryCache = new Map<string, unknown>();
+  private static deletedTrxSetCache: Set<string> | null = null;
+  private static demoPurgedCache: boolean | null = null;
+  private static storageListenerAttached = false;
+
+  private static ensureStorageListener(): void {
+    if (this.storageListenerAttached) return;
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('storage', (event: StorageEvent) => {
+        this.invalidateCache(event.key ?? undefined);
+      });
+      this.storageListenerAttached = true;
+    }
+  }
+
+  /**
+   * Membuang cache memori (semua key atau key tertentu).
+   * Otomatis dipanggil saat write, event `storage`, dan setelah sinkronisasi Sheets.
+   */
+  static invalidateCache(key?: string): void {
+    if (!key) {
+      this.memoryCache.clear();
+      this.deletedTrxSetCache = null;
+      this.demoPurgedCache = null;
+      return;
+    }
+    this.memoryCache.delete(key);
+    if (key === STORAGE_KEYS.DELETED_TRX) {
+      this.deletedTrxSetCache = null;
+      this.memoryCache.delete(STORAGE_KEYS.TRANSACTIONS);
+    } else if (key === STORAGE_KEYS.PURGE_FLAG) {
+      this.demoPurgedCache = null;
+    }
+  }
+
+  private static setStorageAndCache<T>(key: string, value: T): void {
+    this.ensureStorageListener();
+    localStorage.setItem(key, JSON.stringify(value));
+    this.memoryCache.set(key, value);
+  }
+
+  private static getCachedItemCount(key: string): number {
+    this.ensureStorageListener();
+    if (this.memoryCache.has(key)) {
+      const cached = this.memoryCache.get(key);
+      return Array.isArray(cached) ? cached.length : 0;
+    }
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.length : 0;
+    } catch {
+      return 0;
+    }
+  }
+
   // Config
   static getConfig(): AppConfig {
+    this.ensureStorageListener();
+    if (this.memoryCache.has(STORAGE_KEYS.CONFIG)) {
+      return this.memoryCache.get(STORAGE_KEYS.CONFIG) as AppConfig;
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.CONFIG);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored) as AppConfig;
+        this.memoryCache.set(STORAGE_KEYS.CONFIG, parsed);
+        return parsed;
+      }
     } catch (e) {
       console.error('Failed to load config', e);
     }
@@ -571,14 +674,19 @@ export class StorageService {
   }
 
   static saveConfig(config: AppConfig): void {
-    localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(config));
+    this.setStorageAndCache(STORAGE_KEYS.CONFIG, config);
   }
 
   // Pastikan data demo statis awal tidak lagi memuat ulang transaksi palsu
   static ensureDemoPurged(): void {
+    this.ensureStorageListener();
+    if (this.demoPurgedCache === true) return;
     try {
       const isPurged = localStorage.getItem(STORAGE_KEYS.PURGE_FLAG);
-      if (isPurged === 'true') return;
+      if (isPurged === 'true') {
+        this.demoPurgedCache = true;
+        return;
+      }
 
       // Cek dan bersihkan transaksi demo jika masih ada di browser
       const v2 = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
@@ -597,7 +705,7 @@ export class StorageService {
         } catch (e) {}
       }
 
-      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(cleanTransactions));
+      this.setStorageAndCache(STORAGE_KEYS.TRANSACTIONS, cleanTransactions);
 
       // Bersihkan catatan keuangan demo jika ada
       const fLegacy = localStorage.getItem(STORAGE_KEYS.FINANCES_LEGACY);
@@ -612,7 +720,7 @@ export class StorageService {
           }
         } catch (e) {}
       }
-      localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(cleanFinances));
+      this.setStorageAndCache(STORAGE_KEYS.FINANCES, cleanFinances);
 
       // Bersihkan barang masuk demo
       const bmLegacy = localStorage.getItem(STORAGE_KEYS.BARANG_MASUK_LEGACY);
@@ -630,9 +738,10 @@ export class StorageService {
       if (cleanBm.length === 0 && Array.isArray(INITIAL_BARANG_MASUK) && INITIAL_BARANG_MASUK.length > 0) {
         cleanBm = [...INITIAL_BARANG_MASUK];
       }
-      localStorage.setItem(STORAGE_KEYS.BARANG_MASUK, JSON.stringify(cleanBm));
+      this.setStorageAndCache(STORAGE_KEYS.BARANG_MASUK, cleanBm);
 
       localStorage.setItem(STORAGE_KEYS.PURGE_FLAG, 'true');
+      this.demoPurgedCache = true;
     } catch (e) {
       console.warn('ensureDemoPurged warning:', e);
     }
@@ -640,27 +749,34 @@ export class StorageService {
 
   // Products - Memorized berdasarkan pembaruan terakhir
   static getProducts(): Product[] {
+    this.ensureStorageListener();
+    if (this.memoryCache.has(STORAGE_KEYS.PRODUCTS)) {
+      const cached = this.memoryCache.get(STORAGE_KEYS.PRODUCTS) as Product[];
+      return cached.map((p) => ({ ...p }));
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
       if (stored !== null) {
         const parsed: Product[] = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Normalize and categorize
-          return parsed.map((p) => ({
+          const normalized = parsed.map((p) => ({
             ...p,
             category: p.category && p.category !== 'PRODUK' ? p.category : classifyProduct(p.sku, p.name),
             cost: Number(p.cost) || 0,
             price: Number(p.price) || 0,
             stock: Number(p.stock) || 0,
           }));
+          this.memoryCache.set(STORAGE_KEYS.PRODUCTS, normalized);
+          return normalized.map((p) => ({ ...p }));
         }
       }
     } catch (e) {
       console.error('Failed to load products', e);
     }
     // Jika benar-benar pertama kali di browser, inisialisasi katalog sekali saja
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(INITIAL_PRODUCTS));
-    return INITIAL_PRODUCTS;
+    this.setStorageAndCache(STORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS);
+    return INITIAL_PRODUCTS.map((p) => ({ ...p }));
   }
 
   static saveProducts(products: Product[], source: 'GOOGLE_SHEETS' | 'POS' | 'LOCAL' = 'LOCAL', details?: string): void {
@@ -668,11 +784,12 @@ export class StorageService {
       ...p,
       category: p.category && p.category !== 'PRODUK' ? p.category : classifyProduct(p.sku, p.name),
     }));
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(formatted));
+    this.setStorageAndCache(STORAGE_KEYS.PRODUCTS, formatted);
     this.setLastUpdateInfo({
       source,
       sourceLabel: source === 'GOOGLE_SHEETS' ? 'Google Sheets' : 'Pembaruan Lokal',
       details: details || `Katalog produk diperbarui (${formatted.length} produk)`,
+      itemCounts: { products: formatted.length },
     });
   }
 
@@ -731,16 +848,65 @@ export class StorageService {
     return products;
   }
 
+  // Stock Audit Trail (Perubahan Produk & Stok)
+  static getStockAuditLogs(): StockAuditRecord[] {
+    this.ensureStorageListener();
+    if (this.memoryCache.has(STORAGE_KEYS.STOCK_AUDIT)) {
+      return [...(this.memoryCache.get(STORAGE_KEYS.STOCK_AUDIT) as StockAuditRecord[])];
+    }
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.STOCK_AUDIT);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          this.memoryCache.set(STORAGE_KEYS.STOCK_AUDIT, parsed);
+          return [...parsed];
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load stock audit logs', e);
+    }
+    return [];
+  }
+
+  static addStockAuditLog(log: Omit<StockAuditRecord, 'id' | 'timestamp' | 'dateStr'>): StockAuditRecord {
+    const logs = this.getStockAuditLogs();
+    const { fullSheetStr } = formatDateForGoogleSheet(new Date(), true);
+    const newRecord: StockAuditRecord = {
+      ...log,
+      id: `AUDIT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      dateStr: fullSheetStr,
+    };
+    const updated = [newRecord, ...logs].slice(0, 200); // keep last 200 records
+    try {
+      this.setStorageAndCache(STORAGE_KEYS.STOCK_AUDIT, updated);
+    } catch (e) {
+      console.warn('Failed to save stock audit log', e);
+    }
+    return newRecord;
+  }
+
   // Blacklist ID Transaksi yang sudah dihapus / di-void secara permanen
   static getDeletedTransactionIds(): Set<string> {
+    this.ensureStorageListener();
+    if (this.deletedTrxSetCache !== null) {
+      return this.deletedTrxSetCache;
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.DELETED_TRX);
       if (stored) {
         const arr = JSON.parse(stored);
-        if (Array.isArray(arr)) return new Set(arr);
+        if (Array.isArray(arr)) {
+          const set = new Set<string>(arr);
+          this.deletedTrxSetCache = set;
+          return set;
+        }
       }
     } catch {}
-    return new Set<string>();
+    const emptySet = new Set<string>();
+    this.deletedTrxSetCache = emptySet;
+    return emptySet;
   }
 
   static isTransactionDeleted(id: string, deletedSet: Set<string>): boolean {
@@ -761,7 +927,7 @@ export class StorageService {
   static markTransactionAsDeleted(trxId: string): void {
     if (!trxId) return;
     try {
-      const deletedSet = this.getDeletedTransactionIds();
+      const deletedSet = new Set(this.getDeletedTransactionIds());
       const raw = String(trxId).trim();
       const noHash = raw.replace(/^#/, '').trim();
       const bare = noHash.replace(/^VOIDED-/i, '').trim();
@@ -775,6 +941,7 @@ export class StorageService {
       deletedSet.add(`#VOIDED-${bare}`);
 
       localStorage.setItem(STORAGE_KEYS.DELETED_TRX, JSON.stringify(Array.from(deletedSet)));
+      this.deletedTrxSetCache = deletedSet;
     } catch (e) {
       console.error(e);
     }
@@ -783,29 +950,26 @@ export class StorageService {
   // Bersihkan semua transaksi berawalan VOIDED- lama dari memori kasir
   static purgeAllVoidedTransactions(): TransactionReceipt[] {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-      if (stored) {
-        const parsed: TransactionReceipt[] = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          const deletedSet = this.getDeletedTransactionIds();
-          const cleaned: TransactionReceipt[] = [];
+      const list = this.getTransactions();
+      const deletedSet = this.getDeletedTransactionIds();
+      const cleaned: TransactionReceipt[] = [];
+      let hadVoided = false;
 
-          for (const t of parsed) {
-            const rawId = String(t.id || '').trim();
-            const isVoidedPrefix = rawId.toUpperCase().startsWith('VOIDED-') || rawId.toUpperCase().startsWith('#VOIDED-');
-            if (isVoidedPrefix || this.isTransactionDeleted(rawId, deletedSet)) {
-              this.markTransactionAsDeleted(rawId);
-            } else {
-              cleaned.push(t);
-            }
-          }
-
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(cleaned));
-          }
-          return cleaned;
+      for (const t of list) {
+        const rawId = String(t.id || '').trim();
+        const isVoidedPrefix = rawId.toUpperCase().startsWith('VOIDED-') || rawId.toUpperCase().startsWith('#VOIDED-');
+        if (isVoidedPrefix || this.isTransactionDeleted(rawId, deletedSet)) {
+          this.markTransactionAsDeleted(rawId);
+          hadVoided = true;
+        } else {
+          cleaned.push(t);
         }
       }
+
+      if (hadVoided && cleaned.length !== list.length) {
+        this.setStorageAndCache(STORAGE_KEYS.TRANSACTIONS, cleaned);
+      }
+      return cleaned;
     } catch (e) {
       console.error('Failed to purge voided transactions', e);
     }
@@ -815,6 +979,9 @@ export class StorageService {
   // Transactions - Memorized riil, TIDAK PERNAH memuat demo awal
   static getTransactions(): TransactionReceipt[] {
     this.ensureDemoPurged();
+    if (this.memoryCache.has(STORAGE_KEYS.TRANSACTIONS)) {
+      return [...(this.memoryCache.get(STORAGE_KEYS.TRANSACTIONS) as TransactionReceipt[])];
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
       if (stored !== null) {
@@ -829,9 +996,11 @@ export class StorageService {
           });
           const normalized = normalizeTransactionsByDate(activeOnly);
           if (normalized !== parsed) {
-            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(normalized));
+            this.setStorageAndCache(STORAGE_KEYS.TRANSACTIONS, normalized);
+          } else {
+            this.memoryCache.set(STORAGE_KEYS.TRANSACTIONS, normalized);
           }
-          return normalized;
+          return [...normalized];
         }
       }
     } catch (e) {
@@ -851,11 +1020,12 @@ export class StorageService {
       return true;
     });
     const normalized = normalizeTransactionsByDate(filtered);
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(normalized));
+    this.setStorageAndCache(STORAGE_KEYS.TRANSACTIONS, normalized);
     this.setLastUpdateInfo({
       source,
       sourceLabel: source === 'GOOGLE_SHEETS' ? 'Google Sheets' : source === 'POS' ? 'Kasir POS' : 'Update Lokal',
       details: details || `Memorize ${normalized.length} transaksi`,
+      itemCounts: { transactions: normalized.length },
     });
   }
 
@@ -909,7 +1079,7 @@ export class StorageService {
 
     const list = this.getTransactions();
     const updated = [enrichedTrx, ...list];
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
+    this.setStorageAndCache(STORAGE_KEYS.TRANSACTIONS, updated);
 
     // Automatically record shipping fee as website income (+) if present
     if (trx.shippingFee && trx.shippingFee > 0) {
@@ -945,6 +1115,7 @@ export class StorageService {
       source: 'POS',
       sourceLabel: 'Kasir POS',
       details: `Transaksi ${trx.id} (${formatRupiah(trx.total)})`,
+      itemCounts: { transactions: updated.length, products: products.length },
     });
 
     return updated;
@@ -984,14 +1155,14 @@ export class StorageService {
       return curRaw !== rawTarget && curBare !== bareTarget;
     });
 
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
+    this.setStorageAndCache(STORAGE_KEYS.TRANSACTIONS, updated);
 
     // Bersihkan juga catatan keuangan ongkir jika ada
     try {
       const finances = this.getFinanceRecords();
       const updatedFinances = finances.filter((f) => !f.description.includes(bareTarget) && !f.description.includes(trxId));
       if (updatedFinances.length !== finances.length) {
-        localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(updatedFinances));
+        this.setStorageAndCache(STORAGE_KEYS.FINANCES, updatedFinances);
       }
     } catch (e) {}
 
@@ -999,6 +1170,7 @@ export class StorageService {
       source: 'POS',
       sourceLabel: 'Void & Hapus Permanen',
       details: `Nota ${trxId} dibatalkan & dihapus permanen (${reason || 'VOID'})`,
+      itemCounts: { transactions: updated.length },
     });
 
     return updated;
@@ -1034,14 +1206,14 @@ export class StorageService {
       const curBare = curRaw.replace(/^#/, '').replace(/^VOIDED-/, '');
       return curRaw !== rawTarget && curBare !== bareTarget;
     });
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
+    this.setStorageAndCache(STORAGE_KEYS.TRANSACTIONS, updated);
 
     // Hapus juga catatan keuangan ongkir jika ada yang terikat nomor struk ini
     try {
       const finances = this.getFinanceRecords();
       const updatedFinances = finances.filter((f) => !f.description.includes(bareTarget) && !f.description.includes(trxId));
       if (updatedFinances.length !== finances.length) {
-        localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(updatedFinances));
+        this.setStorageAndCache(STORAGE_KEYS.FINANCES, updatedFinances);
       }
     } catch (e) {}
 
@@ -1049,6 +1221,7 @@ export class StorageService {
       source: 'POS',
       sourceLabel: 'Hapus Transaksi',
       details: `Nota ${trxId} dihapus permanen`,
+      itemCounts: { transactions: updated.length },
     });
 
     return updated;
@@ -1082,14 +1255,22 @@ export class StorageService {
     todayList.forEach((t) => {
       totalOmset += t.total;
       totalMargin += t.margin || 0;
-      totalQty += t.totalQty || 0;
 
-      if (Array.isArray(t.items)) {
+      // Volume Terjual (Excl. Promo): hitung jumlah botol HANYA dari item yang BUKAN promo
+      if (Array.isArray(t.items) && t.items.length > 0) {
+        const nonPromoQty = t.items.reduce((sum, item) => {
+          if (isPromoItem(item)) return sum;
+          return sum + (Number(item.qty) || 0);
+        }, 0);
+        totalQty += nonPromoQty;
+
         t.items.forEach((item) => {
           if (isEligibleBottleItem(item)) {
             filteredBottleQty += Number(item.qty) || 0;
           }
         });
+      } else {
+        totalQty += t.totalQty || 0;
       }
 
       const method = t.paymentMethod;
@@ -1114,11 +1295,17 @@ export class StorageService {
   // LOG_BARANG_MASUK (B4:H) - Memorized, tidak memuat demo
   static getBarangMasukList(): BarangMasukRecord[] {
     this.ensureDemoPurged();
+    if (this.memoryCache.has(STORAGE_KEYS.BARANG_MASUK)) {
+      return [...(this.memoryCache.get(STORAGE_KEYS.BARANG_MASUK) as BarangMasukRecord[])];
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.BARANG_MASUK);
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.memoryCache.set(STORAGE_KEYS.BARANG_MASUK, parsed);
+          return [...parsed];
+        }
       }
     } catch (e) {
       console.error(e);
@@ -1128,11 +1315,12 @@ export class StorageService {
 
   static saveBarangMasukList(list: BarangMasukRecord[]): void {
     this.ensureDemoPurged();
-    localStorage.setItem(STORAGE_KEYS.BARANG_MASUK, JSON.stringify(list));
+    this.setStorageAndCache(STORAGE_KEYS.BARANG_MASUK, list);
     this.setLastUpdateInfo({
       source: 'LOCAL',
       sourceLabel: 'Barang Masuk',
       details: `Catatan barang masuk disimpan (${list.length} data)`,
+      itemCounts: { barangMasuk: list.length },
     });
   }
 
@@ -1150,28 +1338,34 @@ export class StorageService {
     const list = this.getBarangMasukList();
     const { full } = getFormattedNow();
     const nowId = `BM-${Date.now().toString().slice(-6)}`;
+    const qty = Number(entry.qty) || 0;
+    const cost = Number(entry.cost) || 0;
+    const totalCost = entry.totalCost !== undefined ? Number(entry.totalCost) : (qty * cost);
 
     const newRecord: BarangMasukRecord = {
       id: entry.id || nowId,
       date: entry.date || full,
       sku: entry.sku,
       name: entry.name,
-      qty: Number(entry.qty) || 0,
-      cost: Number(entry.cost) || 0,
-      supplierOrNotes: entry.supplierOrNotes || 'Restock Barang Masuk',
-      totalCost: (Number(entry.qty) || 0) * (Number(entry.cost) || 0),
+      krat: Number(entry.krat) || 0,
+      qty: qty,
+      cost: cost,
+      supplier: entry.supplier || entry.supplierOrNotes || 'orang tua',
+      supplierOrNotes: entry.supplierOrNotes || entry.supplier || 'Restock Barang Masuk',
+      totalCost: totalCost,
     };
 
     const updated = [newRecord, ...list];
     this.saveBarangMasukList(updated);
 
-    // Also update product stock in DASHBOARD_MUTASI_&_PROFIT
+    // Also update product stock in catalog
     this.updateProductStock(entry.sku, newRecord.qty, false);
 
+    const isCorrection = (entry.supplierOrNotes || '').includes('KOREKSI') || (entry.supplier || '').includes('KOREKSI');
     this.setLastUpdateInfo({
       source: 'LOCAL',
-      sourceLabel: 'Restock Barang',
-      details: `Barang Masuk: ${newRecord.name} (+${newRecord.qty})`,
+      sourceLabel: isCorrection ? 'Koreksi Stok' : 'Restock Barang',
+      details: `${isCorrection ? 'Koreksi Stok' : 'Barang Masuk'}: ${newRecord.name} (${qty >= 0 ? '+' : ''}${qty})`,
     });
 
     return newRecord;
@@ -1179,9 +1373,18 @@ export class StorageService {
 
   // Shift & Cash Drawer
   static getCurrentShift(): ShiftRecord {
+    this.ensureStorageListener();
+    if (this.memoryCache.has(STORAGE_KEYS.CURRENT_SHIFT)) {
+      const cached = this.memoryCache.get(STORAGE_KEYS.CURRENT_SHIFT) as ShiftRecord;
+      return { ...cached, expenses: [...(cached.expenses || [])] };
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_SHIFT);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored) as ShiftRecord;
+        this.memoryCache.set(STORAGE_KEYS.CURRENT_SHIFT, parsed);
+        return { ...parsed, expenses: [...(parsed.expenses || [])] };
+      }
     } catch (e) {
       console.error(e);
     }
@@ -1198,14 +1401,14 @@ export class StorageService {
       difference: 0,
       status: 'OPEN',
     };
-    localStorage.setItem(STORAGE_KEYS.CURRENT_SHIFT, JSON.stringify(newShift));
-    return newShift;
+    this.setStorageAndCache(STORAGE_KEYS.CURRENT_SHIFT, newShift);
+    return { ...newShift, expenses: [] };
   }
 
   static updateShiftCashSales(amount: number): ShiftRecord {
     const shift = this.getCurrentShift();
     shift.cashSales += amount;
-    localStorage.setItem(STORAGE_KEYS.CURRENT_SHIFT, JSON.stringify(shift));
+    this.setStorageAndCache(STORAGE_KEYS.CURRENT_SHIFT, shift);
     return shift;
   }
 
@@ -1219,7 +1422,7 @@ export class StorageService {
       description,
       amount,
     });
-    localStorage.setItem(STORAGE_KEYS.CURRENT_SHIFT, JSON.stringify(shift));
+    this.setStorageAndCache(STORAGE_KEYS.CURRENT_SHIFT, shift);
     return shift;
   }
 
@@ -1241,8 +1444,8 @@ export class StorageService {
 
     const allShifts = this.getShiftHistory();
     allShifts.unshift(closed);
-    localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(allShifts));
-    localStorage.setItem(STORAGE_KEYS.CURRENT_SHIFT, JSON.stringify(closed));
+    this.setStorageAndCache(STORAGE_KEYS.SHIFTS, allShifts);
+    this.setStorageAndCache(STORAGE_KEYS.CURRENT_SHIFT, closed);
 
     return closed;
   }
@@ -1260,14 +1463,24 @@ export class StorageService {
       difference: 0,
       status: 'OPEN',
     };
-    localStorage.setItem(STORAGE_KEYS.CURRENT_SHIFT, JSON.stringify(newShift));
+    this.setStorageAndCache(STORAGE_KEYS.CURRENT_SHIFT, newShift);
     return newShift;
   }
 
   static getShiftHistory(): ShiftRecord[] {
+    this.ensureStorageListener();
+    if (this.memoryCache.has(STORAGE_KEYS.SHIFTS)) {
+      return [...(this.memoryCache.get(STORAGE_KEYS.SHIFTS) as ShiftRecord[])];
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.SHIFTS);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          this.memoryCache.set(STORAGE_KEYS.SHIFTS, parsed);
+          return [...parsed];
+        }
+      }
     } catch (e) {
       console.error(e);
     }
@@ -1276,6 +1489,10 @@ export class StorageService {
 
   // Promo Management
   static getPromos(): PromoRule[] {
+    this.ensureStorageListener();
+    if (this.memoryCache.has(STORAGE_KEYS.PROMOS)) {
+      return [...(this.memoryCache.get(STORAGE_KEYS.PROMOS) as PromoRule[])];
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.PROMOS);
       if (stored) {
@@ -1296,18 +1513,19 @@ export class StorageService {
               isActive: true,
             };
             const updated = [promo5rb, ...list];
-            localStorage.setItem(STORAGE_KEYS.PROMOS, JSON.stringify(updated));
-            return updated;
+            this.setStorageAndCache(STORAGE_KEYS.PROMOS, updated);
+            return [...updated];
           }
-          return list;
+          this.memoryCache.set(STORAGE_KEYS.PROMOS, list);
+          return [...list];
         }
       }
     } catch (e) {
       console.error('Failed to parse promos:', e);
     }
     // Inisialisasi awal jika belum ada
-    localStorage.setItem(STORAGE_KEYS.PROMOS, JSON.stringify(INITIAL_PROMOS));
-    return INITIAL_PROMOS;
+    this.setStorageAndCache(STORAGE_KEYS.PROMOS, INITIAL_PROMOS);
+    return [...INITIAL_PROMOS];
   }
 
   static savePromo(promo: PromoRule): PromoRule[] {
@@ -1322,13 +1540,13 @@ export class StorageService {
       updated = [promo, ...promos];
     }
 
-    localStorage.setItem(STORAGE_KEYS.PROMOS, JSON.stringify(updated));
+    this.setStorageAndCache(STORAGE_KEYS.PROMOS, updated);
     return updated;
   }
 
   static deletePromo(id: string): PromoRule[] {
     const promos = this.getPromos().filter((p) => p.id !== id);
-    localStorage.setItem(STORAGE_KEYS.PROMOS, JSON.stringify(promos));
+    this.setStorageAndCache(STORAGE_KEYS.PROMOS, promos);
     return promos;
   }
 
@@ -1336,18 +1554,24 @@ export class StorageService {
     const promos = this.getPromos().map((p) => 
       p.id === id ? { ...p, isActive: p.isActive === false ? true : false } : p
     );
-    localStorage.setItem(STORAGE_KEYS.PROMOS, JSON.stringify(promos));
+    this.setStorageAndCache(STORAGE_KEYS.PROMOS, promos);
     return promos;
   }
 
   // Finance (Pemasukan & Pengeluaran Non-Penjualan) - Memorized, tidak memuat demo
   static getFinanceRecords(): FinanceRecord[] {
     this.ensureDemoPurged();
+    if (this.memoryCache.has(STORAGE_KEYS.FINANCES)) {
+      return [...(this.memoryCache.get(STORAGE_KEYS.FINANCES) as FinanceRecord[])];
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.FINANCES);
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          this.memoryCache.set(STORAGE_KEYS.FINANCES, parsed);
+          return [...parsed];
+        }
       }
     } catch (e) {
       console.error('Failed to load finance records', e);
@@ -1357,7 +1581,7 @@ export class StorageService {
 
   static saveFinanceRecord(rec: Omit<FinanceRecord, 'id' | 'dateYmd' | 'dateTimeStr'> & { id?: string; date?: string; dateYmd?: string; dateTimeStr?: string }): FinanceRecord[] {
     const list = this.getFinanceRecords();
-    const { full, date } = getFormattedNow();
+    const { date } = getFormattedNow();
     const entryDate = rec.date || date;
     const dateYmd = rec.dateYmd || normalizeDateToYmd(entryDate);
 
@@ -1379,7 +1603,7 @@ export class StorageService {
       id: rec.id || `FIN-${Date.now().toString().slice(-8)}`,
       date: entryDate,
       dateYmd: dateYmd,
-      dateTimeStr: rec.dateTimeStr || `${entryDate} ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`,
+      dateTimeStr: rec.dateTimeStr || `${entryDate} ${WIB_TIME_SHORT_FORMATTER.format(new Date())}`,
       type: rec.type,
       category: rec.category,
       categoryLabel: rec.categoryLabel || categoryMap[rec.category] || rec.category,
@@ -1395,12 +1619,13 @@ export class StorageService {
     };
 
     const updated = [newRec, ...list.filter((f) => f.id !== newRec.id)];
-    localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(updated));
+    this.setStorageAndCache(STORAGE_KEYS.FINANCES, updated);
 
     this.setLastUpdateInfo({
       source: 'LOCAL',
       sourceLabel: 'Catatan Keuangan',
       details: `${newRec.type === 'INCOME' ? 'Pemasukan' : 'Pengeluaran'}: ${newRec.description} (${formatRupiah(amount)})`,
+      itemCounts: { finances: updated.length },
     });
 
     return updated;
@@ -1440,32 +1665,39 @@ export class StorageService {
     const result = Array.from(mergedMap.values());
     result.sort((a, b) => String(b.dateYmd || b.date || '').localeCompare(String(a.dateYmd || a.date || '')));
 
-    localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(result));
+    this.setStorageAndCache(STORAGE_KEYS.FINANCES, result);
     return result;
   }
 
   static deleteFinanceRecord(id: string): FinanceRecord[] {
     const list = this.getFinanceRecords().filter((f) => f.id !== id);
-    localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify(list));
+    this.setStorageAndCache(STORAGE_KEYS.FINANCES, list);
     this.setLastUpdateInfo({
       source: 'LOCAL',
       sourceLabel: 'Hapus Keuangan',
       details: 'Catatan keuangan dihapus',
+      itemCounts: { finances: list.length },
     });
     return list;
   }
 
   // Sales Target Bulanan
   static getSalesTarget(): SalesTarget {
+    this.ensureStorageListener();
+    if (this.memoryCache.has(STORAGE_KEYS.SALES_TARGET)) {
+      return this.memoryCache.get(STORAGE_KEYS.SALES_TARGET) as SalesTarget;
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.SALES_TARGET);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored) as SalesTarget;
+        this.memoryCache.set(STORAGE_KEYS.SALES_TARGET, parsed);
+        return parsed;
       }
     } catch (e) {
       console.error('Failed to load sales target', e);
     }
-    localStorage.setItem(STORAGE_KEYS.SALES_TARGET, JSON.stringify(INITIAL_SALES_TARGET));
+    this.setStorageAndCache(STORAGE_KEYS.SALES_TARGET, INITIAL_SALES_TARGET);
     return INITIAL_SALES_TARGET;
   }
 
@@ -1476,16 +1708,22 @@ export class StorageService {
       month: currentMonth,
       updatedAt: new Date().toISOString(),
     };
-    localStorage.setItem(STORAGE_KEYS.SALES_TARGET, JSON.stringify(newTarget));
+    this.setStorageAndCache(STORAGE_KEYS.SALES_TARGET, newTarget);
     return newTarget;
   }
 
   // Memorize Base on Last Update State Management
   static getLastUpdateInfo(): LastUpdateInfo {
+    this.ensureStorageListener();
+    if (this.memoryCache.has(STORAGE_KEYS.LAST_UPDATE)) {
+      return this.memoryCache.get(STORAGE_KEYS.LAST_UPDATE) as LastUpdateInfo;
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.LAST_UPDATE);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored) as LastUpdateInfo;
+        this.memoryCache.set(STORAGE_KEYS.LAST_UPDATE, parsed);
+        return parsed;
       }
     } catch (e) {}
 
@@ -1493,7 +1731,7 @@ export class StorageService {
     const d = String(now.getDate()).padStart(2, '0');
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const y = now.getFullYear();
-    const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const time = WIB_TIME_SHORT_FORMATTER.format(now);
 
     return {
       timestamp: now.toISOString(),
@@ -1510,7 +1748,7 @@ export class StorageService {
     const d = String(now.getDate()).padStart(2, '0');
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const y = now.getFullYear();
-    const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const time = WIB_TIME_SHORT_FORMATTER.format(now);
 
     const updated: LastUpdateInfo = {
       timestamp: now.toISOString(),
@@ -1519,15 +1757,15 @@ export class StorageService {
       sourceLabel: info.sourceLabel || (info.source === 'GOOGLE_SHEETS' ? 'Google Sheets' : info.source === 'POS' ? 'Kasir POS' : 'Update Lokal'),
       details: info.details || current.details || 'Pembaruan data kasir',
       itemCounts: {
-        products: info.itemCounts?.products ?? (JSON.parse(localStorage.getItem(STORAGE_KEYS.PRODUCTS) || '[]')?.length || 0),
-        transactions: info.itemCounts?.transactions ?? (JSON.parse(localStorage.getItem(STORAGE_KEYS.TRANSACTIONS) || '[]')?.length || 0),
-        finances: info.itemCounts?.finances ?? (JSON.parse(localStorage.getItem(STORAGE_KEYS.FINANCES) || '[]')?.length || 0),
-        barangMasuk: info.itemCounts?.barangMasuk ?? (JSON.parse(localStorage.getItem(STORAGE_KEYS.BARANG_MASUK) || '[]')?.length || 0),
+        products: info.itemCounts?.products ?? this.getCachedItemCount(STORAGE_KEYS.PRODUCTS),
+        transactions: info.itemCounts?.transactions ?? this.getCachedItemCount(STORAGE_KEYS.TRANSACTIONS),
+        finances: info.itemCounts?.finances ?? this.getCachedItemCount(STORAGE_KEYS.FINANCES),
+        barangMasuk: info.itemCounts?.barangMasuk ?? this.getCachedItemCount(STORAGE_KEYS.BARANG_MASUK),
       },
     };
 
     try {
-      localStorage.setItem(STORAGE_KEYS.LAST_UPDATE, JSON.stringify(updated));
+      this.setStorageAndCache(STORAGE_KEYS.LAST_UPDATE, updated);
     } catch (e) {}
 
     return updated;
@@ -1535,15 +1773,18 @@ export class StorageService {
 
   // Bersihkan data transaksi dan keuangan ke kondisi fresh (TIDAK menyuntikkan data demo palsu!)
   static resetToInitialData(): void {
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.BARANG_MASUK, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.FINANCES, JSON.stringify([]));
+    this.setStorageAndCache(STORAGE_KEYS.TRANSACTIONS, []);
+    this.setStorageAndCache(STORAGE_KEYS.BARANG_MASUK, []);
+    this.setStorageAndCache(STORAGE_KEYS.FINANCES, []);
     localStorage.removeItem(STORAGE_KEYS.CURRENT_SHIFT);
     localStorage.removeItem(STORAGE_KEYS.SHIFTS);
+    this.memoryCache.delete(STORAGE_KEYS.CURRENT_SHIFT);
+    this.memoryCache.delete(STORAGE_KEYS.SHIFTS);
     this.setLastUpdateInfo({
       source: 'LOCAL',
       sourceLabel: 'Data Dibersihkan',
       details: 'Data transaksi & catatan kasir dibersihkan (tanpa data demo)',
+      itemCounts: { transactions: 0, barangMasuk: 0, finances: 0 },
     });
   }
 }

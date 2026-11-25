@@ -1,6 +1,0 @@
-{
-  "summary": "Rencana pembersihan tuntas transaksi VOIDED dari memori lokal dan Google Sheets:\n1. Pembersihan Otomatis Data VOIDED (Auto-Purge): Menghapus seluruh transaksi yang berawalan 'VOIDED-' atau berstatus 'VOIDED' dari memori lokal (localStorage).\n2. Blacklist Multivarian: Memperluas markTransactionAsDeleted agar mencatat semua variasi ID (raw, bare, #, dan VOIDED-).\n3. Penyelarasan Sinkronisasi: Memastikan proses sinkronisasi Google Sheets tidak lagi memunculkan kembali transaksi yang sudah di-void.\n4. Logika Hapus Google Sheets: Menghapus baris secara fisik di Google Sheets LOG_PENJUALAN via deleteRow.",
-  "updatedAt": "2026-10-15T09:01:44.592086671Z",
-  "requestFeedback": true,
-  "userFacing": true
-}

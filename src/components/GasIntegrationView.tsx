@@ -331,23 +331,23 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-24">
+    <div className="space-y-4 max-w-7xl mx-auto pb-24 text-[#0F172A] dark:text-[#F4F4F6] min-w-0">
       {/* Top Banner */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[#FFF2ED] text-[#FF5E36] flex items-center justify-center flex-shrink-0">
+      <div className="bg-white dark:bg-[#1B1B20] rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] shadow-none flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-start sm:items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center flex-shrink-0">
             <FileSpreadsheet className="w-5 h-5" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-extrabold text-stone-900 tracking-tight">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-lg font-black text-[#0F172A] dark:text-[#F4F4F6] tracking-tight uppercase">
                 Integrasi Google Spreadsheet
               </h2>
               <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
                   scriptVersion?.upToDate
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-amber-50 text-amber-800 border-amber-300'
+                    ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35'
+                    : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/35'
                 }`}
                 title={scriptVersion?.message || 'Versi Apps Script yang sedang terpasang di Google Sheets'}
               >
@@ -363,13 +363,13 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
                 type="button"
                 onClick={checkScriptVersion}
                 disabled={checkingVersion}
-                className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-500 cursor-pointer disabled:opacity-50"
+                className="text-[11px] font-bold px-2.5 py-1 rounded-full border border-slate-200 dark:border-[#343440] bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-600 dark:text-zinc-300 cursor-pointer disabled:opacity-50 transition-colors"
                 title="Periksa ulang versi Apps Script yang terpasang"
               >
                 Cek ulang
               </button>
             </div>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
               Sinkronisasi data real-time: Master Produk B70:H (Read-Only) & Log Penjualan B7:M (Harga Biasa)
             </p>
           </div>
@@ -378,49 +378,49 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
         <button
           onClick={handleCopyCode}
           id="btn-copy-gas-code"
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap min-h-[44px]"
+          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] text-white text-xs font-bold transition-colors cursor-pointer shadow-none whitespace-nowrap min-h-[44px]"
         >
-          {copied ? <Check className="w-4 h-4 text-emerald-400 stroke-[3]" /> : <Copy className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4 text-emerald-300 stroke-[3]" /> : <Copy className="w-4 h-4" />}
           <span>{copied ? 'Tersalin ke Clipboard!' : 'Salin Kode .gs Terbaru'}</span>
         </button>
       </div>
 
       {/* PERINGATAN: script di Google Sheets masih versi lama */}
       {scriptVersion && scriptVersion.upToDate === false && (
-        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 text-xs text-amber-900 space-y-1.5">
-          <div className="font-extrabold flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            Script yang terpasang di Google Sheets masih <span className="font-black">{scriptVersion.installedVersion || 'versi lama'}</span>, sedangkan aplikasi ini memakai <span className="font-black">{scriptVersion.expectedVersion}</span>.
+        <div className="bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 rounded-2xl p-4 text-xs text-amber-900 dark:text-amber-200 space-y-1.5">
+          <div className="font-extrabold flex items-center gap-1.5 text-amber-900 dark:text-amber-300">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+            Script yang terpasang di Google Sheets masih <span className="font-black text-amber-700 dark:text-amber-300">{scriptVersion.installedVersion || 'versi lama'}</span>, sedangkan aplikasi ini memakai <span className="font-black text-emerald-700 dark:text-emerald-400">{scriptVersion.expectedVersion}</span>.
           </div>
-          <div className="leading-relaxed">
-            Akibatnya tombol <strong>VOID / Hapus</strong> hanya <strong>menandai</strong> transaksi jadi <code className="bg-amber-100 px-1 rounded">VOIDED-…</code> dan <strong>barisnya tetap ada</strong> di Google Sheets.
+          <div className="leading-relaxed text-amber-800 dark:text-amber-200/90">
+            Akibatnya tombol <strong className="text-amber-950 dark:text-amber-100">VOID / Hapus</strong> hanya <strong className="text-amber-950 dark:text-amber-100">menandai</strong> transaksi jadi <code className="bg-white dark:bg-[#1B1B20] border border-amber-200 dark:border-amber-500/35 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded font-mono">VOIDED-…</code> dan <strong className="text-amber-950 dark:text-amber-100">barisnya tetap ada</strong> di Google Sheets.
           </div>
-          <div className="leading-relaxed">
-            <strong>Cara memperbaiki:</strong> klik <strong>“Salin Kode .gs Terbaru”</strong> di atas → di editor Apps Script tekan <strong>Ctrl+A</strong> lalu <strong>Ctrl+V</strong> (timpa semua) → <strong>Simpan</strong> → <strong>Deploy → Manage deployments → ikon pensil → Version: “New version” → Deploy</strong>.
+          <div className="leading-relaxed text-amber-800 dark:text-amber-200/90">
+            <strong className="text-amber-950 dark:text-amber-100">Cara memperbaiki:</strong> klik <strong className="text-amber-950 dark:text-amber-100">“Salin Kode .gs Terbaru”</strong> di atas → di editor Apps Script tekan <strong className="text-amber-950 dark:text-amber-100">Ctrl+A</strong> lalu <strong className="text-amber-950 dark:text-amber-100">Ctrl+V</strong> (timpa semua) → <strong className="text-amber-950 dark:text-amber-100">Simpan</strong> → <strong className="text-amber-950 dark:text-amber-100">Deploy → Manage deployments → ikon pensil → Version: “New version” → Deploy</strong>.
           </div>
-          <div className="text-[11px] text-amber-800/80">
-            Sesudah deploy, klik <strong>Cek ulang</strong> di atas — kalau sudah hijau, tombol VOID akan benar-benar menghapus barisnya.
+          <div className="text-[11px] text-amber-700 dark:text-amber-300">
+            Sesudah deploy, klik <strong className="text-amber-950 dark:text-amber-100">Cek ulang</strong> di atas — kalau sudah hijau, tombol VOID akan benar-benar menghapus barisnya.
           </div>
         </div>
       )}
 
       {/* Unified Logic: Penulisan Bersih & Hapus/VOID Otomatis Tanpa Benturan */}
-      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 rounded-2xl p-4 border border-teal-200/80 shadow-xs space-y-3">
+      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-teal-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/35 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-none">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-extrabold text-stone-900 text-sm">
+                <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] text-sm">
                   Sistem Terpadu: Penulisan Bersih & Penghapusan Otomatis (Anti-Benturan)
                 </span>
-                <span className="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                   Harmonis & Aktif
                 </span>
               </div>
-              <p className="text-stone-600 text-xs mt-1 leading-relaxed">
+              <p className="text-slate-500 dark:text-zinc-400 text-xs mt-1 leading-relaxed">
                 Logika penulisan dan penghapusan diatur secara sinkron agar tidak saling menghalangi:
               </p>
             </div>
@@ -429,49 +429,49 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
           <button
             onClick={handleCleanDuplicates}
             disabled={cleaningDuplicates}
-            className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap min-h-[40px] flex-shrink-0"
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] disabled:opacity-50 text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer shadow-none whitespace-nowrap min-h-[44px] flex-shrink-0"
             title="Bersihkan baris ganda yang tidak sengaja terinput di Google Sheets"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${cleaningDuplicates ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-600 dark:text-zinc-300 ${cleaningDuplicates ? 'animate-spin' : ''}`} />
             <span>{cleaningDuplicates ? 'Membersihkan Duplikat...' : 'Bersihkan Duplikat di Sheets'}</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1 border-t border-teal-100">
-          <div className="bg-white/80 p-2.5 rounded-xl border border-teal-200/50">
-            <span className="font-bold text-teal-900 block mb-0.5">✓ 1. Saat Transaksi Kasir Dibuat (Write):</span>
-            <span className="text-stone-600 leading-normal">
-              Dicatat langsung ke sheet <strong>LOG_PENJUALAN</strong> (dan ongkir ke <strong>LAIN-LAIN</strong>) sekali saja tanpa dobel.
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[11px] pt-2 border-t border-slate-100 dark:border-[#2B2B33]">
+          <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border border-slate-200 dark:border-[#343440]">
+            <span className="font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">✓ 1. Saat Transaksi Kasir Dibuat (Write):</span>
+            <span className="text-slate-600 dark:text-zinc-300 leading-normal">
+              Dicatat langsung ke sheet <strong className="text-[#0F172A] dark:text-[#F4F4F6]">LOG_PENJUALAN</strong> (dan ongkir ke <strong className="text-[#0F172A] dark:text-[#F4F4F6]">LAIN-LAIN</strong>) sekali saja tanpa dobel.
             </span>
           </div>
 
-          <div className="bg-white/80 p-2.5 rounded-xl border border-rose-200/50">
-            <span className="font-bold text-rose-900 block mb-0.5">✓ 2. Saat Transaksi Di-VOID / Dihapus (Delete):</span>
-            <span className="text-stone-600 leading-normal">
-              Seluruh baris transaksi langsung <strong>dihapus permanen (deleteRow)</strong> dari Google Sheets, dan kunci anti-duplikat langsung dilepas seketika.
+          <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border border-slate-200 dark:border-[#343440]">
+            <span className="font-bold text-red-600 dark:text-red-400 block mb-0.5">✓ 2. Saat Transaksi Di-VOID / Dihapus (Delete):</span>
+            <span className="text-slate-600 dark:text-zinc-300 leading-normal">
+              Seluruh baris transaksi langsung <strong className="text-[#0F172A] dark:text-[#F4F4F6]">dihapus permanen (deleteRow)</strong> dari Google Sheets, dan kunci anti-duplikat langsung dilepas seketika.
             </span>
           </div>
         </div>
       </div>
 
       {/* NEW: Test & Verify LOG_PENJUALAN Write & Delete Card */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border-2 border-[#FF5E36]/30 shadow-xs space-y-3">
+      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 sm:p-5 border border-blue-200 dark:border-purple-500/40 shadow-none space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-[#FFF2ED] text-[#FF5E36] flex items-center justify-center font-black">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center font-black flex-shrink-0">
               🧪
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-extrabold text-stone-900">
+                <h3 className="text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6]">
                   Uji Coba Otomatis: Tulis & Hapus LOG_PENJUALAN
                 </h3>
-                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                   v3.5 Siap Diuji
                 </span>
               </div>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Menguji penulisan transaksi kasir ke <strong>LOG_PENJUALAN</strong> dan langsung menghapusnya kembali untuk memastikan sistem 100% normal.
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                Menguji penulisan transaksi kasir ke <strong className="text-[#0F172A] dark:text-[#F4F4F6]">LOG_PENJUALAN</strong> dan langsung menghapusnya kembali untuk memastikan sistem 100% normal.
               </p>
             </div>
           </div>
@@ -480,7 +480,7 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
             type="button"
             onClick={handleTestWriteDelete}
             disabled={testingWriteDelete}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF5E36] hover:bg-[#F24E24] disabled:opacity-50 text-white text-xs font-bold transition-all cursor-pointer shadow-sm min-h-[44px] flex-shrink-0"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer shadow-none min-h-[44px] flex-shrink-0"
           >
             <RefreshCw className={`w-4 h-4 ${testingWriteDelete ? 'animate-spin' : ''}`} />
             <span>{testingWriteDelete ? 'Menguji Tulis & Hapus...' : 'Jalankan Tes Tulis & Hapus Sekarang'}</span>
@@ -489,12 +489,12 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
 
         {/* Live Test Diagnostic Output */}
         {testingWriteDelete && (
-          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2 animate-in fade-in">
-            <div className="flex items-center gap-2 font-bold text-amber-800">
-              <RefreshCw className="w-4 h-4 animate-spin text-[#FF5E36]" />
+          <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 text-xs text-amber-800 dark:text-amber-200 space-y-2 animate-in fade-in">
+            <div className="flex items-center gap-2 font-bold text-amber-950 dark:text-amber-300">
+              <RefreshCw className="w-4 h-4 animate-spin text-amber-600 dark:text-amber-400" />
               <span>Sedang memproses pengujian pipeline Google Sheets...</span>
             </div>
-            <ul className="text-[11px] text-amber-700 space-y-1 list-disc list-inside">
+            <ul className="text-[11px] text-amber-800 dark:text-amber-200/90 space-y-1 list-disc list-inside">
               <li>Tahap 1: Mengirim dummy transaksi ke sheet LOG_PENJUALAN via saveTransaction...</li>
               <li>Tahap 2: Menunggu konfirmasi nomor baris yang tercatat di Spreadsheet...</li>
               <li>Tahap 3: Menjalankan penghapusan otomatis (deleteRow) agar sheet tetap bersih...</li>
@@ -505,40 +505,40 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
         {writeDeleteResult && (
           <div className={`p-4 rounded-xl border text-xs space-y-2.5 animate-in fade-in ${
             writeDeleteResult.success 
-              ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900' 
-              : 'bg-rose-50/80 border-rose-200 text-rose-900'
+              ? 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-200 dark:border-emerald-500/35 text-emerald-900 dark:text-emerald-200' 
+              : 'bg-red-50 dark:bg-red-500/15 border-red-200 dark:border-red-500/35 text-red-900 dark:text-red-200'
           }`}>
             <div className="flex items-center gap-2">
               {writeDeleteResult.success ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
               )}
-              <h4 className="font-extrabold text-xs sm:text-sm">
+              <h4 className="font-extrabold text-xs sm:text-sm text-[#0F172A] dark:text-[#F4F4F6]">
                 {writeDeleteResult.message}
               </h4>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
-              <div className="bg-white/80 p-2.5 rounded-lg border border-stone-200/80 space-y-1">
-                <span className="font-bold text-stone-700 block">1. Status Penulisan (WRITE):</span>
-                <span className="text-stone-600">
+              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-lg border border-slate-200 dark:border-[#343440] space-y-1">
+                <span className="font-bold text-slate-500 dark:text-zinc-400 block">1. Status Penulisan (WRITE):</span>
+                <span className="text-[#0F172A] dark:text-[#F4F4F6] font-semibold">
                   {writeDeleteResult.writeResult?.message || (writeDeleteResult.stage === 'WRITE' ? 'Gagal pada tahap penulisan' : 'Berhasil')}
                 </span>
                 {writeDeleteResult.writeResult?.startRow && (
-                  <span className="block font-mono text-[10px] text-emerald-700">
+                  <span className="block font-mono text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
                     Tercatat di baris: {writeDeleteResult.writeResult.startRow}
                   </span>
                 )}
               </div>
 
-              <div className="bg-white/80 p-2.5 rounded-lg border border-stone-200/80 space-y-1">
-                <span className="font-bold text-stone-700 block">2. Status Penghapusan (DELETE):</span>
-                <span className="text-stone-600">
+              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-lg border border-slate-200 dark:border-[#343440] space-y-1">
+                <span className="font-bold text-slate-500 dark:text-zinc-400 block">2. Status Penghapusan (DELETE):</span>
+                <span className="text-[#0F172A] dark:text-[#F4F4F6] font-semibold">
                   {writeDeleteResult.deleteResult?.message || (writeDeleteResult.success ? 'Berhasil dihapus' : 'Belum selesai')}
                 </span>
                 {writeDeleteResult.deleteResult?.deletedSalesRows !== undefined && (
-                  <span className="block font-mono text-[10px] text-emerald-700">
+                  <span className="block font-mono text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
                     Baris dihapus: {writeDeleteResult.deleteResult.deletedSalesRows} baris
                   </span>
                 )}
@@ -546,7 +546,7 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
             </div>
 
             {writeDeleteResult.testId && (
-              <p className="text-[10px] text-stone-500 font-mono">
+              <p className="text-[10px] text-slate-600 dark:text-zinc-400 font-mono">
                 ID Uji Coba: {writeDeleteResult.testId}
               </p>
             )}
@@ -555,40 +555,40 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
       </div>
 
       {/* URL Input & Quick Sync Controls */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/80 shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
+      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-[#FF5E36]" />
-            <h3 className="text-sm font-extrabold text-stone-900">
+            <Terminal className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
+            <h3 className="text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6]">
               Koneksi Web App Google Apps Script
             </h3>
           </div>
           {diagnostic?.success ? (
-            <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-full">
+            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/35 px-2.5 py-1 rounded-full">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>TERHUBUNG</span>
             </span>
           ) : (
-            <span className="text-[11px] font-bold text-amber-700 flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-full">
+            <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 px-2.5 py-1 rounded-full">
               <span className="w-2 h-2 rounded-full bg-amber-500" />
               <span>Belum Terhubung</span>
             </span>
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-stone-50 border border-stone-200/80">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440]">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-8 h-8 rounded-xl bg-[#FFF2ED] text-[#FF5E36] flex items-center justify-center flex-shrink-0">
-              <Star className="w-4 h-4 fill-[#FF5E36]" />
+            <span className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center flex-shrink-0">
+              <Star className="w-4 h-4 fill-[#2563EB] dark:fill-[#C084FC]" />
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-bold text-stone-900">URL Utama Toko:</span>
-                <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                <span className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6]">URL Utama Toko:</span>
+                <span className="text-[10px] bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/35">
                   Tersimpan Permanen
                 </span>
               </div>
-              <p className="text-[11px] font-mono text-stone-500 truncate max-w-xs sm:max-w-md mt-0.5" title={primaryStoreUrl}>
+              <p className="text-[11px] font-mono text-slate-500 dark:text-zinc-400 truncate max-w-full sm:max-w-md mt-0.5" title={primaryStoreUrl}>
                 {primaryStoreUrl}
               </p>
             </div>
@@ -600,10 +600,10 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
               <button
                 type="button"
                 onClick={handleUsePrimaryUrl}
-                className="text-[11px] font-bold text-stone-700 bg-white hover:bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                className="text-[11px] font-bold text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] bg-white dark:bg-[#1B1B20] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-none min-h-[40px]"
                 title="Gunakan URL Utama Toko saat ini"
               >
-                <RotateCcw className="w-3 h-3 text-stone-500" />
+                <RotateCcw className="w-3 h-3 text-slate-500 dark:text-zinc-400" />
                 <span>Gunakan URL Utama</span>
               </button>
             )}
@@ -613,7 +613,7 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
               type="button"
               onClick={handleSetCurrentAsPrimary}
               disabled={!webAppUrl.trim() || webAppUrl.trim() === primaryStoreUrl.trim()}
-              className="text-[11px] font-bold text-[#FF5E36] bg-[#FFF2ED] hover:bg-[#FFE5DC] border border-[#FF5E36]/30 px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
+              className="text-[11px] font-bold text-[#2563EB] dark:text-[#C084FC] bg-blue-50 dark:bg-purple-500/15 hover:bg-blue-100 dark:hover:bg-purple-500/25 border border-blue-200 dark:border-purple-500/40 px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-none disabled:opacity-40 disabled:cursor-not-allowed min-h-[40px]"
               title="Jadikan URL yang diketik di bawah sebagai URL Utama Toko"
             >
               <Star className="w-3 h-3" />
@@ -624,10 +624,10 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
             <button
               type="button"
               onClick={handleStartEditPrimary}
-              className="text-[11px] font-bold text-stone-700 bg-white hover:bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              className="text-[11px] font-bold text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] bg-white dark:bg-[#1B1B20] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-none min-h-[40px]"
               title="Ketik atau paste URL Utama Toko baru"
             >
-              <Pencil className="w-3 h-3 text-stone-500" />
+              <Pencil className="w-3 h-3 text-slate-500 dark:text-zinc-400" />
               <span>Ubah URL Utama</span>
             </button>
           </div>
@@ -635,16 +635,16 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
 
         {/* Panel input inline jika user klik "Ubah URL Utama" */}
         {isEditingPrimary && (
-          <div className="p-3.5 bg-amber-50/90 border border-amber-200 rounded-2xl space-y-2 animate-in fade-in">
+          <div className="p-3.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 rounded-2xl space-y-2 animate-in fade-in">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                <Pencil className="w-3.5 h-3.5 text-amber-600" />
+              <span className="text-xs font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                <Pencil className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 Masukkan URL Utama Toko yang Baru:
               </span>
               <button
                 type="button"
                 onClick={() => setIsEditingPrimary(false)}
-                className="text-[11px] text-stone-500 hover:text-stone-800 font-semibold cursor-pointer"
+                className="text-[11px] text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] font-semibold cursor-pointer px-2 py-1"
               >
                 Batal
               </button>
@@ -655,12 +655,12 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
                 value={primaryInputDraft}
                 onChange={(e) => setPrimaryInputDraft(e.target.value)}
                 placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-                className="flex-1 px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-mono text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#FF5E36]"
+                className="flex-1 px-3 py-2.5 bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-mono text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
               />
               <button
                 type="button"
                 onClick={handleSaveEditedPrimary}
-                className="px-4 py-2 bg-[#FF5E36] hover:bg-[#F24E24] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer whitespace-nowrap"
+                className="px-4 py-2.5 bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] text-white text-xs font-bold rounded-xl transition-colors shadow-none cursor-pointer whitespace-nowrap min-h-[44px]"
               >
                 Simpan Sebagai URL Utama
               </button>
@@ -674,21 +674,21 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
             value={webAppUrl}
             onChange={(e) => setWebAppUrl(e.target.value)}
             placeholder="https://script.google.com/macros/s/AKfycbx.../exec"
-            className="flex-1 px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-mono text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF5E36]"
+            className="flex-1 px-3.5 py-2.5 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-mono text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:bg-white dark:focus:bg-[#1B1B20] focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
           />
           <div className="flex gap-2">
             <button
               onClick={handleSaveAndTest}
               disabled={testing}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 min-h-[44px]"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 min-h-[44px]"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${testing ? 'animate-spin text-[#FF5E36]' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-600 dark:text-zinc-300 ${testing ? 'animate-spin text-[#2563EB] dark:text-[#C084FC]' : ''}`} />
               <span>{testing ? 'Menguji...' : 'Uji Koneksi'}</span>
             </button>
             <button
               onClick={handlePullAllData}
               disabled={syncing || !webAppUrl.trim()}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF5E36] hover:bg-[#F24E24] text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 shadow-xs min-h-[44px]"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 shadow-none min-h-[44px]"
             >
               <ArrowDownCircle className={`w-4 h-4 ${syncing ? 'animate-bounce' : ''}`} />
               <span>{syncing ? 'Menarik...' : 'Tarik Data'}</span>
@@ -698,68 +698,68 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
 
         {/* Notifications */}
         {successMessage && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/35 text-emerald-800 dark:text-emerald-300 text-xs font-medium">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
 
         {errorMessage && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
-            <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/35 text-red-700 dark:text-red-300 text-xs font-medium">
+            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* Diagnostics Panel */}
         {diagnostic && diagnostic.success && (
-          <div className="bg-stone-50 border border-stone-200/80 rounded-2xl p-3.5 space-y-2 mt-2">
-            <div className="flex items-center justify-between border-b border-stone-200/80 pb-2">
-              <span className="text-xs font-bold text-stone-700 flex items-center gap-1.5">
-                <Database className="w-3.5 h-3.5 text-[#FF5E36]" />
+          <div className="bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-2xl p-3.5 space-y-2 mt-2">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#343440] pb-2">
+              <span className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#C084FC]" />
                 Hasil Diagnostik Spreadsheet
               </span>
-              <span className="text-[10px] text-stone-400">
+              <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium">
                 {diagnostic.timezone || 'Asia/Jakarta'}
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="bg-white p-2.5 rounded-xl border border-stone-100">
-                <p className="text-stone-400 text-[10px] uppercase font-bold">Sheet Produk</p>
-                <p className="font-bold text-stone-800 mt-0.5 truncate">
+              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-xl border border-slate-200 dark:border-[#343440]">
+                <p className="text-slate-500 dark:text-zinc-400 text-[10px] uppercase font-bold">Sheet Produk</p>
+                <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 truncate">
                   {diagnostic.sheetsStatus?.productsSheetName || 'DASHBOARD_MUTASI_&_PROFIT'}
                 </p>
-                <p className="text-[10px] text-stone-500 mt-0.5">
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
                   {diagnostic.sheetsStatus?.productsRowCount ? `${diagnostic.sheetsStatus.productsRowCount} baris` : 'Baris 71+'} (Read)
                 </p>
               </div>
 
-              <div className="bg-white p-2.5 rounded-xl border border-stone-100">
-                <p className="text-stone-400 text-[10px] uppercase font-bold">Log Penjualan</p>
-                <p className="font-bold text-stone-800 mt-0.5 truncate">
+              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-xl border border-slate-200 dark:border-[#343440]">
+                <p className="text-slate-500 dark:text-zinc-400 text-[10px] uppercase font-bold">Log Penjualan</p>
+                <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 truncate">
                   {diagnostic.sheetsStatus?.salesLogSheetName || 'LOG_PENJUALAN'}
                 </p>
-                <p className="text-[10px] text-stone-500 mt-0.5">
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
                   {diagnostic.sheetsStatus?.salesLogRowCount ? `${diagnostic.sheetsStatus.salesLogRowCount} baris` : 'Baris 8+'} (Write)
                 </p>
               </div>
 
-              <div className="bg-white p-2.5 rounded-xl border border-stone-100">
-                <p className="text-stone-400 text-[10px] uppercase font-bold">Barang Masuk</p>
-                <p className="font-bold text-stone-800 mt-0.5 truncate">LOG_BARANG_MASUK</p>
-                <p className="text-[10px] text-stone-500 mt-0.5">
+              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-xl border border-slate-200 dark:border-[#343440]">
+                <p className="text-slate-500 dark:text-zinc-400 text-[10px] uppercase font-bold">Barang Masuk</p>
+                <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 truncate">LOG_BARANG_MASUK</p>
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
                   {diagnostic.sheetsStatus?.barangMasukRowCount ? `${diagnostic.sheetsStatus.barangMasukRowCount} baris` : 'Baris 5+'} (Write)
                 </p>
               </div>
 
-              <div className="bg-white p-2.5 rounded-xl border border-stone-100">
-                <p className="text-emerald-600 text-[10px] uppercase font-bold flex items-center gap-1">
+              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-xl border border-slate-200 dark:border-[#343440]">
+                <p className="text-emerald-700 dark:text-emerald-400 text-[10px] uppercase font-bold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   Sheet LAIN-LAIN
                 </p>
-                <p className="font-bold text-stone-800 mt-0.5 truncate">LAIN-LAIN</p>
-                <p className="text-[10px] text-emerald-700 font-medium mt-0.5">
+                <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 truncate">LAIN-LAIN</p>
+                <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium mt-0.5 tabular-nums">
                   {diagnostic.sheetsStatus?.pengeluaranLainRowCount ? `${diagnostic.sheetsStatus.pengeluaranLainRowCount} baris` : 'A4:F'} (Read & Write)
                 </p>
               </div>
@@ -769,23 +769,23 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
       </div>
 
       {/* Column J Category Assistant Card */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/80 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#FFF2ED] text-[#FF5E36] flex items-center justify-center flex-shrink-0">
+      <div className="bg-white dark:bg-[#1B1B20] rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-[#2B2B33] pb-3">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center flex-shrink-0">
               <Tag className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-extrabold text-stone-900 tracking-tight">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-base font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight">
                   Kategori Produk Kolom J (B70:J)
                 </h3>
-                <span className="bg-emerald-50 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-200">
+                <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-200 dark:border-emerald-500/35">
                   Sinkron Aktif
                 </span>
               </div>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Range <code className="bg-stone-100 px-1 py-0.5 rounded font-mono text-[11px] text-stone-700 font-bold">DASHBOARD_MUTASI_&_PROFIT B70:J</code> (Cell J70: Header KATEGORI, Cell J71+: Data Kategori).
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                Range <code className="bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] px-1.5 py-0.5 rounded font-mono text-[11px] text-[#0F172A] dark:text-[#F4F4F6] font-bold">DASHBOARD_MUTASI_&_PROFIT B70:J</code> (Cell J70: Header KATEGORI, Cell J71+: Data Kategori).
               </p>
             </div>
           </div>
@@ -793,17 +793,17 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={handleCopyColumnJValues}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
               title="Salin semua kategori untuk langsung di-paste di sel J71 Google Sheets"
             >
-              {copiedCategories ? <CheckCheck className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              {copiedCategories ? <CheckCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-300" />}
               <span>{copiedCategories ? 'Tersalin!' : 'Salin Data Kolom J'}</span>
             </button>
 
             <button
               onClick={handleFillCategoriesInSheet}
               disabled={fillingCategories || !webAppUrl.trim()}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FF5E36] hover:bg-[#F24E24] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] text-white text-xs font-bold transition-colors cursor-pointer shadow-none disabled:opacity-50 min-h-[44px]"
               title="Perintahkan Google Apps Script untuk mengisi Kolom J di Spreadsheet secara otomatis"
             >
               <Sparkles className={`w-3.5 h-3.5 ${fillingCategories ? 'animate-spin' : ''}`} />
@@ -814,24 +814,24 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
 
         {/* Informational guide */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          <div className="p-3 bg-stone-50 rounded-2xl border border-stone-100">
-            <span className="text-[10px] font-bold text-[#FF5E36] uppercase tracking-wider block">Aturan Kolom J</span>
-            <p className="text-xs text-stone-700 font-medium mt-1 leading-snug">
+          <div className="p-3 bg-slate-50 dark:bg-[#24242B] rounded-2xl border border-slate-200 dark:border-[#343440]">
+            <span className="text-[10px] font-bold text-[#2563EB] dark:text-[#C084FC] uppercase tracking-wider block">Aturan Kolom J</span>
+            <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium mt-1 leading-snug">
               Jika Kolom J diisi di Google Sheets, sistem kasir akan langsung memakai kategori tersebut. Jika masih kosong, sistem menggunakan klasifikasi otomatis.
             </p>
           </div>
 
-          <div className="p-3 bg-stone-50 rounded-2xl border border-stone-100">
-            <span className="text-[10px] font-bold text-[#FF5E36] uppercase tracking-wider block">Opsi 1: Klik 1 Tombol</span>
-            <p className="text-xs text-stone-700 font-medium mt-1 leading-snug">
-              Klik <strong>Auto-Fill Kolom J di Sheets</strong> di atas. Apps Script akan otomatis mengisi cell J70 ('KATEGORI') dan baris 71 ke bawah dengan kategori yang tepat.
+          <div className="p-3 bg-slate-50 dark:bg-[#24242B] rounded-2xl border border-slate-200 dark:border-[#343440]">
+            <span className="text-[10px] font-bold text-[#2563EB] dark:text-[#C084FC] uppercase tracking-wider block">Opsi 1: Klik 1 Tombol</span>
+            <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium mt-1 leading-snug">
+              Klik <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Auto-Fill Kolom J di Sheets</strong> di atas. Apps Script akan otomatis mengisi cell J70 ('KATEGORI') dan baris 71 ke bawah dengan kategori yang tepat.
             </p>
           </div>
 
-          <div className="p-3 bg-stone-50 rounded-2xl border border-stone-100">
-            <span className="text-[10px] font-bold text-[#FF5E36] uppercase tracking-wider block">Opsi 2: Salin & Paste Manual</span>
-            <p className="text-xs text-stone-700 font-medium mt-1 leading-snug">
-              Klik <strong>Salin Data Kolom J</strong>, lalu buka Google Sheets, klik sel <strong>J71</strong>, dan tekan <strong>Ctrl + V</strong>.
+          <div className="p-3 bg-slate-50 dark:bg-[#24242B] rounded-2xl border border-slate-200 dark:border-[#343440]">
+            <span className="text-[10px] font-bold text-[#2563EB] dark:text-[#C084FC] uppercase tracking-wider block">Opsi 2: Salin & Paste Manual</span>
+            <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium mt-1 leading-snug">
+              Klik <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Salin Data Kolom J</strong>, lalu buka Google Sheets, klik sel <strong className="text-[#0F172A] dark:text-[#F4F4F6]">J71</strong>, dan tekan <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Ctrl + V</strong>.
             </p>
           </div>
         </div>
@@ -840,46 +840,48 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
         <div className="pt-1">
           <button
             onClick={() => setShowCategoryTable(!showCategoryTable)}
-            className="flex items-center gap-2 text-xs font-bold text-stone-700 hover:text-stone-900 transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:text-[#2563EB] dark:hover:text-[#C084FC] transition-colors cursor-pointer min-h-[40px]"
           >
             <span>{showCategoryTable ? 'Sembunyikan Daftar Kategori Kolom J' : `Lihat Daftar Pemetaan Kategori Produk (${productsList.length} Item)`}</span>
             {showCategoryTable ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
           {showCategoryTable && (
-            <div className="mt-3 space-y-3 border border-stone-200/70 rounded-2xl p-3 bg-stone-50/50">
+            <div className="mt-3 space-y-3 border border-slate-200 dark:border-[#343440] rounded-2xl p-3 bg-slate-50 dark:bg-[#24242B]">
               {/* Filter controls */}
               <div className="flex flex-col sm:flex-row gap-2 items-center justify-between">
                 <div className="relative w-full sm:w-64">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                   <input
                     type="text"
                     value={categorySearch}
                     onChange={(e) => setCategorySearch(e.target.value)}
                     placeholder="Cari SKU, Nama, atau Kategori..."
-                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#FF5E36]"
+                    className="w-full pl-8 pr-3 py-2 bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] rounded-xl text-xs text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[40px]"
                   />
                 </div>
 
-                <div className="flex gap-1.5 flex-wrap w-full sm:w-auto">
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 w-full sm:w-auto max-w-full">
                   <button
+                    type="button"
                     onClick={() => setSelectedCatFilter('ALL')}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors active:scale-[0.97] cursor-pointer whitespace-nowrap min-h-[38px] ${
                       selectedCatFilter === 'ALL'
-                        ? 'bg-stone-900 text-white'
-                        : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'
+                        ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white'
+                        : 'bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-[#2E2E37]'
                     }`}
                   >
                     Semua ({productsList.length})
                   </button>
                   {uniqueCategories.map(cat => (
                     <button
+                      type="button"
                       key={cat}
                       onClick={() => setSelectedCatFilter(cat)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors active:scale-[0.97] cursor-pointer whitespace-nowrap min-h-[38px] ${
                         selectedCatFilter === cat
-                          ? 'bg-[#FF5E36] text-white'
-                          : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'
+                          ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white'
+                          : 'bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-[#2E2E37]'
                       }`}
                     >
                       {cat}
@@ -888,31 +890,58 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
                 </div>
               </div>
 
-              {/* Table */}
-              <div className="max-h-72 overflow-y-auto rounded-xl border border-stone-200 bg-white">
-                <table className="w-full text-left text-xs">
-                  <thead className="sticky top-0 bg-stone-100 border-b border-stone-200 text-stone-600 font-bold uppercase text-[10px]">
+              {/* Mobile Card List (<640px) */}
+              <div className="sm:hidden max-h-72 overflow-y-auto space-y-2">
+                {filteredProducts.map((p, idx) => (
+                  <div
+                    key={p.id || p.sku || idx}
+                    className="rounded-xl border border-slate-200 dark:border-[#343440] bg-white dark:bg-[#1B1B20] p-2.5 space-y-1"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-[11px] font-bold text-[#0F172A] dark:text-[#F4F4F6] truncate">
+                        #{p.rowNumber || (71 + idx)} • {p.sku}
+                      </span>
+                      <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/40 shrink-0">
+                        {p.category}
+                      </span>
+                    </div>
+                    <p className="text-xs font-medium text-[#0F172A] dark:text-[#F4F4F6] break-words">
+                      {p.name}
+                    </p>
+                  </div>
+                ))}
+                {filteredProducts.length === 0 && (
+                  <div className="px-4 py-6 text-center text-slate-500 dark:text-zinc-400 text-xs bg-white dark:bg-[#1B1B20] rounded-xl border border-slate-200 dark:border-[#343440]">
+                    Tidak ditemukan produk yang cocok dengan pencarian.
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Table (>=640px) */}
+              <div className="hidden sm:block max-h-72 overflow-y-auto overflow-x-auto rounded-xl border border-slate-200 dark:border-[#343440] bg-white dark:bg-[#1B1B20]">
+                <table className="w-full text-left text-xs min-w-[460px]">
+                  <thead className="sticky top-0 bg-slate-50 dark:bg-[#24242B] border-b border-slate-200 dark:border-[#343440] text-slate-500 dark:text-zinc-400 font-bold uppercase text-[10px]">
                     <tr>
-                      <th className="px-3 py-2 w-16">Baris Sheet</th>
-                      <th className="px-3 py-2 w-28">SKU</th>
-                      <th className="px-3 py-2">Nama Produk</th>
-                      <th className="px-3 py-2">Kategori Kolom J</th>
+                      <th className="px-3 py-2.5 w-16">Baris Sheet</th>
+                      <th className="px-3 py-2.5 w-28">SKU</th>
+                      <th className="px-3 py-2.5">Nama Produk</th>
+                      <th className="px-3 py-2.5">Kategori Kolom J</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-stone-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-[#2B2B33]">
                     {filteredProducts.map((p, idx) => (
-                      <tr key={p.id || p.sku || idx} className="hover:bg-stone-50/80">
-                        <td className="px-3 py-2 font-mono text-[11px] text-stone-500">
+                      <tr key={p.id || p.sku || idx} className="hover:bg-slate-50 dark:hover:bg-[#24242B]/70 transition-colors">
+                        <td className="px-3 py-2 font-mono text-[11px] text-slate-500 dark:text-zinc-400 tabular-nums">
                           {p.rowNumber || (71 + idx)}
                         </td>
-                        <td className="px-3 py-2 font-mono text-stone-800 font-bold">
+                        <td className="px-3 py-2 font-mono text-[#0F172A] dark:text-[#F4F4F6] font-bold">
                           {p.sku}
                         </td>
-                        <td className="px-3 py-2 text-stone-800 font-medium">
+                        <td className="px-3 py-2 text-[#0F172A] dark:text-[#F4F4F6] font-medium">
                           {p.name}
                         </td>
                         <td className="px-3 py-2">
-                          <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#FFF2ED] text-[#FF5E36] border border-[#FF5E36]/20">
+                          <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/40">
                             {p.category}
                           </span>
                         </td>
@@ -920,7 +949,7 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
                     ))}
                     {filteredProducts.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="px-4 py-6 text-center text-stone-400 text-xs">
+                        <td colSpan={4} className="px-4 py-6 text-center text-slate-500 dark:text-zinc-400 text-xs">
                           Tidak ditemukan produk yang cocok dengan pencarian.
                         </td>
                       </tr>
@@ -935,59 +964,60 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
 
       {/* 3 Step Deployment Guide */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs space-y-1.5">
+        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-1.5">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-[#FFF2ED] text-[#FF5E36] flex items-center justify-center text-xs font-bold">
+            <span className="w-5 h-5 rounded-full bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center text-xs font-bold">
               1
             </span>
-            <h4 className="font-bold text-xs text-stone-900">Buka Spreadsheet</h4>
+            <h4 className="font-bold text-xs text-[#0F172A] dark:text-[#F4F4F6]">Buka Spreadsheet</h4>
           </div>
-          <p className="text-xs text-stone-500 leading-relaxed">
-            Buka file Google Sheets ORTUKILL Anda. Klik menu <strong>Ekstensi</strong> &gt; <strong>Apps Script</strong>.
+          <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+            Buka file Google Sheets ORTUKILL Anda. Klik menu <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Ekstensi</strong> &gt; <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Apps Script</strong>.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs space-y-1.5">
+        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-1.5">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-[#FFF2ED] text-[#FF5E36] flex items-center justify-center text-xs font-bold">
+            <span className="w-5 h-5 rounded-full bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center text-xs font-bold">
               2
             </span>
-            <h4 className="font-bold text-xs text-stone-900">Perbarui Kode.gs</h4>
+            <h4 className="font-bold text-xs text-[#0F172A] dark:text-[#F4F4F6]">Perbarui Kode.gs</h4>
           </div>
-          <p className="text-xs text-stone-500 leading-relaxed">
-            Klik tombol "Salin Kode .gs Terbaru" di atas, ganti seluruh isi file <code className="text-stone-800 font-mono text-[10px] bg-stone-100 px-1 py-0.5 rounded">Kode.gs</code>, lalu klik Simpan.
+          <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+            Klik tombol "Salin Kode .gs Terbaru" di atas, ganti seluruh isi file <code className="text-[#0F172A] dark:text-[#F4F4F6] font-mono text-[10px] bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] px-1 py-0.5 rounded">Kode.gs</code>, lalu klik Simpan.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs space-y-1.5">
+        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-1.5">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-[#FFF2ED] text-[#FF5E36] flex items-center justify-center text-xs font-bold">
+            <span className="w-5 h-5 rounded-full bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center text-xs font-bold">
               3
             </span>
-            <h4 className="font-bold text-xs text-stone-900">Deployment Baru (Wajib Versi Baru)</h4>
+            <h4 className="font-bold text-xs text-[#0F172A] dark:text-[#F4F4F6]">Deployment Baru (Wajib Versi Baru)</h4>
           </div>
-          <p className="text-xs text-stone-500 leading-relaxed">
-            Klik <strong>Terapkan (Deploy)</strong> &gt; <strong>Kelola penerapan (Manage deployments)</strong> &gt; Ikon pensil (Edit) &gt; Versi: <strong>Versi baru (New version)</strong> &gt; Terapkan. Pastikan Akses: <strong>Siapa saja (Anyone)</strong>.
+          <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+            Klik <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Terapkan (Deploy)</strong> &gt; <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Kelola penerapan (Manage deployments)</strong> &gt; Ikon pensil (Edit) &gt; Versi: <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Versi baru (New version)</strong> &gt; Terapkan. Pastikan Akses: <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Siapa saja (Anyone)</strong>.
           </p>
         </div>
       </div>
 
       {/* Code Preview Box */}
-      <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
-          <span className="text-xs font-bold text-stone-700 flex items-center gap-2">
-            <FileCode2 className="w-4 h-4 text-[#FF5E36]" />
-            <span>Kode.gs (Google Apps Script Backend)</span>
+      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl border border-slate-200 dark:border-[#2B2B33] shadow-none overflow-hidden min-w-0">
+        <div className="px-4 py-3 bg-slate-50 dark:bg-[#24242B] border-b border-slate-200 dark:border-[#343440] flex items-center justify-between gap-2">
+          <span className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] flex items-center gap-2 min-w-0">
+            <FileCode2 className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC] shrink-0" />
+            <span className="truncate">Kode.gs (Google Apps Script Backend)</span>
           </span>
           <button
+            type="button"
             onClick={handleCopyCode}
-            className="text-xs font-bold text-stone-600 hover:text-stone-900 flex items-center gap-1 transition-colors cursor-pointer"
+            className="text-xs font-bold text-[#2563EB] dark:text-[#C084FC] hover:text-[#1D4ED8] dark:hover:text-[#A855F7] flex items-center gap-1 transition-colors active:scale-[0.97] cursor-pointer px-2.5 py-1.5 min-h-[40px] shrink-0"
           >
             <Copy className="w-3.5 h-3.5" />
             <span>Salin</span>
           </button>
         </div>
-        <pre className="p-4 text-[11px] font-mono text-stone-700 overflow-x-auto max-h-72 leading-relaxed bg-stone-50/50 select-all">
+        <pre className="p-4 text-[11px] font-mono text-slate-800 dark:text-zinc-200 overflow-x-auto max-h-72 leading-relaxed bg-slate-50/50 dark:bg-[#121215] select-all max-w-full">
           {scriptCode}
         </pre>
       </div>

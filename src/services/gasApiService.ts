@@ -1,5 +1,5 @@
 import { Product, TransactionReceipt, BarangMasukRecord, FinanceRecord } from '../types';
-import { StorageService, classifyProduct } from './storageService';
+import { StorageService, classifyProduct, isPromoItem } from './storageService';
 
 export interface GasDiagnosticResult {
   success: boolean;
@@ -380,6 +380,9 @@ export class GasApiService {
         sourceLabel: 'Google Sheets',
         details: `Sinkronisasi Spreadsheet berhasil (${result.products?.length || 0} produk)`,
       });
+
+      // Pastikan seluruh pembacaan berikutnya mengambil kondisi terbaru pasca-sync
+      StorageService.invalidateCache();
     }
 
     return result;
@@ -470,9 +473,19 @@ export class GasApiService {
       const sheetTotal = sheetSubtotal;
       const sheetMargin = sheetItems.reduce((sum, item) => sum + item.margin, 0);
 
+      // DEDUPLIKASI KETAT PROMO:
+      // Karena promo/diskon sudah dimasukkan sebagai baris item tersendiri di sheetItems
+      // (baik dari keranjang kasir maupun ditambahkan di atas), nilai discount di sheetsPayload
+      // WAJIB disetel ke 0. Hal ini menjamin Google Apps Script (baik script lama yang sudah
+      // terpasang di Google Sheets user maupun script baru) TIDAK AKAN PERNAH memasukkan baris promo 2x!
+      const hasAnyPromoInItems = sheetItems.some(
+        (i) => i.price < 0 || String(i.sku || '').toUpperCase().includes('PROMO') || String(i.name || '').toUpperCase().includes('PROMO')
+      );
+
       const sheetsPayload = {
         ...trx,
         items: sheetItems,
+        discount: hasAnyPromoInItems ? 0 : 0,
         subtotal: sheetSubtotal,
         total: sheetTotal,
         margin: sheetMargin,
@@ -826,6 +839,142 @@ export class GasApiService {
     return { success: false, message: 'Gagal update stok ke spreadsheet' };
   }
 
+  // Add Product to Google Sheets (DATABASE_PRODUK B:L)
+  static async addProduct(product: Partial<Product>): Promise<{ success: boolean; message?: string; rowNumber?: number }> {
+    const sku = String(product.sku || '').trim().toUpperCase();
+    const lockKey = `add_prod_${sku}`;
+
+    if (this.activeInFlightRequests.has(lockKey) || this.recentProcessedKeys.has(lockKey)) {
+      return { success: true, message: 'Permintaan tambah produk sedang diproses (Deduplicated).' };
+    }
+
+    this.activeInFlightRequests.add(lockKey);
+
+    try {
+      const webAppUrl = this.getSavedWebAppUrl();
+
+      // 1. Backend proxy
+      try {
+        const res = await fetch('/api/gas/add-product', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(product),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            this.trackKeyProcessed(lockKey);
+            return data;
+          }
+          if (data && data.message) return data;
+        }
+      } catch (err) {
+        console.warn('Backend proxy /api/gas/add-product failed:', err);
+      }
+
+      // 2. Direct fallback
+      if (webAppUrl) {
+        try {
+          const direct = await fetch(webAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'addProduct', product }),
+          });
+          if (direct.ok) {
+            const result = await direct.json();
+            if (result.success) this.trackKeyProcessed(lockKey);
+            return result;
+          }
+        } catch (err: any) {
+          return { success: false, message: 'Koneksi ke Google Sheets gagal: ' + err.message };
+        }
+      }
+
+      return { success: false, message: 'Google Apps Script belum dikonfigurasi.' };
+    } finally {
+      this.activeInFlightRequests.delete(lockKey);
+    }
+  }
+
+  // Update Product in Google Sheets (DATABASE_PRODUK B:L)
+  static async updateProduct(product: Partial<Product>): Promise<{ success: boolean; message?: string; rowNumber?: number }> {
+    const sku = String(product.sku || '').trim().toUpperCase();
+    const lockKey = `upd_prod_${sku}_${Date.now()}`;
+
+    try {
+      const webAppUrl = this.getSavedWebAppUrl();
+
+      // 1. Backend proxy
+      try {
+        const res = await fetch('/api/gas/update-product', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(product),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) return data;
+          if (data && data.message) return data;
+        }
+      } catch (err) {
+        console.warn('Backend proxy /api/gas/update-product failed:', err);
+      }
+
+      // 2. Direct fallback
+      if (webAppUrl) {
+        try {
+          const direct = await fetch(webAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'updateProduct', product }),
+          });
+          if (direct.ok) return await direct.json();
+        } catch (err: any) {
+          return { success: false, message: 'Koneksi ke Google Sheets gagal: ' + err.message };
+        }
+      }
+
+      return { success: false, message: 'Google Apps Script belum dikonfigurasi.' };
+    } finally {
+      this.activeInFlightRequests.delete(lockKey);
+    }
+  }
+
+  // Adjust stock via LOG_BARANG_MASUK (Stok Akhir = Stok Awal + Masuk - Keluar)
+  static async adjustStock(params: {
+    sku: string;
+    name: string;
+    delta: number;
+    cost: number;
+    reason: string;
+    notes?: string;
+  }): Promise<{ success: boolean; message?: string; rowNumber?: number }> {
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    const dateStr = `${d}/${m}/${y}`;
+
+    const reasonLabel = params.reason || 'KOREKSI_OPNAME';
+    const supplierNotes = `[KOREKSI STOK] ${reasonLabel}${params.notes ? ' - ' + params.notes.trim() : ''}`;
+
+    const entry: BarangMasukRecord = {
+      id: `BM-KOREKSI-${Date.now().toString().slice(-6)}`,
+      date: dateStr,
+      sku: params.sku,
+      name: params.name,
+      krat: 0,
+      qty: params.delta,
+      cost: params.cost,
+      totalCost: params.delta * params.cost,
+      supplier: supplierNotes,
+      supplierOrNotes: supplierNotes,
+    };
+
+    return await this.pushBarangMasuk(entry);
+  }
+
+
   private static deletedRowsFrom(data: any): number {
     if (!data) return 0;
     const raw = data.deletedRows ?? data.totalDeleted ?? data.deletedSalesRows ?? data.matchedRows ?? 0;
@@ -1146,7 +1295,9 @@ export class GasApiService {
           margin: actualMargin,
         });
 
-        dateMap[key].totalQty += actualQty;
+        if (!isPromoItem({ sku: actualSku, name: actualName, price: actualPrice, category: cat })) {
+          dateMap[key].totalQty += actualQty;
+        }
         dateMap[key].subtotal += actualTotal;
         dateMap[key].total += actualTotal;
         dateMap[key].margin += actualMargin;

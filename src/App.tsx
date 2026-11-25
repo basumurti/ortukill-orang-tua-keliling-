@@ -1,14 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Header } from './components/Header';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { Header, SyncHealthStatus } from './components/Header';
 import { PosRegisterView } from './components/PosRegisterView';
-import { TodayTransactionsView } from './components/TodayTransactionsView';
-import { SalesHistoryView } from './components/SalesHistoryView';
-import { StockManagementView } from './components/StockManagementView';
-import { ShiftClosingView } from './components/ShiftClosingView';
-import { GasIntegrationView } from './components/GasIntegrationView';
-import { ReceiptModal } from './components/ReceiptModal';
 import { BottomNavigation } from './components/BottomNavigation';
-import { AiCopilotModal } from './components/AiCopilotModal';
+import { ChunkErrorBoundary, ViewLoadingFallback, ModalLoadingFallback } from './components/ChunkErrorBoundary';
 import { 
   Product, 
   CartItem, 
@@ -23,11 +17,82 @@ import {
 } from './types';
 import { StorageService, formatRupiah } from './services/storageService';
 import { GasApiService } from './services/gasApiService';
-import { CheckCircle2, AlertCircle, Info, Sparkles } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, Sparkles, WifiOff, RefreshCw, X } from 'lucide-react';
+
+function createLazyComponent<P extends object>(
+  loader: () => Promise<{ default: React.ComponentType<P> }>
+) {
+  let LazyComp = React.lazy(loader);
+  const Wrapper: React.FC<P> = (props) => <LazyComp {...props} />;
+  return {
+    Component: Wrapper,
+    preload: () => loader().catch(() => undefined),
+    reset: () => {
+      LazyComp = React.lazy(loader);
+    },
+  };
+}
+
+const LazyTodayTransactionsView = createLazyComponent(() =>
+  import('./components/TodayTransactionsView').then((m) => ({ default: m.TodayTransactionsView }))
+);
+const LazySalesHistoryView = createLazyComponent(() =>
+  import('./components/SalesHistoryView').then((m) => ({ default: m.SalesHistoryView }))
+);
+const LazyStockManagementView = createLazyComponent(() =>
+  import('./components/StockManagementView').then((m) => ({ default: m.StockManagementView }))
+);
+const LazyShiftClosingView = createLazyComponent(() =>
+  import('./components/ShiftClosingView').then((m) => ({ default: m.ShiftClosingView }))
+);
+const LazyGasIntegrationView = createLazyComponent(() =>
+  import('./components/GasIntegrationView').then((m) => ({ default: m.GasIntegrationView }))
+);
+const LazyFinanceManagementView = createLazyComponent(() =>
+  import('./components/FinanceManagementView').then((m) => ({ default: m.FinanceManagementView }))
+);
+const LazyReceiptModal = createLazyComponent(() =>
+  import('./components/ReceiptModal').then((m) => ({ default: m.ReceiptModal }))
+);
+const LazyAiCopilotModal = createLazyComponent(() =>
+  import('./components/AiCopilotModal').then((m) => ({ default: m.AiCopilotModal }))
+);
 
 export default function App() {
+  // Theme (Light / Dark Grey + Neon Purple)
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ortukill_theme') === 'dark';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const rootEl = document.documentElement;
+    if (isDarkMode) {
+      rootEl.classList.add('dark');
+      try {
+        localStorage.setItem('ortukill_theme', 'dark');
+      } catch {
+        // ignore
+      }
+    } else {
+      rootEl.classList.remove('dark');
+      try {
+        localStorage.setItem('ortukill_theme', 'light');
+      } catch {
+        // ignore
+      }
+    }
+    const metaTheme = document.getElementById('meta-theme-color');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', isDarkMode ? '#1B1B20' : '#F6F7F9');
+    }
+  }, [isDarkMode]);
+
   // Navigation
-  const [activeTab, setActiveTab] = useState<'pos' | 'today' | 'history' | 'stock' | 'shift' | 'gas'>('pos');
+  const [activeTab, setActiveTab] = useState<'pos' | 'today' | 'history' | 'stock' | 'shift' | 'gas' | 'finance'>('pos');
 
   // Brand config
   const [brand] = useState<BrandConfig>(StorageService.getBrandConfig());
@@ -109,14 +174,103 @@ export default function App() {
   };
   const [isConnectedGas, setIsConnectedGas] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isOnline, setIsOnline] = useState<boolean>(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [toast, setToast] = useState<{
+    id: number;
+    message: string;
+    type: 'success' | 'error' | 'info';
+    action?: { label: string; onAction: () => void };
+  } | null>(null);
+  const [chunkRetryNonce, setChunkRetryNonce] = useState(0);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info', duration: number = 4000) => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast((prev) => (prev?.message === message ? null : prev));
-    }, duration);
+  const initialSyncPromiseRef = useRef<Promise<void> | null>(null);
+  const initialSyncSettledRef = useRef<boolean>(false);
+  const toastTimerRef = useRef<number | null>(null);
+  const toastIdRef = useRef<number>(0);
+  const isRedPriceModeRef = useRef<boolean>(isRedPriceMode);
+  isRedPriceModeRef.current = isRedPriceMode;
+  const productsRef = useRef<Product[]>(products);
+  productsRef.current = products;
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const showToast = useCallback(
+    (
+      message: string,
+      type: 'success' | 'error' | 'info' = 'info',
+      duration: number = 4000,
+      action?: { label: string; onAction: () => void }
+    ) => {
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+      const nextId = ++toastIdRef.current;
+      setToast({ id: nextId, message, type, action });
+      toastTimerRef.current = window.setTimeout(() => {
+        setToast((prev) => (prev?.id === nextId ? null : prev));
+        toastTimerRef.current = null;
+      }, duration);
+    },
+    []
+  );
+
+  // Sinkronkan harga item di keranjang jika katalog baru saja ter-update dari Sheets
+  const syncCartWithProducts = (latestProducts: Product[], useRedMode: boolean) => {
+    if (!latestProducts || latestProducts.length === 0) return;
+    const byId = new Map(latestProducts.map((p) => [p.id, p]));
+    const bySku = new Map(latestProducts.map((p) => [p.sku, p]));
+
+    setCart((prevCart) => {
+      if (prevCart.length === 0) return prevCart;
+      let changed = false;
+      const nextCart = prevCart.map((item) => {
+        const isPromo = item.price < 0 || String(item.sku || '').toUpperCase().includes('PROMO');
+        if (isPromo) return item;
+        const fresh = byId.get(item.productId) || bySku.get(item.sku);
+        if (!fresh) return item;
+
+        const regularPrice = fresh.price;
+        const redPrice = fresh.redPrice && fresh.redPrice > 0 ? fresh.redPrice : regularPrice;
+        const nextPrice = useRedMode ? redPrice : regularPrice;
+        const nextCost = fresh.cost || 0;
+
+        if (
+          item.price === nextPrice &&
+          item.regularPrice === regularPrice &&
+          item.redPrice === redPrice &&
+          item.cost === nextCost
+        ) {
+          return item;
+        }
+        changed = true;
+        const nextSubtotal = item.qty * nextPrice;
+        return {
+          ...item,
+          price: nextPrice,
+          regularPrice,
+          redPrice,
+          cost: nextCost,
+          subtotal: nextSubtotal,
+          total: nextSubtotal,
+          margin: item.qty * (nextPrice - nextCost),
+          isRedPrice: useRedMode,
+        };
+      });
+      return changed ? nextCart : prevCart;
+    });
   };
 
   // Load state from StorageService
@@ -141,6 +295,7 @@ export default function App() {
     setFinanceRecords(finances);
     setSalesTarget(target);
     setLastUpdateInfo(updateInfo);
+    syncCartWithProducts(prods, isRedPriceModeRef.current);
   };
 
   // Live Sync with Google Sheets
@@ -155,10 +310,12 @@ export default function App() {
     }
 
     setIsSyncing(true);
+    setSyncError(null);
     try {
       const res = await GasApiService.fetchAndSyncAll();
       if (res.success) {
         setIsConnectedGas(true);
+        setSyncError(null);
         const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         setLastSynced(timeStr);
         refreshAllData();
@@ -168,11 +325,13 @@ export default function App() {
           showToast(`Berhasil sinkron! Memuat ${pCount} produk & ${tCount} transaksi hari ini dari Spreadsheet.`, 'success');
         }
       } else {
+        setSyncError(res.message || 'Gagal tersambung ke Google Spreadsheet.');
         if (!silent) {
           showToast(res.message || 'Gagal tersambung ke Google Spreadsheet.', 'error');
         }
       }
     } catch (err: any) {
+      setSyncError(err?.message || 'Koneksi Google Sheets gagal.');
       if (!silent) {
         showToast('Koneksi Google Sheets gagal: ' + err.message, 'error');
       }
@@ -181,10 +340,9 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
-    refreshAllData();
-    // Check if saved Web App URL exists and perform initial silent sync
-    const initGas = async () => {
+  const runInitialSync = (): Promise<void> => {
+    if (initialSyncPromiseRef.current) return initialSyncPromiseRef.current;
+    const p = (async () => {
       try {
         await GasApiService.getStatus();
       } catch {
@@ -193,14 +351,65 @@ export default function App() {
       const saved = GasApiService.getSavedWebAppUrl();
       if (saved) {
         setIsConnectedGas(true);
-        handleSyncSpreadsheet(true);
+        await handleSyncSpreadsheet(true);
+      }
+    })().finally(() => {
+      initialSyncSettledRef.current = true;
+    });
+    initialSyncPromiseRef.current = p;
+    return p;
+  };
+
+  useEffect(() => {
+    refreshAllData();
+
+    // Tunda sync awal Sheets tepat sampai setelah first paint selesai (bukan idle lama)
+    let cancelled = false;
+    let paintTimer: number | undefined;
+    const rafId = window.requestAnimationFrame(() => {
+      paintTimer = window.setTimeout(() => {
+        if (!cancelled) {
+          void runInitialSync();
+        }
+      }, 0);
+    });
+
+    // Preload chunk Struk, Laporan, & Stok saat browser idle agar transisi & cetak struk instan
+    let idleTimer: number | undefined;
+    let idleCallbackId: number | undefined;
+    const runIdlePreloads = () => {
+      if (cancelled) return;
+      void LazyReceiptModal.preload();
+      void LazySalesHistoryView.preload();
+      void LazyStockManagementView.preload();
+    };
+
+    if (typeof (window as any).requestIdleCallback === 'function') {
+      idleCallbackId = (window as any).requestIdleCallback(runIdlePreloads, { timeout: 2500 });
+    } else {
+      idleTimer = window.setTimeout(runIdlePreloads, 1200);
+    }
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(rafId);
+      if (paintTimer !== undefined) window.clearTimeout(paintTimer);
+      if (idleTimer !== undefined) window.clearTimeout(idleTimer);
+      if (idleCallbackId !== undefined && typeof (window as any).cancelIdleCallback === 'function') {
+        (window as any).cancelIdleCallback(idleCallbackId);
       }
     };
-    initGas();
   }, []);
 
+  // Pastikan chunk Struk sudah siap sejak item pertama masuk ke keranjang
+  useEffect(() => {
+    if (cart.length > 0) {
+      void LazyReceiptModal.preload();
+    }
+  }, [cart.length]);
+
   // Toggle Mode Harga Jual Merah (Make Up Price Reseller)
-  const handleToggleRedPriceMode = (enabled: boolean) => {
+  const handleToggleRedPriceMode = useCallback((enabled: boolean) => {
     setIsRedPriceMode(enabled);
 
     // Update seluruh barang yang saat ini sudah ada di keranjang
@@ -210,7 +419,7 @@ export default function App() {
         if (isPromoItem) {
           return item; // Item promo tidak diubah oleh mode reseller
         }
-        const prod = products.find((p) => p.id === item.productId || p.sku === item.sku);
+        const prod = productsRef.current.find((p) => p.id === item.productId || p.sku === item.sku);
         const regularPrice = item.regularPrice || (prod ? prod.price : item.price);
         const redPrice = (prod && prod.redPrice && prod.redPrice > 0) ? prod.redPrice : regularPrice;
         const targetPrice = enabled ? redPrice : regularPrice;
@@ -233,18 +442,19 @@ export default function App() {
       enabled
         ? '🏷️ Mode Reseller Aktif: Menggunakan Harga Jual Merah. Penulisan ke Google Sheets tetap dengan harga biasa.'
         : 'Mode Biasa: Kembali ke Harga Jual Standar.',
-      enabled ? 'info' : 'info'
+      'info'
     );
-  };
+  }, []);
 
-  // Cart operations
-  const handleAddToCart = (product: Product) => {
+  // Cart operations (referensi stabil via useCallback untuk React.memo product cards)
+  const handleAddToCart = useCallback((product: Product) => {
     const isPromo = product.category === 'Daftar Promo' || product.price < 0 || String(product.sku || '').toUpperCase().includes('PROMO');
     if (!isPromo && product.stock <= 0) return;
 
+    const redMode = isRedPriceModeRef.current;
     const regularPrice = product.price;
     const redPrice = (!isPromo && product.redPrice && product.redPrice > 0) ? product.redPrice : regularPrice;
-    const effectivePrice = (isRedPriceMode && !isPromo) ? redPrice : regularPrice;
+    const effectivePrice = (redMode && !isPromo) ? redPrice : regularPrice;
 
     setCart((prev) => {
       const existing = prev.find((item) => item.productId === product.id || item.sku === product.sku);
@@ -277,14 +487,14 @@ export default function App() {
             subtotal: effectivePrice,
             total: effectivePrice,
             margin: effectivePrice - (product.cost || 0),
-            isRedPrice: isRedPriceMode && !isPromo,
+            isRedPrice: redMode && !isPromo,
           },
         ];
       }
     });
-  };
+  }, []);
 
-  const handleUpdateItemPrice = (productId: string, newPrice: number) => {
+  const handleUpdateItemPrice = useCallback((productId: string, newPrice: number) => {
     setCart((prev) =>
       prev.map((item) => {
         if (item.productId === productId || item.sku === productId) {
@@ -301,15 +511,48 @@ export default function App() {
         return item;
       })
     );
-  };
+  }, []);
 
-  const handleUpdateQty = (productId: string, qty: number) => {
+  const handleRemoveFromCart = useCallback((productId: string) => {
+    setCart((prev) => prev.filter((item) => item.productId !== productId && item.sku !== productId));
+  }, []);
+
+  const handleRestoreCartItem = useCallback((itemToRestore: CartItem, index?: number) => {
+    setCart((prev) => {
+      const existingIdx = prev.findIndex(
+        (i) => i.productId === itemToRestore.productId || i.sku === itemToRestore.sku
+      );
+      if (existingIdx !== -1) {
+        return prev.map((item, idx) => {
+          if (idx !== existingIdx) return item;
+          const nextQty = item.qty + itemToRestore.qty;
+          const nextSubtotal = nextQty * item.price;
+          return {
+            ...item,
+            qty: nextQty,
+            subtotal: nextSubtotal,
+            total: nextSubtotal,
+            margin: nextQty * (item.price - (item.cost || 0)),
+          };
+        });
+      }
+      const next = [...prev];
+      if (typeof index === 'number' && index >= 0 && index <= next.length) {
+        next.splice(index, 0, itemToRestore);
+      } else {
+        next.push(itemToRestore);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleUpdateQty = useCallback((productId: string, qty: number) => {
     if (qty <= 0) {
       handleRemoveFromCart(productId);
       return;
     }
 
-    const prod = products.find((p) => p.id === productId || p.sku === productId);
+    const prod = productsRef.current.find((p) => p.id === productId || p.sku === productId);
     const isPromo = prod?.category === 'Daftar Promo' || String(prod?.sku || '').toUpperCase().includes('PROMO') || productId.startsWith('promo-');
     if (prod && !isPromo && qty > prod.stock && prod.stock > 0) {
       qty = prod.stock;
@@ -330,13 +573,9 @@ export default function App() {
         return item;
       })
     );
-  };
+  }, [handleRemoveFromCart]);
 
-  const handleRemoveFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.productId !== productId && item.sku !== productId));
-  };
-
-  const handleClearCart = () => {
+  const handleClearCart = useCallback(() => {
     setCart([]);
     setDiscount(0);
     setAppliedPromoCode('');
@@ -344,23 +583,64 @@ export default function App() {
     setShippingFee(0);
     setCashReceived(0);
     setCustomerName('');
-  };
+  }, []);
 
   // Checkout process (Mendukung custom date & time dari date picker keranjang)
-  const handleProcessCheckout = (customDateOption?: { dateStr: string; timeStr: string; dateTimeStr: string; dateYmd?: string }) => {
+  const handleProcessCheckout = async (customDateOption?: { dateStr: string; timeStr: string; dateTimeStr: string; dateYmd?: string }) => {
     if (cart.length === 0) return;
 
-    const regularItems = cart.filter((i) => i.price >= 0 && !String(i.sku || '').toUpperCase().includes('PROMO'));
-    const promoItems = cart.filter((i) => i.price < 0 || String(i.sku || '').toUpperCase().includes('PROMO'));
+    // Pastikan sinkronisasi awal produk/harga dari Google Sheets sudah selesai sebelum checkout
+    if (!initialSyncSettledRef.current) {
+      showToast('Memastikan harga & stok terbaru dari Google Sheets...', 'info', 2500);
+      await Promise.race([
+        runInitialSync(),
+        new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+      ]);
+    }
+
+    // Revalidasi harga item keranjang dengan katalog terbaru pasca-sync
+    const latestProducts = StorageService.getProducts();
+    const latestById = new Map(latestProducts.map((p) => [p.id, p]));
+    const latestBySku = new Map(latestProducts.map((p) => [p.sku, p]));
+
+    const checkoutCart: CartItem[] = cart.map((item) => {
+      const isPromo = item.price < 0 || String(item.sku || '').toUpperCase().includes('PROMO');
+      if (isPromo) return item;
+      const fresh = latestById.get(item.productId) || latestBySku.get(item.sku);
+      if (!fresh) return item;
+      const regularPrice = fresh.price;
+      const redPrice = fresh.redPrice && fresh.redPrice > 0 ? fresh.redPrice : regularPrice;
+      const effectivePrice = isRedPriceMode ? redPrice : regularPrice;
+      const cost = fresh.cost || 0;
+      // Hormati harga jika sudah diubah manual kasir, atau ikuti katalog jika masih sesuai katalog lama
+      const matchesPreviousCatalog =
+        item.price === (item.isRedPrice ? (item.redPrice || item.regularPrice) : item.regularPrice);
+      const finalUnitPrice = matchesPreviousCatalog ? effectivePrice : item.price;
+      const itemTotal = item.qty * finalUnitPrice;
+      return {
+        ...item,
+        price: finalUnitPrice,
+        regularPrice,
+        redPrice,
+        cost,
+        subtotal: itemTotal,
+        total: itemTotal,
+        margin: item.qty * (finalUnitPrice - cost),
+      };
+    });
+
+    const regularItems = checkoutCart.filter((i) => i.price >= 0 && !String(i.sku || '').toUpperCase().includes('PROMO'));
+    const promoItems = checkoutCart.filter((i) => i.price < 0 || String(i.sku || '').toUpperCase().includes('PROMO'));
 
     const grossSubtotal = regularItems.reduce((sum, i) => sum + i.subtotal, 0);
     const promoDiscountsTotal = Math.abs(promoItems.reduce((sum, i) => sum + i.subtotal, 0));
     const combinedDiscount = discount + promoDiscountsTotal;
-    const finalTotal = Math.max(0, (grossSubtotal > 0 ? grossSubtotal : cart.reduce((sum, i) => sum + i.subtotal, 0)) - combinedDiscount + shippingFee);
+    const finalTotal = Math.max(0, (grossSubtotal > 0 ? grossSubtotal : checkoutCart.reduce((sum, i) => sum + i.subtotal, 0)) - combinedDiscount + shippingFee);
     const totalBottleQty = regularItems.reduce((sum, i) => sum + i.qty, 0);
     const totalMargin = regularItems.reduce((sum, i) => sum + i.margin, 0) - combinedDiscount;
 
     if (paymentMethod === 'CASH' && cashReceived < finalTotal) {
+      showToast(`Pembayaran tunai kurang dari total terbaru (${formatRupiah(finalTotal)})`, 'error');
       return;
     }
 
@@ -405,7 +685,7 @@ export default function App() {
       promoCode: promoCodeFinal,
       promoName: promoNameFinal,
       isResellerMode: isRedPriceMode,
-      items: cart.map((item) => {
+      items: checkoutCart.map((item) => {
         const itemTotal = item.subtotal || (item.qty * item.price);
         const regularPrice = item.regularPrice || item.originalPrice || item.price;
         return {
@@ -422,12 +702,12 @@ export default function App() {
           isRedPrice: item.isRedPrice,
         };
       }),
-      subtotal: grossSubtotal > 0 ? grossSubtotal : cart.reduce((sum, i) => sum + i.subtotal, 0),
+      subtotal: grossSubtotal > 0 ? grossSubtotal : checkoutCart.reduce((sum, i) => sum + i.subtotal, 0),
       discount: combinedDiscount,
       shippingFee: shippingFee > 0 ? shippingFee : undefined,
       total: finalTotal,
       margin: Math.max(0, totalMargin),
-      totalQty: totalBottleQty > 0 ? totalBottleQty : cart.reduce((sum, i) => sum + i.qty, 0),
+      totalQty: totalBottleQty > 0 ? totalBottleQty : checkoutCart.reduce((sum, i) => sum + i.qty, 0),
       cashReceived: paymentMethod === 'CASH' ? cashReceived : undefined,
       cashChange: paymentMethod === 'CASH' ? Math.max(0, cashReceived - finalTotal) : undefined,
       cashier: currentShift.cashierName || 'Kasir',
@@ -475,10 +755,10 @@ export default function App() {
   };
 
   // View Receipt Modal
-  const handleViewReceipt = (receipt: TransactionReceipt) => {
+  const handleViewReceipt = useCallback((receipt: TransactionReceipt) => {
     setActiveReceipt(receipt);
     setIsReceiptOpen(true);
-  };
+  }, []);
 
   // Void Transaction & Delete from Google Sheets (Mirroring basumurti/ortukill-pos Code.gs v3.5)
   const handleVoidTransaction = async (id: string, reason: string) => {
@@ -600,15 +880,53 @@ export default function App() {
       .catch((err) => console.warn(err));
   };
 
-  const handleAddProduct = (newProd: Omit<Product, 'id'>) => {
-    StorageService.addProduct(newProd);
-    refreshAllData();
-    showToast(`Produk ${newProd.name} ditambahkan lokal`, 'info');
+  const handleAddProduct = async (newProd: Omit<Product, 'id'>) => {
+    try {
+      const res = await GasApiService.addProduct(newProd);
+      if (res && res.success) {
+        StorageService.addProduct(newProd);
+        StorageService.addStockAuditLog({
+          sku: newProd.sku,
+          productName: newProd.name,
+          action: 'TAMBAH_PRODUK',
+          details: `Tambah produk baru (Harga: Rp ${newProd.price.toLocaleString('id-ID')}, HPP: Rp ${newProd.cost.toLocaleString('id-ID')}, Stok Awal: ${newProd.stock})`,
+          newValue: newProd.stock,
+          source: 'GOOGLE_SHEETS',
+          operator: 'Admin',
+        });
+        refreshAllData();
+        showToast(res.message || `✓ Produk ${newProd.name} berhasil ditambahkan ke Google Sheets!`, 'success');
+        handleSyncSpreadsheet(true);
+      } else {
+        showToast(`⚠️ Gagal menambah produk ke Google Sheets: ${res?.message || 'Error'}`, 'error', 6000);
+      }
+    } catch (err: any) {
+      showToast(`⚠️ Gagal koneksi saat menambah produk: ${err?.message || 'Error'}`, 'error', 6000);
+    }
   };
 
-  const handleUpdateProduct = (updatedProd: Product) => {
-    StorageService.updateProduct(updatedProd);
-    refreshAllData();
+  const handleUpdateProduct = async (updatedProd: Product) => {
+    try {
+      const res = await GasApiService.updateProduct(updatedProd);
+      if (res && res.success) {
+        StorageService.updateProduct(updatedProd);
+        StorageService.addStockAuditLog({
+          sku: updatedProd.sku,
+          productName: updatedProd.name,
+          action: 'EDIT_PRODUK',
+          details: `Ubah info produk (Harga: Rp ${updatedProd.price.toLocaleString('id-ID')}, HPP: Rp ${updatedProd.cost.toLocaleString('id-ID')})`,
+          source: 'GOOGLE_SHEETS',
+          operator: 'Admin',
+        });
+        refreshAllData();
+        showToast(res.message || `✓ Info produk ${updatedProd.name} diperbarui di Google Sheets!`, 'success');
+        handleSyncSpreadsheet(true);
+      } else {
+        showToast(`⚠️ Gagal memperbarui produk: ${res?.message || 'Error'}`, 'error', 6000);
+      }
+    } catch (err: any) {
+      showToast(`⚠️ Gagal koneksi saat memperbarui produk: ${err?.message || 'Error'}`, 'error', 6000);
+    }
   };
 
   // Shift Management
@@ -699,9 +1017,18 @@ export default function App() {
   };
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
+  const syncStatus: SyncHealthStatus = !isOnline
+    ? 'offline'
+    : isSyncing
+    ? 'syncing'
+    : syncError
+    ? 'error'
+    : isConnectedGas
+    ? 'connected'
+    : 'error';
 
   return (
-    <div className="min-h-screen bg-[#F8F6F3] text-stone-900 flex flex-col font-sans selection:bg-[#FF5E36] selection:text-white pb-20 md:pb-6">
+    <div className="min-h-dvh bg-[#F6F7F9] dark:bg-[#121215] text-[#0F172A] dark:text-[#F4F4F6] flex flex-col font-sans selection:bg-[#2563EB] dark:selection:bg-[#A855F7] selection:text-white pb-20 md:pb-0 transition-colors duration-200">
       {/* Header */}
       <Header
         activeTab={activeTab}
@@ -712,33 +1039,100 @@ export default function App() {
         todayMargin={todaySummary.totalMargin}
         isConnectedGas={isConnectedGas}
         isSyncing={isSyncing}
+        syncStatus={syncStatus}
         lastSynced={lastSynced}
         lastUpdateInfo={lastUpdateInfo}
         onSyncData={() => handleSyncSpreadsheet(false)}
         onResetData={handleResetData}
         onOpenAiCopilot={() => setIsAiCopilotOpen(true)}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
       />
 
-      {/* Floating Status Toast */}
+      {/* Lightweight Non-Intrusive Offline / Sync Error Status Banner */}
+      {!isOnline ? (
+        <div
+          role="status"
+          className="bg-amber-50 dark:bg-amber-500/15 border-b border-amber-200 dark:border-amber-500/35 px-3 sm:px-6 py-2 no-print"
+        >
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 text-xs font-semibold text-amber-900 dark:text-amber-200">
+            <div className="flex items-center gap-2 min-w-0">
+              <WifiOff className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="truncate">Mode offline — data tersimpan aman di perangkat</span>
+            </div>
+          </div>
+        </div>
+      ) : syncError ? (
+        <div
+          role="status"
+          className="bg-red-50 dark:bg-red-500/15 border-b border-red-200 dark:border-red-500/35 px-3 sm:px-6 py-2 no-print"
+        >
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 text-xs font-semibold text-red-900 dark:text-red-200">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+              <span className="truncate">Sinkronisasi Sheets gagal</span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleSyncSpreadsheet(false)}
+                disabled={isSyncing}
+                className="min-h-[36px] px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center gap-1.5 active:scale-[0.97] cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>Coba lagi</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSyncError(null)}
+                aria-label="Tutup peringatan sinkronisasi"
+                className="min-w-[36px] min-h-[36px] rounded-lg flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Floating Status Toast (Supports Undo action, positioned cleanly above overlays) */}
       {toast && (
-        <div className="fixed bottom-24 right-4 sm:bottom-12 sm:right-6 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl border shadow-xl text-xs font-semibold backdrop-blur-md ${
-            toast.type === 'success' 
-              ? 'bg-emerald-50/95 border-emerald-200 text-emerald-900'
-              : toast.type === 'error'
-              ? 'bg-rose-50/95 border-rose-200 text-rose-900'
-              : 'bg-white/95 border-stone-200 text-stone-900'
-          }`}>
-            {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />}
-            {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />}
-            {toast.type === 'info' && <Info className="w-4 h-4 text-[#FF5E36] flex-shrink-0" />}
-            <span>{toast.message}</span>
+        <div className="fixed top-16 left-3 right-3 sm:top-auto sm:left-auto sm:bottom-8 sm:right-6 z-[80] animate-in fade-in slide-in-from-top-2 sm:slide-in-from-bottom-2 duration-150 pointer-events-none flex justify-center sm:justify-end">
+          <div
+            role="status"
+            className={`pointer-events-auto flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-2xl border shadow-xl text-xs font-semibold w-full sm:w-auto sm:max-w-md ${
+              toast.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-950 dark:bg-[#1B1B20] dark:border-emerald-500/45 dark:text-emerald-300'
+                : toast.type === 'error'
+                ? 'bg-red-50 border-red-200 text-red-950 dark:bg-[#1B1B20] dark:border-red-500/45 dark:text-red-300'
+                : 'bg-white border-slate-200 text-[#0F172A] dark:bg-[#1B1B20] dark:border-purple-500/45 dark:text-[#F4F4F6]'
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+              {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />}
+              {toast.type === 'info' && <Info className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC] shrink-0" />}
+              <span className="break-words">{toast.message}</span>
+            </div>
+            {toast.action && (
+              <button
+                type="button"
+                onClick={() => {
+                  const act = toast.action;
+                  setToast(null);
+                  act?.onAction();
+                }}
+                className="min-h-[36px] px-3 py-1 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] text-white font-bold text-xs shrink-0 active:scale-[0.97] transition-colors cursor-pointer"
+              >
+                {toast.action.label}
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* Main Content Body */}
-      <main className="flex-1 px-3 sm:px-6 py-4 max-w-7xl mx-auto w-full">
+      <main className="flex-1 px-3 sm:px-6 py-4 sm:py-6 max-w-7xl mx-auto w-full">
         {activeTab === 'pos' && (
           <PosRegisterView
             products={products}
@@ -762,8 +1156,10 @@ export default function App() {
             onUpdateQty={handleUpdateQty}
             onUpdateItemPrice={handleUpdateItemPrice}
             onRemoveFromCart={handleRemoveFromCart}
+            onRestoreCartItem={handleRestoreCartItem}
             onClearCart={handleClearCart}
             onProcessCheckout={handleProcessCheckout}
+            onShowToast={showToast}
             brand={brand}
             todayOmset={todaySummary.totalOmset}
             todayMargin={todaySummary.totalMargin}
@@ -777,87 +1173,166 @@ export default function App() {
         )}
 
         {activeTab === 'today' && (
-          <TodayTransactionsView
-            summary={todaySummary}
-            transactions={todayTransactions}
-            onViewReceipt={handleViewReceipt}
-            onVoidTransaction={handleVoidTransaction}
-            onDeleteTransaction={handleDeleteTransaction}
-            onRefresh={refreshAllData}
-            onSyncSpreadsheet={() => handleSyncSpreadsheet(false)}
-            isSyncing={isSyncing}
-          />
+          <ChunkErrorBoundary
+            resetKey={`today-${chunkRetryNonce}`}
+            title="Gagal memuat Transaksi Hari Ini"
+            onRetry={() => {
+              LazyTodayTransactionsView.reset();
+              setChunkRetryNonce((n) => n + 1);
+            }}
+          >
+            <Suspense fallback={<ViewLoadingFallback label="Memuat transaksi hari ini..." />}>
+              <LazyTodayTransactionsView.Component
+                summary={todaySummary}
+                transactions={todayTransactions}
+                allTransactions={transactions}
+                onViewReceipt={handleViewReceipt}
+                onVoidTransaction={handleVoidTransaction}
+                onDeleteTransaction={handleDeleteTransaction}
+                onRefresh={refreshAllData}
+                onSyncSpreadsheet={() => handleSyncSpreadsheet(false)}
+                isSyncing={isSyncing}
+              />
+            </Suspense>
+          </ChunkErrorBoundary>
         )}
 
         {activeTab === 'history' && (
-          <SalesHistoryView
-            transactions={transactions}
-            products={products}
-            financeRecords={financeRecords}
-            salesTarget={salesTarget}
-            onViewReceipt={handleViewReceipt}
-            onVoidTransaction={handleVoidTransaction}
-            onDeleteTransaction={handleDeleteTransaction}
-            onAddFinanceRecord={handleAddFinanceRecord}
-            onDeleteFinanceRecord={handleDeleteFinanceRecord}
-            onSaveSalesTarget={handleSaveSalesTarget}
-            onSyncSpreadsheet={() => handleSyncSpreadsheet(false)}
-            isSyncing={isSyncing}
-            showToast={showToast}
-          />
+          <ChunkErrorBoundary
+            resetKey={`history-${chunkRetryNonce}`}
+            title="Gagal memuat Laporan & Grafik"
+            onRetry={() => {
+              LazySalesHistoryView.reset();
+              setChunkRetryNonce((n) => n + 1);
+            }}
+          >
+            <Suspense fallback={<ViewLoadingFallback label="Memuat Laporan & Grafik..." />}>
+              <LazySalesHistoryView.Component
+                transactions={transactions}
+                products={products}
+                financeRecords={financeRecords}
+                salesTarget={salesTarget}
+                onViewReceipt={handleViewReceipt}
+                onVoidTransaction={handleVoidTransaction}
+                onDeleteTransaction={handleDeleteTransaction}
+                onAddFinanceRecord={handleAddFinanceRecord}
+                onDeleteFinanceRecord={handleDeleteFinanceRecord}
+                onSaveSalesTarget={handleSaveSalesTarget}
+                onSyncSpreadsheet={() => handleSyncSpreadsheet(false)}
+                isSyncing={isSyncing}
+                showToast={showToast}
+                isDarkMode={isDarkMode}
+              />
+            </Suspense>
+          </ChunkErrorBoundary>
+        )}
+
+        {activeTab === 'finance' && (
+          <ChunkErrorBoundary
+            resetKey={`finance-${chunkRetryNonce}`}
+            title="Gagal memuat Catatan Keuangan"
+            onRetry={() => {
+              LazyFinanceManagementView.reset();
+              setChunkRetryNonce((n) => n + 1);
+            }}
+          >
+            <Suspense fallback={<ViewLoadingFallback label="Memuat catatan keuangan..." />}>
+              <LazyFinanceManagementView.Component
+                financeRecords={financeRecords}
+                onAddRecord={handleAddFinanceRecord}
+                onDeleteRecord={handleDeleteFinanceRecord}
+                onSyncSpreadsheet={() => handleSyncSpreadsheet(false)}
+                isSyncing={isSyncing}
+                showToast={showToast}
+              />
+            </Suspense>
+          </ChunkErrorBoundary>
         )}
 
         {activeTab === 'stock' && (
-          <StockManagementView
-            products={products}
-            onUpdateStock={handleUpdateStock}
-            onAddProduct={handleAddProduct}
-            onUpdateProduct={handleUpdateProduct}
-            onSyncSpreadsheet={() => handleSyncSpreadsheet(false)}
-            isSyncing={isSyncing}
-            showToast={showToast}
-          />
+          <ChunkErrorBoundary
+            resetKey={`stock-${chunkRetryNonce}`}
+            title="Gagal memuat Manajemen Stok"
+            onRetry={() => {
+              LazyStockManagementView.reset();
+              setChunkRetryNonce((n) => n + 1);
+            }}
+          >
+            <Suspense fallback={<ViewLoadingFallback label="Memuat manajemen stok..." />}>
+              <LazyStockManagementView.Component
+                products={products}
+                onUpdateStock={handleUpdateStock}
+                onAddProduct={handleAddProduct}
+                onUpdateProduct={handleUpdateProduct}
+                onSyncSpreadsheet={() => handleSyncSpreadsheet(false)}
+                isSyncing={isSyncing}
+                showToast={showToast}
+              />
+            </Suspense>
+          </ChunkErrorBoundary>
         )}
 
         {activeTab === 'shift' && (
-          <ShiftClosingView
-            currentShift={currentShift}
-            shiftHistory={shiftHistory}
-            todayCashSales={todaySummary.paymentBreakdown.CASH.total}
-            todayQrisSales={todaySummary.paymentBreakdown.QRIS.total}
-            todayTransferSales={todaySummary.paymentBreakdown.TRANSFER.total}
-            brand={brand}
-            onAddExpense={handleAddExpense}
-            onCloseShift={handleCloseShift}
-            onStartNewShift={handleStartNewShift}
-          />
+          <ChunkErrorBoundary
+            resetKey={`shift-${chunkRetryNonce}`}
+            title="Gagal memuat Tutup Shift"
+            onRetry={() => {
+              LazyShiftClosingView.reset();
+              setChunkRetryNonce((n) => n + 1);
+            }}
+          >
+            <Suspense fallback={<ViewLoadingFallback label="Memuat data shift..." />}>
+              <LazyShiftClosingView.Component
+                currentShift={currentShift}
+                shiftHistory={shiftHistory}
+                todayCashSales={todaySummary.paymentBreakdown.CASH.total}
+                todayQrisSales={todaySummary.paymentBreakdown.QRIS.total}
+                todayTransferSales={todaySummary.paymentBreakdown.TRANSFER.total}
+                brand={brand}
+                onAddExpense={handleAddExpense}
+                onCloseShift={handleCloseShift}
+                onStartNewShift={handleStartNewShift}
+              />
+            </Suspense>
+          </ChunkErrorBoundary>
         )}
 
         {activeTab === 'gas' && (
-          <GasIntegrationView 
-            onSyncComplete={() => {
-              setIsConnectedGas(true);
-              const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-              setLastSynced(timeStr);
-              refreshAllData();
+          <ChunkErrorBoundary
+            resetKey={`gas-${chunkRetryNonce}`}
+            title="Gagal memuat Integrasi Google Sheets"
+            onRetry={() => {
+              LazyGasIntegrationView.reset();
+              setChunkRetryNonce((n) => n + 1);
             }}
-          />
+          >
+            <Suspense fallback={<ViewLoadingFallback label="Memuat integrasi Google Sheets..." />}>
+              <LazyGasIntegrationView.Component
+                onSyncComplete={() => {
+                  setIsConnectedGas(true);
+                  const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                  setLastSynced(timeStr);
+                  refreshAllData();
+                }}
+              />
+            </Suspense>
+          </ChunkErrorBoundary>
         )}
       </main>
 
-      {/* Modern Compact Footer */}
-      <footer className="py-3 px-4 sm:px-6 border-t border-stone-200/60 bg-transparent text-[11px] text-stone-500 select-none no-print hidden md:flex items-center justify-between">
+      {/* Clean Desktop Footer */}
+      <footer className="py-3 px-4 sm:px-6 border-t border-slate-200 dark:border-[#2B2B33] bg-white dark:bg-[#1B1B20] text-[11px] text-slate-500 dark:text-zinc-400 select-none no-print hidden md:flex items-center justify-between transition-colors">
         <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${isConnectedGas ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+          <span className={`w-2 h-2 rounded-full ${isConnectedGas ? 'bg-emerald-500' : 'bg-amber-500'}`} />
           <span className="font-medium">
-            {isConnectedGas ? 'Status: Terhubung ke Google Spreadsheet' : 'Status: Mode Offline (Belum Tersinkron)'}
+            {isConnectedGas ? 'Terhubung ke Google Spreadsheet' : 'Mode Offline (Data Lokal)'}
           </span>
         </div>
-        <div className="font-medium">
-          ORTUKILL KEDIRI POS • Mobile-First Edition
+        <div className="font-semibold text-[#0F172A] dark:text-[#F4F4F6]">
+          ORTUKILL KEDIRI POS
         </div>
         <div>
-          Bantuan: <span className="font-semibold text-stone-700">{brand.PHONE}</span>
+          Bantuan: <span className="font-semibold text-[#0F172A] dark:text-[#F4F4F6]">{brand.PHONE}</span>
         </div>
       </footer>
 
@@ -869,42 +1344,86 @@ export default function App() {
         cartCount={cartCount}
         isConnectedGas={isConnectedGas}
         onResetData={handleResetData}
-        onOpenAiCopilot={() => setIsAiCopilotOpen(true)}
+        onOpenAiCopilot={() => {
+          void LazyAiCopilotModal.preload();
+          setIsAiCopilotOpen(true);
+        }}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
       />
 
-      {/* Floating AI Copilot Trigger Button (Always visible on mobile & desktop) */}
+      {/* Desktop Floating AI Copilot Button (Mobile uses Header button so it never overlaps cart bar) */}
       <button
-        onClick={() => setIsAiCopilotOpen(true)}
+        onClick={() => {
+          void LazyAiCopilotModal.preload();
+          setIsAiCopilotOpen(true);
+        }}
+        onMouseEnter={() => { void LazyAiCopilotModal.preload(); }}
         type="button"
         aria-label="Buka AI Copilot Kasir"
         title="AI Copilot Kasir (Otomasi Suara & Teks)"
-        className="fixed bottom-22 md:bottom-8 right-4 md:right-8 z-40 bg-gradient-to-r from-[#FF643D] via-[#FF5E36] to-amber-500 hover:from-[#e04f29] hover:to-[#FF5E36] text-white p-3.5 sm:px-4 sm:py-3.5 rounded-full shadow-xl shadow-[#FF5E36]/35 flex items-center gap-2 font-black text-xs sm:text-sm transition-all hover:scale-105 active:scale-95 cursor-pointer ring-4 ring-white/90"
+        className="hidden md:flex fixed bottom-6 right-6 z-40 bg-[#0F172A] hover:bg-slate-800 dark:bg-[#1B1B20] dark:hover:bg-[#24242B] dark:border dark:border-[#A855F7]/60 dark:shadow-[0_0_20px_rgba(168,85,247,0.28)] text-white px-4 py-3 rounded-full items-center gap-2 font-bold text-xs shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
       >
-        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
-        <span className="hidden sm:inline font-extrabold tracking-wide">AI Copilot</span>
+        <Sparkles className="w-4 h-4 text-blue-400 dark:text-[#C084FC]" />
+        <span>AI Copilot</span>
       </button>
 
       {/* Thermal Receipt Modal */}
-      <ReceiptModal
-        receipt={activeReceipt}
-        brand={brand}
-        isOpen={isReceiptOpen}
-        onClose={() => setIsReceiptOpen(false)}
-        onVoidTransaction={handleVoidTransaction}
-        onDeleteTransaction={handleDeleteTransaction}
-      />
+      {isReceiptOpen && activeReceipt && (
+        <ChunkErrorBoundary
+          resetKey={`receipt-${chunkRetryNonce}`}
+          compact
+          title="Gagal memuat Struk"
+          onRetry={() => {
+            LazyReceiptModal.reset();
+            setChunkRetryNonce((n) => n + 1);
+          }}
+        >
+          <Suspense fallback={<ModalLoadingFallback label="Menyiapkan struk..." />}>
+            <LazyReceiptModal.Component
+              receipt={activeReceipt}
+              brand={brand}
+              isOpen={isReceiptOpen}
+              onClose={() => setIsReceiptOpen(false)}
+              onNewTransaction={() => {
+                handleClearCart();
+                setIsReceiptOpen(false);
+                setActiveTab('pos');
+              }}
+              onVoidTransaction={handleVoidTransaction}
+              onDeleteTransaction={handleDeleteTransaction}
+              onShowToast={showToast}
+            />
+          </Suspense>
+        </ChunkErrorBoundary>
+      )}
 
       {/* AI Copilot Kasir Modal (Voice & Text Automated Assistant) */}
-      <AiCopilotModal
-        isOpen={isAiCopilotOpen}
-        onClose={() => setIsAiCopilotOpen(false)}
-        products={products}
-        todayTransactions={todayTransactions}
-        cashierName={currentShift.cashierName || 'Kasir'}
-        brand={brand}
-        onExecuteAction={handleExecuteAiAction}
-        onViewReceipt={handleViewReceipt}
-      />
+      {isAiCopilotOpen && (
+        <ChunkErrorBoundary
+          resetKey={`copilot-${chunkRetryNonce}`}
+          compact
+          title="Gagal memuat AI Copilot"
+          onRetry={() => {
+            LazyAiCopilotModal.reset();
+            setChunkRetryNonce((n) => n + 1);
+          }}
+        >
+          <Suspense fallback={<ModalLoadingFallback label="Membuka AI Copilot..." />}>
+            <LazyAiCopilotModal.Component
+              isOpen={isAiCopilotOpen}
+              onClose={() => setIsAiCopilotOpen(false)}
+              products={products}
+              todayTransactions={todayTransactions}
+              cashierName={currentShift.cashierName || 'Kasir'}
+              brand={brand}
+              onExecuteAction={handleExecuteAiAction}
+              onViewReceipt={handleViewReceipt}
+              onShowToast={showToast}
+            />
+          </Suspense>
+        </ChunkErrorBoundary>
+      )}
     </div>
   );
 }
