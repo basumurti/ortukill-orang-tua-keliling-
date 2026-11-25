@@ -1,25 +1,20 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Button, Card, Chip, Input, Modal, TextArea } from '@heroui/react';
 import { 
   Package, 
   ArrowUpCircle, 
   Search, 
   Plus, 
   Edit3, 
-  X, 
   Download, 
   RefreshCw, 
   Layers, 
   History,
-  AlertCircle,
-  CheckCircle2,
   SlidersHorizontal,
   ClipboardList,
   Scale,
   ShieldCheck,
-  TrendingDown,
-  TrendingUp,
   AlertTriangle,
-  FileSpreadsheet,
   Clock,
   Sparkles
 } from 'lucide-react';
@@ -70,80 +65,91 @@ const StockMobileCard: React.FC<StockItemRowProps> = React.memo(({
   const marginPercent = p.price > 0 ? (margin / p.price) * 100 : 0;
 
   return (
-    <div className="[content-visibility:auto] [contain-intrinsic-size:auto_220px] bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] space-y-3">
+    <Card className="[content-visibility:auto] [contain-intrinsic-size:auto_220px] bg-[var(--surface)] rounded-2xl p-4 gap-3 border border-[var(--border)] shadow-none">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-xs font-extrabold text-[#2563EB] dark:text-[#C084FC] bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/35 px-2 py-0.5 rounded-md truncate">
+        <span className="font-mono text-xs font-extrabold text-[var(--accent)] bg-[var(--accent-soft)] border border-[var(--accent)]/25 px-2 py-0.5 rounded-md truncate">
           {p.sku}
         </span>
-        <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full tabular-nums font-mono whitespace-nowrap ${
-          isOutOfStock
-            ? 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35'
-            : isLowStock
-            ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35'
-            : 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35'
-        }`}>
-          {isOutOfStock ? 'HABIS (0)' : isLowStock ? `MENIPIS (${p.stock})` : `STOK: ${p.stock}`}
-        </span>
+        <Chip
+          size="sm"
+          variant="soft"
+          color={isOutOfStock ? 'danger' : isLowStock ? 'warning' : 'success'}
+          className="font-extrabold tabular-nums font-mono border border-[var(--border)]"
+        >
+          <Chip.Label className={isOutOfStock ? '' : isLowStock ? 'text-amber-700 dark:text-[var(--warning)]' : 'text-emerald-700 dark:text-[var(--success)]'}>
+            {isOutOfStock ? 'HABIS (0)' : isLowStock ? `MENIPIS (${p.stock})` : `STOK: ${p.stock}`}
+          </Chip.Label>
+        </Chip>
       </div>
 
       <div>
-        <h4 className="text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] leading-snug">
+        <h4 className="text-sm font-extrabold text-[var(--foreground)] leading-snug">
           {p.name}
         </h4>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
-          <span className="text-[11px] text-slate-600 dark:text-zinc-300 font-semibold bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] px-2 py-0.5 rounded-md">
+          <span className="text-[11px] text-[var(--foreground)] font-semibold bg-[var(--surface-secondary)] border border-[var(--border)] px-2 py-0.5 rounded-md">
             {p.category}
           </span>
-          <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-            Margin: <strong className={marginPercent < 20 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}>{marginPercent.toFixed(1)}%</strong>
+          <span className="text-[11px] text-[var(--muted)]">
+            Margin:{' '}
+            <strong className={marginPercent < 20 ? 'text-amber-700 dark:text-[var(--warning)]' : 'text-emerald-700 dark:text-[var(--success)]'}>
+              {marginPercent.toFixed(1)}%
+            </strong>
           </span>
         </div>
       </div>
 
-      <div className="pt-2.5 border-t border-slate-100 dark:border-[#2B2B33] grid grid-cols-2 gap-2 text-xs">
+      <div className="pt-2.5 border-t border-[var(--border)] grid grid-cols-2 gap-2 text-xs">
         <div>
-          <span className="text-[10px] text-slate-500 dark:text-zinc-400 uppercase font-bold tracking-wider">Harga Jual:</span>
-          <p className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">{formatRupiah(p.price)}</p>
+          <span className="text-[10px] text-[var(--muted)] uppercase font-bold tracking-wider">Harga Jual:</span>
+          <p className="font-extrabold text-[var(--foreground)] tabular-nums font-mono">{formatRupiah(p.price)}</p>
           {p.redPrice && p.redPrice !== p.price ? (
-            <p className="text-[10px] text-red-600 dark:text-red-400 font-bold tabular-nums font-mono">Merah: {formatRupiah(p.redPrice)}</p>
+            <p className="text-[10px] text-amber-700 dark:text-[var(--warning)] font-bold tabular-nums font-mono">
+              Reseller: {formatRupiah(p.redPrice)}
+            </p>
           ) : null}
         </div>
 
         <div>
-          <span className="text-[10px] text-slate-500 dark:text-zinc-400 uppercase font-bold tracking-wider">HPP &amp; Nilai Aset:</span>
-          <p className="text-slate-600 dark:text-zinc-300 font-medium tabular-nums font-mono">HPP: {formatRupiah(p.cost)}</p>
-          <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold tabular-nums font-mono">Aset: {formatRupiah(p.totalAsset || p.cost * p.stock)}</p>
+          <span className="text-[10px] text-[var(--muted)] uppercase font-bold tracking-wider">HPP &amp; Nilai Aset:</span>
+          <p className="text-[var(--muted)] font-medium tabular-nums font-mono">HPP: {formatRupiah(p.cost)}</p>
+          <p className="text-[10px] text-amber-700 dark:text-[var(--warning)] font-bold tabular-nums font-mono">
+            Aset: {formatRupiah(p.totalAsset || p.cost * p.stock)}
+          </p>
         </div>
       </div>
 
       {/* 3 Action Buttons for Mobile */}
-      <div className="pt-2.5 border-t border-slate-100 dark:border-[#2B2B33] grid grid-cols-3 gap-1.5">
-        <button
-          onClick={() => onRestock(p)}
-          className="py-2.5 px-2 rounded-xl bg-blue-50 dark:bg-purple-500/15 hover:bg-blue-100 dark:hover:bg-purple-500/25 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/35 text-xs font-bold flex items-center justify-center gap-1 min-h-[44px] cursor-pointer transition-colors"
+      <div className="pt-2.5 border-t border-[var(--border)] grid grid-cols-3 gap-1.5">
+        <Button
+          variant="outline"
+          onPress={() => onRestock(p)}
+          className="px-2 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/25 text-xs font-bold min-h-[44px]"
         >
           <ArrowUpCircle className="w-3.5 h-3.5" />
           <span>Restock</span>
-        </button>
+        </Button>
 
-        <button
-          onClick={() => onOpname(p)}
-          className="py-2.5 px-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white border border-slate-200 dark:border-[#343440] text-xs font-bold flex items-center justify-center gap-1 min-h-[44px] cursor-pointer transition-colors"
-          title="Koreksi Stok / Opname"
+        <Button
+          variant="outline"
+          onPress={() => onOpname(p)}
+          aria-label="Koreksi Stok / Opname"
+          className="px-2 rounded-xl bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)] text-xs font-bold min-h-[44px]"
         >
-          <Scale className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          <Scale className="w-3.5 h-3.5 text-amber-700 dark:text-[var(--warning)]" />
           <span>Opname</span>
-        </button>
+        </Button>
 
-        <button
-          onClick={() => onEdit(p)}
-          className="py-2.5 px-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white border border-slate-200 dark:border-[#343440] text-xs font-bold flex items-center justify-center gap-1 min-h-[44px] cursor-pointer transition-colors"
+        <Button
+          variant="outline"
+          onPress={() => onEdit(p)}
+          className="px-2 rounded-xl bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)] text-xs font-bold min-h-[44px]"
         >
           <Edit3 className="w-3.5 h-3.5" />
           <span>Edit Info</span>
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 });
 
@@ -160,77 +166,87 @@ const StockTableRow: React.FC<StockItemRowProps> = React.memo(({
   const asset = p.totalAsset || p.cost * p.stock;
 
   return (
-    <tr className="hover:bg-slate-50/80 dark:hover:bg-[#24242B]/70 transition-colors">
-      <td className="py-3 px-4 font-mono font-bold text-[#2563EB] dark:text-[#C084FC] whitespace-nowrap">
+    <tr className="hover:bg-[var(--surface-secondary)]/80 transition-colors">
+      <td className="py-3 px-4 font-mono font-bold text-[var(--accent)] whitespace-nowrap">
         {p.sku}
       </td>
       <td className="py-3 px-4">
-        <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6] block">{p.name}</span>
+        <span className="font-bold text-[var(--foreground)] block">{p.name}</span>
         {p.notes ? (
-          <span className="text-[10px] text-slate-500 dark:text-zinc-400 italic block">{p.notes}</span>
+          <span className="text-[10px] text-[var(--muted)] italic block">{p.notes}</span>
         ) : null}
       </td>
       <td className="py-3 px-4">
-        <span className="bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-[#343440] px-2 py-0.5 rounded-md font-semibold text-[11px] whitespace-nowrap">
+        <span className="bg-[var(--surface-secondary)] text-[var(--foreground)] border border-[var(--border)] px-2 py-0.5 rounded-md font-semibold text-[11px] whitespace-nowrap">
           {p.category}
         </span>
       </td>
       <td className="py-3 px-4 text-center">
-        <span className={`inline-block font-extrabold px-2.5 py-0.5 rounded-full text-xs tabular-nums font-mono whitespace-nowrap ${
-          isOutOfStock
-            ? 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35'
-            : isLowStock
-            ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35'
-            : 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35'
-        }`}>
-          {p.stock} btl
-        </span>
+        <Chip
+          size="sm"
+          variant="soft"
+          color={isOutOfStock ? 'danger' : isLowStock ? 'warning' : 'success'}
+          className="font-extrabold tabular-nums font-mono border border-[var(--border)]"
+        >
+          <Chip.Label className={isOutOfStock ? '' : isLowStock ? 'text-amber-700 dark:text-[var(--warning)]' : 'text-emerald-700 dark:text-[var(--success)]'}>
+            {p.stock} btl
+          </Chip.Label>
+        </Chip>
       </td>
       <td className="py-3 px-4 text-right whitespace-nowrap">
-        <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] block tabular-nums font-mono">{formatRupiah(p.price)}</span>
+        <span className="font-extrabold text-[var(--foreground)] block tabular-nums font-mono">{formatRupiah(p.price)}</span>
         {p.redPrice && p.redPrice !== p.price ? (
-          <span className="text-[10px] text-red-600 dark:text-red-400 font-bold block tabular-nums font-mono">Merah: {formatRupiah(p.redPrice)}</span>
+          <span className="text-[10px] text-amber-700 dark:text-[var(--warning)] font-bold block tabular-nums font-mono">
+            Reseller: {formatRupiah(p.redPrice)}
+          </span>
         ) : null}
       </td>
-      <td className="py-3 px-4 text-right text-slate-600 dark:text-zinc-300 font-medium tabular-nums font-mono whitespace-nowrap">
+      <td className="py-3 px-4 text-right text-[var(--muted)] font-medium tabular-nums font-mono whitespace-nowrap">
         {formatRupiah(p.cost)}
       </td>
       <td className="py-3 px-4 text-right whitespace-nowrap">
-        <span className={`font-bold block tabular-nums font-mono ${marginPercent < 20 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+        <span className={`font-bold block tabular-nums font-mono ${marginPercent < 20 ? 'text-amber-700 dark:text-[var(--warning)]' : 'text-emerald-700 dark:text-[var(--success)]'}`}>
           {marginPercent.toFixed(1)}%
         </span>
-        <span className="text-[10px] text-slate-500 dark:text-zinc-400 block tabular-nums font-mono">+{formatRupiah(margin)}</span>
+        <span className="text-[10px] text-[var(--muted)] block tabular-nums font-mono">+{formatRupiah(margin)}</span>
       </td>
-      <td className="py-3 px-4 text-right font-extrabold text-amber-700 dark:text-amber-400 tabular-nums font-mono whitespace-nowrap">
+      <td className="py-3 px-4 text-right font-extrabold text-amber-700 dark:text-[var(--warning)] tabular-nums font-mono whitespace-nowrap">
         {formatRupiah(asset)}
       </td>
       <td className="py-3 px-4">
         <div className="flex items-center justify-center gap-1.5">
-          <button
-            onClick={() => onRestock(p)}
-            title="Catat Restock Barang Masuk"
-            className="px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-purple-500/15 hover:bg-blue-100 dark:hover:bg-purple-500/25 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/35 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer min-h-[38px]"
+          <Button
+            variant="outline"
+            size="sm"
+            onPress={() => onRestock(p)}
+            aria-label="Catat Restock Barang Masuk"
+            className="px-2.5 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/25 font-bold text-xs min-h-[38px]"
           >
             <ArrowUpCircle className="w-3.5 h-3.5" />
             <span>Restock</span>
-          </button>
+          </Button>
 
-          <button
-            onClick={() => onOpname(p)}
-            title="Koreksi Stok / Stock Opname"
-            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white border border-slate-200 dark:border-[#343440] font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer min-h-[38px]"
+          <Button
+            variant="outline"
+            size="sm"
+            onPress={() => onOpname(p)}
+            aria-label="Koreksi Stok / Stock Opname"
+            className="px-2.5 rounded-xl bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)] font-bold text-xs min-h-[38px]"
           >
-            <Scale className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <Scale className="w-3.5 h-3.5 text-amber-700 dark:text-[var(--warning)]" />
             <span>Opname</span>
-          </button>
+          </Button>
 
-          <button
-            onClick={() => onEdit(p)}
-            title="Edit Info & Harga (Tanpa merusak stok)"
-            className="p-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-white border border-slate-200 dark:border-[#343440] transition-colors cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center"
+          <Button
+            variant="outline"
+            isIconOnly
+            size="sm"
+            onPress={() => onEdit(p)}
+            aria-label="Edit Info & Harga (Tanpa merusak stok)"
+            className="rounded-xl bg-[var(--surface-secondary)] text-[var(--muted)] hover:text-[var(--foreground)] border-[var(--border)] min-h-[38px] min-w-[38px]"
           >
             <Edit3 className="w-3.5 h-3.5" />
-          </button>
+          </Button>
         </div>
       </td>
     </tr>
@@ -818,31 +834,31 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-24">
+    <div className="space-y-4 max-w-7xl mx-auto pb-24 text-[var(--foreground)]">
       {/* Top Header Card & Sync Status */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 transition-colors">
+      <Card className="bg-[var(--surface)] rounded-2xl p-4 sm:p-5 gap-3.5 border border-[var(--border)] shadow-none flex flex-col lg:flex-row lg:items-center justify-between">
         <div className="flex items-start sm:items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/35 flex items-center justify-center flex-shrink-0">
+          <div className="w-11 h-11 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/25 flex items-center justify-center flex-shrink-0">
             <Package className="w-5 h-5 stroke-[2.2]" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-[#0F172A] dark:text-[#F4F4F6]">
+              <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-[var(--foreground)]">
                 Manajemen Stok &amp; Inventori
               </h2>
-              <span className="bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/35 text-[11px] px-2.5 py-0.5 rounded-full font-bold">
-                {products.length} SKU
-              </span>
-              <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35 text-[11px] px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Formula M:Q Aman</span>
-              </span>
+              <Chip size="sm" variant="soft" color="accent" className="font-bold border border-[var(--accent)]/25">
+                <Chip.Label>{products.length} SKU</Chip.Label>
+              </Chip>
+              <Chip size="sm" variant="soft" color="success" className="font-semibold border border-[var(--success)]/30">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-[var(--success)]" />
+                <Chip.Label className="text-emerald-700 dark:text-[var(--success)]">Formula M:Q Aman</Chip.Label>
+              </Chip>
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-zinc-400 mt-1 flex-wrap">
-              <span className="font-medium text-slate-600 dark:text-zinc-300">Google Sheets ORTUKILL KEDIRI</span>
-              <span className="text-slate-300 dark:text-zinc-600">•</span>
-              <span className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-zinc-400 font-medium">
-                <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
+            <div className="flex items-center gap-2 text-xs text-[var(--muted)] mt-1 flex-wrap">
+              <span className="font-medium text-[var(--foreground)]">Google Sheets ORTUKILL KEDIRI</span>
+              <span className="text-[var(--muted)]">•</span>
+              <span className="flex items-center gap-1 text-[11px] text-[var(--muted)] font-medium">
+                <Clock className="w-3.5 h-3.5" />
                 <span>Sinkron: {lastSyncTime ? lastSyncTime : 'Baru saja'}</span>
               </span>
             </div>
@@ -851,115 +867,114 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
 
         <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full lg:w-auto">
           {onSyncSpreadsheet && (
-            <button
-              onClick={onSyncSpreadsheet}
-              disabled={isSyncing}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white border border-slate-200 dark:border-[#343440] text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
+            <Button
+              variant="outline"
+              onPress={onSyncSpreadsheet}
+              isDisabled={isSyncing}
+              className="rounded-xl bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)] text-xs font-bold min-h-[44px] px-3.5"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-[#2563EB] dark:text-[#C084FC] ${isSyncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-[var(--accent)] ${isSyncing ? 'animate-spin' : ''}`} />
               <span>{isSyncing ? 'Sinkron...' : 'Segarkan Sheets'}</span>
-            </button>
+            </Button>
           )}
 
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] text-white text-xs font-bold transition-colors cursor-pointer min-h-[44px] shadow-xs dark:shadow-[0_0_14px_rgba(168,85,247,0.3)]"
+          <Button
+            variant="primary"
+            onPress={handleOpenAddModal}
+            className="rounded-xl text-xs font-bold min-h-[44px] px-4"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Tambah Produk</span>
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* 4 Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] transition-colors">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-1 border border-[var(--border)] shadow-none">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] block">
             Total Stok Fisik
           </span>
-          <h3 className="text-lg sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] mt-1 tabular-nums font-mono">
+          <h3 className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tabular-nums font-mono">
             {inventoryMetrics.totalBottles} Botol
           </h3>
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+          <p className="text-[11px] text-[var(--muted)]">
             Formula: Stok Awal + Masuk − Keluar
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] transition-colors">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-1 border border-[var(--border)] shadow-none">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] block">
             Nilai Aset Modal
           </span>
-          <h3 className="text-lg sm:text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-1 tabular-nums font-mono">
+          <h3 className="text-lg sm:text-xl font-extrabold text-amber-700 dark:text-[var(--warning)] tabular-nums font-mono">
             {formatRupiah(inventoryMetrics.totalAssetCost)}
           </h3>
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+          <p className="text-[11px] text-[var(--muted)]">
             Total biaya HPP tertanam
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] transition-colors">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-1 border border-[var(--border)] shadow-none">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] block">
             Potensi Omset
           </span>
-          <h3 className="text-lg sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] mt-1 tabular-nums font-mono">
+          <h3 className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tabular-nums font-mono">
             {formatRupiah(inventoryMetrics.totalPotentialRevenue)}
           </h3>
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+          <p className="text-[11px] text-[var(--muted)]">
             Bila seluruh stok terjual
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] transition-colors">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-1 border border-[var(--border)] shadow-none">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] block">
             Potensi Keuntungan
           </span>
-          <h3 className="text-lg sm:text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums font-mono">
+          <h3 className="text-lg sm:text-xl font-extrabold text-emerald-700 dark:text-[var(--success)] tabular-nums font-mono">
             +{formatRupiah(inventoryMetrics.potentialProfit)}
           </h3>
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+          <p className="text-[11px] text-[var(--muted)]">
             Estimasi margin kotor
           </p>
-        </div>
+        </Card>
       </div>
 
       {/* Main Tab Switcher (Katalog, Riwayat Masuk, Audit Log) */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-1.5 border border-slate-200 dark:border-[#2B2B33] flex items-center gap-1 overflow-x-auto no-scrollbar transition-colors">
-        <button
-          onClick={() => setActiveTab('PRODUCTS')}
-          className={`flex-1 min-w-fit whitespace-nowrap flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer min-h-[44px] ${
-            activeTab === 'PRODUCTS'
-              ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white shadow-xs'
-              : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#24242B]'
+      <Card className="bg-[var(--surface)] rounded-2xl p-1.5 gap-1 border border-[var(--border)] shadow-none flex flex-row items-center overflow-x-auto no-scrollbar">
+        <Button
+          variant={activeTab === 'PRODUCTS' ? 'primary' : 'ghost'}
+          onPress={() => setActiveTab('PRODUCTS')}
+          className={`flex-1 min-w-fit whitespace-nowrap rounded-xl text-xs font-bold min-h-[44px] px-3.5 ${
+            activeTab === 'PRODUCTS' ? '' : 'text-[var(--muted)]'
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
           <span>Katalog &amp; Stok ({filteredProducts.length})</span>
-        </button>
+        </Button>
 
-        <button
-          onClick={() => setActiveTab('BARANG_MASUK')}
-          className={`flex-1 min-w-fit whitespace-nowrap flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer min-h-[44px] ${
-            activeTab === 'BARANG_MASUK'
-              ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white shadow-xs'
-              : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#24242B]'
+        <Button
+          variant={activeTab === 'BARANG_MASUK' ? 'primary' : 'ghost'}
+          onPress={() => setActiveTab('BARANG_MASUK')}
+          className={`flex-1 min-w-fit whitespace-nowrap rounded-xl text-xs font-bold min-h-[44px] px-3.5 ${
+            activeTab === 'BARANG_MASUK' ? '' : 'text-[var(--muted)]'
           }`}
         >
           <History className="w-3.5 h-3.5" />
           <span>Riwayat Masuk ({barangMasukList.length})</span>
-        </button>
+        </Button>
 
-        <button
-          onClick={() => setActiveTab('AUDIT_LOG')}
-          className={`flex-1 min-w-fit whitespace-nowrap flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer min-h-[44px] ${
-            activeTab === 'AUDIT_LOG'
-              ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white shadow-xs'
-              : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#24242B]'
+        <Button
+          variant={activeTab === 'AUDIT_LOG' ? 'primary' : 'ghost'}
+          onPress={() => setActiveTab('AUDIT_LOG')}
+          className={`flex-1 min-w-fit whitespace-nowrap rounded-xl text-xs font-bold min-h-[44px] px-3.5 ${
+            activeTab === 'AUDIT_LOG' ? '' : 'text-[var(--muted)]'
           }`}
         >
           <ClipboardList className="w-3.5 h-3.5" />
           <span>Audit Log ({auditLogs.length})</span>
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       {/* ========================================================================= */}
       {/* TAB 1: KATALOG & STOK                                                     */}
@@ -967,17 +982,19 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
       {activeTab === 'PRODUCTS' && (
         <>
           {/* Search, Filter & Stock Status Controls */}
-          <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-3.5 sm:p-4 border border-slate-200 dark:border-[#2B2B33] space-y-3 transition-colors">
+          <Card className="bg-[var(--surface)] rounded-2xl p-3.5 sm:p-4 gap-3 border border-[var(--border)] shadow-none">
             {/* Search + Sort + CSV */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                <input
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none z-10" />
+                <Input
                   type="text"
+                  fullWidth
+                  variant="secondary"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cari SKU atau nama produk..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:bg-white dark:focus:bg-[#1B1B20] focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm text-[var(--foreground)] min-h-[44px]"
                 />
               </div>
 
@@ -986,117 +1003,125 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                   <select
                     value={sortOption}
                     onChange={(e) => setSortOption(e.target.value as SortOptionType)}
-                    className="w-full sm:w-auto px-3 py-2.5 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 focus:outline-none focus:bg-white dark:focus:bg-[#1B1B20] focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
+                    aria-label="Urutkan produk"
+                    className="w-full sm:w-auto px-3 py-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs font-semibold text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)] min-h-[44px] cursor-pointer"
                   >
-                    <option value="NAME_ASC" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">Urut: Nama (A-Z)</option>
-                    <option value="STOCK_ASC" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">Urut: Stok Terendah</option>
-                    <option value="STOCK_DESC" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">Urut: Stok Tertinggi</option>
-                    <option value="PRICE_DESC" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">Urut: Harga Termahal</option>
-                    <option value="ASSET_DESC" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">Urut: Nilai Aset Terbesar</option>
+                    <option value="NAME_ASC">Urut: Nama (A-Z)</option>
+                    <option value="STOCK_ASC">Urut: Stok Terendah</option>
+                    <option value="STOCK_DESC">Urut: Stok Tertinggi</option>
+                    <option value="PRICE_DESC">Urut: Harga Termahal</option>
+                    <option value="ASSET_DESC">Urut: Nilai Aset Terbesar</option>
                   </select>
                 </div>
 
-                <button
-                  onClick={handleExportProductsCSV}
-                  title="Ekspor CSV"
-                  className="px-3.5 py-2.5 bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 min-h-[44px] cursor-pointer transition-colors"
+                <Button
+                  variant="outline"
+                  onPress={handleExportProductsCSV}
+                  aria-label="Ekspor CSV"
+                  className="px-3.5 bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)] rounded-xl text-xs font-bold min-h-[44px]"
                 >
-                  <Download className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
+                  <Download className="w-4 h-4 text-[var(--accent)]" />
                   <span>CSV</span>
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Stock Warning Status Filter Chips (0 Habis, 1-4 Menipis, >=5 Normal) */}
-            <div className="pt-2.5 border-t border-slate-100 dark:border-[#2B2B33] flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider pr-1 flex items-center gap-1 whitespace-nowrap">
-                <SlidersHorizontal className="w-3 h-3 text-slate-400 dark:text-zinc-500" />
+            <div className="pt-2.5 border-t border-[var(--border)] flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+              <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider pr-1 flex items-center gap-1 whitespace-nowrap">
+                <SlidersHorizontal className="w-3 h-3" />
                 Status:
               </span>
 
-              <button
-                onClick={() => setStockStatusFilter('ALL')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer min-h-[38px] flex items-center gap-1.5 ${
-                  stockStatusFilter === 'ALL'
-                    ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white shadow-xs'
-                    : 'bg-slate-50 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440]'
+              <Button
+                size="sm"
+                variant={stockStatusFilter === 'ALL' ? 'primary' : 'outline'}
+                onPress={() => setStockStatusFilter('ALL')}
+                className={`rounded-xl text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
+                  stockStatusFilter === 'ALL' ? '' : 'bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)]'
                 }`}
               >
                 <span>Semua</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${stockStatusFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-[#343440] text-slate-700 dark:text-zinc-300'}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${stockStatusFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'}`}>
                   {stockCounts.all}
                 </span>
-              </button>
+              </Button>
 
-              <button
-                onClick={() => setStockStatusFilter('OUT_OF_STOCK')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer min-h-[38px] flex items-center gap-1.5 ${
-                  stockStatusFilter === 'OUT_OF_STOCK'
-                    ? 'bg-red-600 text-white shadow-xs'
-                    : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35 hover:bg-red-100 dark:hover:bg-red-500/25'
+              <Button
+                size="sm"
+                variant={stockStatusFilter === 'OUT_OF_STOCK' ? 'danger' : 'outline'}
+                onPress={() => setStockStatusFilter('OUT_OF_STOCK')}
+                className={`rounded-xl text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
+                  stockStatusFilter === 'OUT_OF_STOCK' ? '' : 'bg-[var(--danger-soft)] text-[var(--danger)] border-[var(--danger)]/35'
                 }`}
               >
                 <span>Habis (0)</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${stockStatusFilter === 'OUT_OF_STOCK' ? 'bg-white/20 text-white' : 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300'}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${stockStatusFilter === 'OUT_OF_STOCK' ? 'bg-white/20 text-white' : 'bg-[var(--surface)]/70 text-[var(--danger)]'}`}>
                   {stockCounts.outOfStock}
                 </span>
-              </button>
+              </Button>
 
-              <button
-                onClick={() => setStockStatusFilter('LOW_STOCK')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer min-h-[38px] flex items-center gap-1.5 ${
+              <Button
+                size="sm"
+                variant="outline"
+                onPress={() => setStockStatusFilter('LOW_STOCK')}
+                className={`rounded-xl text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
                   stockStatusFilter === 'LOW_STOCK'
-                    ? 'bg-amber-500 text-white shadow-xs'
-                    : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35 hover:bg-amber-100 dark:hover:bg-amber-500/25'
+                    ? 'bg-[var(--warning)] text-[var(--warning-foreground)] border-[var(--warning)]'
+                    : 'bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border-[var(--warning)]/35'
                 }`}
               >
                 <span>Menipis (1–4)</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${stockStatusFilter === 'LOW_STOCK' ? 'bg-white/20 text-white' : 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300'}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${stockStatusFilter === 'LOW_STOCK' ? 'bg-black/15 text-[var(--warning-foreground)]' : 'bg-[var(--surface)]/70 text-amber-700 dark:text-[var(--warning)]'}`}>
                   {stockCounts.lowStock}
                 </span>
-              </button>
+              </Button>
 
-              <button
-                onClick={() => setStockStatusFilter('NORMAL')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer min-h-[38px] flex items-center gap-1.5 ${
+              <Button
+                size="sm"
+                variant="outline"
+                onPress={() => setStockStatusFilter('NORMAL')}
+                className={`rounded-xl text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
                   stockStatusFilter === 'NORMAL'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35 hover:bg-emerald-100 dark:hover:bg-emerald-500/25'
+                    ? 'bg-[var(--success)] text-[var(--success-foreground)] border-[var(--success)]'
+                    : 'bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border-[var(--success)]/35'
                 }`}
               >
                 <span>Normal (≥5)</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${stockStatusFilter === 'NORMAL' ? 'bg-white/20 text-white' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${stockStatusFilter === 'NORMAL' ? 'bg-black/15 text-[var(--success-foreground)]' : 'bg-[var(--surface)]/70 text-emerald-700 dark:text-[var(--success)]'}`}>
                   {stockCounts.normal}
                 </span>
-              </button>
+              </Button>
             </div>
 
             {/* Category Filter Chips */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
               {categories.map((cat) => (
-                <button
+                <Button
                   key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-[34px] ${
+                  size="sm"
+                  variant={selectedCategory === cat ? 'primary' : 'outline'}
+                  onPress={() => setSelectedCategory(cat)}
+                  className={`px-3.5 rounded-full text-xs font-semibold whitespace-nowrap min-h-[36px] ${
                     selectedCategory === cat
-                      ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-[#24242B] text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-[#2E2E37] hover:text-[#0F172A] dark:hover:text-white border border-transparent dark:border-[#343440]'
+                      ? ''
+                      : 'bg-[var(--surface-secondary)] text-[var(--muted)] hover:text-[var(--foreground)] border-[var(--border)]'
                   }`}
                 >
                   {cat === 'ALL' ? 'Semua Kategori' : cat}
-                </button>
+                </Button>
               ))}
             </div>
-          </div>
+          </Card>
 
           {/* MOBILE VIEW (<640px): Product Card List */}
           <div className="space-y-3 sm:hidden">
             {filteredProducts.length === 0 ? (
-              <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-8 text-center border border-slate-200 dark:border-[#2B2B33]">
-                <Package className="w-8 h-8 text-slate-400 dark:text-zinc-500 mx-auto mb-2" />
-                <p className="text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6]">Tidak ada produk yang cocok</p>
-                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">Coba sesuaikan kata kunci pencarian atau filter status stok.</p>
-              </div>
+              <Card className="bg-[var(--surface)] rounded-2xl p-8 text-center border border-[var(--border)] shadow-none items-center gap-1">
+                <Package className="w-8 h-8 text-[var(--muted)] mx-auto mb-1 opacity-60" />
+                <p className="text-sm font-bold text-[var(--foreground)]">Tidak ada produk yang cocok</p>
+                <p className="text-xs text-[var(--muted)]">Coba sesuaikan kata kunci pencarian atau filter status stok.</p>
+              </Card>
             ) : (
               visibleProducts.map((p) => (
                 <StockMobileCard
@@ -1111,10 +1136,10 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
           </div>
 
           {/* DESKTOP VIEW (>=640px): Full Table */}
-          <div className="hidden sm:block bg-white dark:bg-[#1B1B20] rounded-2xl border border-slate-200 dark:border-[#2B2B33] overflow-hidden transition-colors">
+          <Card className="hidden sm:block bg-[var(--surface)] rounded-2xl p-0 gap-0 border border-[var(--border)] shadow-none overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-[#24242B] text-slate-600 dark:text-zinc-300 uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-[#343440] font-bold">
+                <thead className="bg-[var(--surface-secondary)] text-[var(--muted)] uppercase text-[10px] tracking-wider border-b border-[var(--border)] font-bold">
                   <tr>
                     <th className="py-3 px-4">SKU / Kode</th>
                     <th className="py-3 px-4">Nama Produk</th>
@@ -1127,10 +1152,10 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                     <th className="py-3 px-4 text-center">Aksi Operasional</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-[#2B2B33]">
+                <tbody className="divide-y divide-[var(--separator)]">
                   {filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="py-8 text-center text-slate-500 dark:text-zinc-400">
+                      <td colSpan={9} className="py-8 text-center text-[var(--muted)]">
                         Tidak ada data produk yang cocok dengan pencarian atau filter.
                       </td>
                     </tr>
@@ -1148,20 +1173,20 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
 
           {filteredProducts.length > visibleProducts.length && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-1">
-              <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium tabular-nums">
+              <span className="text-xs text-[var(--muted)] font-medium tabular-nums">
                 Menampilkan {visibleProducts.length} dari {filteredProducts.length} produk
               </span>
-              <button
-                type="button"
-                onClick={() => setProductsVisibleCount((prev) => prev + 50)}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
+              <Button
+                variant="outline"
+                onPress={() => setProductsVisibleCount((prev) => prev + 50)}
+                className="w-full sm:w-auto px-4 rounded-xl bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] text-xs font-bold min-h-[44px]"
               >
                 Muat Lagi (+50)
-              </button>
+              </Button>
             </div>
           )}
         </>
@@ -1171,33 +1196,34 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
       {/* TAB 2: RIWAYAT BARANG MASUK & KOREKSI STOK (LOG_BARANG_MASUK)             */}
       {/* ========================================================================= */}
       {activeTab === 'BARANG_MASUK' && (
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl border border-slate-200 dark:border-[#2B2B33] overflow-hidden p-4 sm:p-5 space-y-4 transition-colors">
+        <Card className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-none overflow-hidden p-4 sm:p-5 gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-extrabold text-[#0F172A] dark:text-[#F4F4F6] flex items-center gap-2 flex-wrap">
+              <h3 className="text-base font-extrabold text-[var(--foreground)] flex items-center gap-2 flex-wrap">
                 <span>Riwayat Barang Masuk &amp; Koreksi</span>
-                <span className="text-xs bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-[#343440] px-2 py-0.5 rounded-full font-bold">
-                  {barangMasukList.length} Catatan
-                </span>
+                <Chip size="sm" variant="soft" color="default" className="font-bold border border-[var(--border)]">
+                  <Chip.Label>{barangMasukList.length} Catatan</Chip.Label>
+                </Chip>
               </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Membaca langsung tab spreadsheet <strong className="text-[#0F172A] dark:text-[#F4F4F6]">LOG_BARANG_MASUK</strong> (Kolom B:H).
+              <p className="text-xs text-[var(--muted)] mt-0.5">
+                Membaca langsung tab spreadsheet <strong className="text-[var(--foreground)]">LOG_BARANG_MASUK</strong> (Kolom B:H).
               </p>
             </div>
 
-            <button
-              onClick={handleExportBarangMasukCSV}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
+            <Button
+              variant="outline"
+              onPress={handleExportBarangMasukCSV}
+              className="px-3.5 bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)] rounded-xl text-xs font-bold min-h-[44px]"
             >
-              <Download className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
+              <Download className="w-4 h-4 text-[var(--accent)]" />
               <span>Ekspor Riwayat CSV</span>
-            </button>
+            </Button>
           </div>
 
           {/* Mobile cards for Barang Masuk */}
           <div className="space-y-2.5 sm:hidden">
             {barangMasukList.length === 0 ? (
-              <div className="py-8 text-center text-slate-500 dark:text-zinc-400 text-xs">
+              <div className="py-8 text-center text-[var(--muted)] text-xs">
                 Belum ada catatan barang masuk di LOG_BARANG_MASUK.
               </div>
             ) : (
@@ -1206,32 +1232,33 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                 const isNegative = bm.qty < 0;
 
                 return (
-                  <div key={bm.id || idx} className="bg-slate-50 dark:bg-[#24242B] rounded-xl p-3.5 border border-slate-200 dark:border-[#343440] space-y-2">
+                  <div key={bm.id || idx} className="bg-[var(--surface-secondary)] rounded-xl p-3.5 border border-[var(--border)] space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">{bm.date}</span>
-                      <span className={`inline-block font-extrabold px-2.5 py-0.5 rounded-full text-xs tabular-nums font-mono ${
-                        isNegative
-                          ? 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35'
-                          : isCorrection
-                          ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35'
-                          : 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35'
-                      }`}>
-                        {bm.qty >= 0 ? `+${bm.qty}` : bm.qty} btl
-                      </span>
+                      <span className="text-[11px] font-semibold text-[var(--muted)]">{bm.date}</span>
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color={isNegative ? 'danger' : isCorrection ? 'warning' : 'success'}
+                        className="font-extrabold tabular-nums font-mono border border-[var(--border)]"
+                      >
+                        <Chip.Label className={isNegative ? '' : isCorrection ? 'text-amber-700 dark:text-[var(--warning)]' : 'text-emerald-700 dark:text-[var(--success)]'}>
+                          {bm.qty >= 0 ? `+${bm.qty}` : bm.qty} btl
+                        </Chip.Label>
+                      </Chip>
                     </div>
                     <div>
-                      <span className="font-mono text-[11px] font-bold text-[#2563EB] dark:text-[#C084FC] block">{bm.sku}</span>
-                      <span className="font-bold text-sm text-[#0F172A] dark:text-[#F4F4F6] block">{bm.name}</span>
+                      <span className="font-mono text-[11px] font-bold text-[var(--accent)] block">{bm.sku}</span>
+                      <span className="font-bold text-sm text-[var(--foreground)] block">{bm.name}</span>
                     </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200/80 dark:border-[#343440] text-xs">
-                      <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                    <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs">
+                      <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
                         isCorrection
-                          ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35'
-                          : 'bg-white dark:bg-[#1B1B20] text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-[#343440]'
+                          ? 'bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border-[var(--warning)]/35'
+                          : 'bg-[var(--surface)] text-[var(--foreground)] border-[var(--border)]'
                       }`}>
                         {bm.supplier || bm.supplierOrNotes || 'orang tua'}
                       </span>
-                      <span className="font-extrabold font-mono text-[#0F172A] dark:text-[#F4F4F6] tabular-nums">
+                      <span className="font-extrabold font-mono text-[var(--foreground)] tabular-nums">
                         {formatRupiah(bm.totalCost || bm.qty * bm.cost)}
                       </span>
                     </div>
@@ -1243,7 +1270,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
 
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-[#24242B] text-slate-600 dark:text-zinc-300 uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-[#343440] font-bold">
+              <thead className="bg-[var(--surface-secondary)] text-[var(--muted)] uppercase text-[10px] tracking-wider border-b border-[var(--border)] font-bold">
                 <tr>
                   <th className="py-3 px-4">Tanggal</th>
                   <th className="py-3 px-4">SKU &amp; Produk</th>
@@ -1254,10 +1281,10 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                   <th className="py-3 px-4">Supplier / Keterangan</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-[#2B2B33]">
+              <tbody className="divide-y divide-[var(--separator)]">
                 {barangMasukList.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-500 dark:text-zinc-400">
+                    <td colSpan={7} className="py-8 text-center text-[var(--muted)]">
                       Belum ada catatan barang masuk di LOG_BARANG_MASUK.
                     </td>
                   </tr>
@@ -1267,39 +1294,40 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                     const isNegative = bm.qty < 0;
 
                     return (
-                      <tr key={bm.id || idx} className="hover:bg-slate-50/80 dark:hover:bg-[#24242B]/70 transition-colors">
-                        <td className="py-3 px-4 text-slate-600 dark:text-zinc-300 font-medium whitespace-nowrap">
+                      <tr key={bm.id || idx} className="hover:bg-[var(--surface-secondary)]/80 transition-colors">
+                        <td className="py-3 px-4 text-[var(--muted)] font-medium whitespace-nowrap">
                           {bm.date}
                         </td>
                         <td className="py-3 px-4">
-                          <span className="font-mono font-bold text-[#2563EB] dark:text-[#C084FC] block">{bm.sku}</span>
-                          <span className="font-semibold text-[#0F172A] dark:text-[#F4F4F6] block">{bm.name}</span>
+                          <span className="font-mono font-bold text-[var(--accent)] block">{bm.sku}</span>
+                          <span className="font-semibold text-[var(--foreground)] block">{bm.name}</span>
                         </td>
-                        <td className="py-3 px-4 text-center text-slate-600 dark:text-zinc-300 font-medium">
+                        <td className="py-3 px-4 text-center text-[var(--muted)] font-medium">
                           {bm.krat ? `${bm.krat} krat` : '-'}
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <span className={`inline-block font-extrabold px-2.5 py-0.5 rounded-full text-xs tabular-nums font-mono ${
-                            isNegative
-                              ? 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35'
-                              : isCorrection
-                              ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35'
-                              : 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35'
-                          }`}>
-                            {bm.qty >= 0 ? `+${bm.qty}` : bm.qty} btl
-                          </span>
+                          <Chip
+                            size="sm"
+                            variant="soft"
+                            color={isNegative ? 'danger' : isCorrection ? 'warning' : 'success'}
+                            className="font-extrabold tabular-nums font-mono border border-[var(--border)]"
+                          >
+                            <Chip.Label className={isNegative ? '' : isCorrection ? 'text-amber-700 dark:text-[var(--warning)]' : 'text-emerald-700 dark:text-[var(--success)]'}>
+                              {bm.qty >= 0 ? `+${bm.qty}` : bm.qty} btl
+                            </Chip.Label>
+                          </Chip>
                         </td>
-                        <td className="py-3 px-4 text-right text-slate-600 dark:text-zinc-300 font-medium tabular-nums font-mono">
+                        <td className="py-3 px-4 text-right text-[var(--muted)] font-medium tabular-nums font-mono">
                           {formatRupiah(bm.cost)}
                         </td>
-                        <td className="py-3 px-4 text-right font-extrabold font-mono text-[#0F172A] dark:text-[#F4F4F6] tabular-nums">
+                        <td className="py-3 px-4 text-right font-extrabold font-mono text-[var(--foreground)] tabular-nums">
                           {formatRupiah(bm.totalCost || bm.qty * bm.cost)}
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                          <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
                             isCorrection
-                              ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35'
-                              : 'bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-[#343440]'
+                              ? 'bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border-[var(--warning)]/35'
+                              : 'bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)]'
                           }`}>
                             {bm.supplier || bm.supplierOrNotes || 'orang tua'}
                           </span>
@@ -1314,47 +1342,47 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
 
           {barangMasukList.length > visibleBarangMasuk.length && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">
-              <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium tabular-nums">
+              <span className="text-xs text-[var(--muted)] font-medium tabular-nums">
                 Menampilkan {visibleBarangMasuk.length} dari {barangMasukList.length} catatan
               </span>
-              <button
-                type="button"
-                onClick={() => setBarangMasukVisibleCount((prev) => prev + 50)}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
+              <Button
+                variant="outline"
+                onPress={() => setBarangMasukVisibleCount((prev) => prev + 50)}
+                className="w-full sm:w-auto px-4 rounded-xl bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)] text-xs font-bold min-h-[44px]"
               >
                 Muat Lagi (+50)
-              </button>
+              </Button>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* ========================================================================= */}
       {/* TAB 3: AUDIT LOG (PERUBAHAN PRODUK & STOK)                                */}
       {/* ========================================================================= */}
       {activeTab === 'AUDIT_LOG' && (
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl border border-slate-200 dark:border-[#2B2B33] overflow-hidden p-4 sm:p-5 space-y-4 transition-colors">
+        <Card className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-none overflow-hidden p-4 sm:p-5 gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-extrabold text-[#0F172A] dark:text-[#F4F4F6] flex items-center gap-2 flex-wrap">
-                <ClipboardList className="w-5 h-5 text-[#2563EB] dark:text-[#C084FC]" />
+              <h3 className="text-base font-extrabold text-[var(--foreground)] flex items-center gap-2 flex-wrap">
+                <ClipboardList className="w-5 h-5 text-[var(--accent)]" />
                 <span>Riwayat Audit Perubahan Produk &amp; Stok</span>
-                <span className="text-xs bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-[#343440] px-2 py-0.5 rounded-full font-bold">
-                  {auditLogs.length} Entri
-                </span>
+                <Chip size="sm" variant="soft" color="default" className="font-bold border border-[var(--border)]">
+                  <Chip.Label>{auditLogs.length} Entri</Chip.Label>
+                </Chip>
               </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-xs text-[var(--muted)] mt-0.5">
                 Mencatat mutasi produk, restock, opname, dan pengubahan info secara transparan tanpa mengubah struktur sheet.
               </p>
             </div>
           </div>
 
-          <div className="divide-y divide-slate-100 dark:divide-[#2B2B33]">
+          <div className="divide-y divide-[var(--separator)]">
             {auditLogs.length === 0 ? (
-              <div className="py-12 text-center text-slate-500 dark:text-zinc-400">
-                <ClipboardList className="w-8 h-8 mx-auto mb-2 text-slate-400 dark:text-zinc-500" />
-                <p className="text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6]">Belum ada aktivitas audit yang terekam</p>
-                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">Setiap mutasi stok, koreksi opname, atau perubahan produk akan tercatat di sini.</p>
+              <div className="py-12 text-center text-[var(--muted)]">
+                <ClipboardList className="w-8 h-8 mx-auto mb-2 opacity-60" />
+                <p className="text-sm font-bold text-[var(--foreground)]">Belum ada aktivitas audit yang terekam</p>
+                <p className="text-xs text-[var(--muted)] mt-1">Setiap mutasi stok, koreksi opname, atau perubahan produk akan tercatat di sini.</p>
               </div>
             ) : (
               visibleAuditLogs.map((log) => {
@@ -1366,34 +1394,33 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                   <div key={log.id} className="py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
-                          isRestock
-                            ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35'
-                            : isOpname
-                            ? 'bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/35'
-                            : isAdd
-                            ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35'
-                            : 'bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-[#343440]'
-                        }`}>
-                          {log.action}
-                        </span>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color={isRestock ? 'success' : isOpname ? 'accent' : isAdd ? 'warning' : 'default'}
+                          className="font-extrabold border border-[var(--border)]"
+                        >
+                          <Chip.Label className={isRestock ? 'text-emerald-700 dark:text-[var(--success)]' : isAdd ? 'text-amber-700 dark:text-[var(--warning)]' : ''}>
+                            {log.action}
+                          </Chip.Label>
+                        </Chip>
 
-                        <span className="font-mono text-xs font-bold text-[#2563EB] dark:text-[#C084FC]">
+                        <span className="font-mono text-xs font-bold text-[var(--accent)]">
                           {log.sku}
                         </span>
 
-                        <span className="text-xs font-extrabold text-[#0F172A] dark:text-[#F4F4F6]">
+                        <span className="text-xs font-extrabold text-[var(--foreground)]">
                           {log.productName}
                         </span>
                       </div>
 
-                      <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium">
+                      <p className="text-xs text-[var(--muted)] font-medium">
                         {log.details}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:text-right text-xs text-slate-500 dark:text-zinc-400">
-                      <span className="bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] px-2 py-0.5 rounded text-[11px] font-semibold text-slate-700 dark:text-zinc-300">
+                    <div className="flex items-center gap-2 sm:text-right text-xs text-[var(--muted)]">
+                      <span className="bg-[var(--surface-secondary)] border border-[var(--border)] px-2 py-0.5 rounded text-[11px] font-semibold text-[var(--foreground)]">
                         {log.source === 'GOOGLE_SHEETS' ? 'Sheets Sync' : 'POS'}
                       </span>
                       <span>{log.dateStr}</span>
@@ -1406,934 +1433,969 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
 
           {auditLogs.length > visibleAuditLogs.length && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">
-              <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium tabular-nums">
+              <span className="text-xs text-[var(--muted)] font-medium tabular-nums">
                 Menampilkan {visibleAuditLogs.length} dari {auditLogs.length} entri
               </span>
-              <button
-                type="button"
-                onClick={() => setAuditVisibleCount((prev) => prev + 50)}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
+              <Button
+                variant="outline"
+                onPress={() => setAuditVisibleCount((prev) => prev + 50)}
+                className="w-full sm:w-auto px-4 rounded-xl bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)] text-xs font-bold min-h-[44px]"
               >
                 Muat Lagi (+50)
-              </button>
+              </Button>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* ========================================================================= */}
       {/* MODAL 1: RESTOCK PRODUK                                                   */}
       {/* ========================================================================= */}
-      {restockProduct && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-        >
-          <div
-            className="fixed inset-0"
-            onClick={() => {
-              setRestockProduct(null);
-              setRestockFeedback(null);
-            }}
-            aria-hidden="true"
-          />
-          <div className="relative z-10 bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-2xl border-t sm:border border-slate-200 dark:border-[#2B2B33] max-h-[92dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-            <div className="px-5 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-              <div className="flex items-center justify-between gap-2">
+      <Modal
+        isOpen={Boolean(restockProduct)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRestockProduct(null);
+            setRestockFeedback(null);
+          }
+        }}
+      >
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="md" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Restock Barang Masuk"
+              className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] w-full flex flex-col"
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              <Modal.Header className="px-5 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] bg-[var(--surface-secondary)] flex-row items-center justify-between gap-2 shrink-0 pr-14">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/35 flex items-center justify-center shrink-0">
+                  <Modal.Icon className="w-9 h-9 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/25 shrink-0">
                     <ArrowUpCircle className="w-4 h-4" />
-                  </div>
+                  </Modal.Icon>
                   <div className="min-w-0">
-                    <h3 className="font-extrabold text-sm sm:text-base text-[#0F172A] dark:text-[#F4F4F6] truncate">
+                    <Modal.Heading className="font-extrabold text-sm sm:text-base text-[var(--foreground)] truncate">
                       Restock Barang Masuk
-                    </h3>
-                    <span className="font-mono text-[11px] font-bold text-[#2563EB] dark:text-[#C084FC] block truncate">
-                      {restockProduct.sku}
-                    </span>
+                    </Modal.Heading>
+                    {restockProduct && (
+                      <span className="font-mono text-[11px] font-bold text-[var(--accent)] block truncate">
+                        {restockProduct.sku}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRestockProduct(null);
-                    setRestockFeedback(null);
-                  }}
+                <Modal.CloseTrigger
                   aria-label="Tutup modal restock"
-                  className="min-w-[44px] min-h-[44px] -mr-2 rounded-full bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white active:scale-[0.97] cursor-pointer shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3.5 text-xs">
-              <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border border-slate-200 dark:border-[#343440]">
-                <p className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] text-sm">{restockProduct.name}</p>
-                <div className="flex justify-between items-center mt-1 text-slate-600 dark:text-zinc-300">
-                  <span>Stok Sistem Saat Ini:</span>
-                  <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">{restockProduct.stock} Botol</span>
-                </div>
-              </div>
-
-              {/* Mode Restock: Krat vs Satuan Botol */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                  Metode Input Kuantitas:
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setRestockMode('KRAT')}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-colors cursor-pointer min-h-[44px] ${
-                      restockMode === 'KRAT'
-                        ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440]'
-                    }`}
-                  >
-                    Per Krat ({restockBottlesPerKrat} btl/krat)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setRestockMode('BOTTLE')}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-colors cursor-pointer min-h-[44px] ${
-                      restockMode === 'BOTTLE'
-                        ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440]'
-                    }`}
-                  >
-                    Kuantitas Botol Langsung
-                  </button>
-                </div>
-              </div>
-
-              {restockMode === 'KRAT' ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                      Jumlah Krat:
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={restockKrat}
-                      onChange={(e) => setRestockKrat(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] tabular-nums font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                      Botol / Krat:
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={restockBottlesPerKrat}
-                      onChange={(e) => setRestockBottlesPerKrat(Math.max(1, parseInt(e.target.value) || 12))}
-                      className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] tabular-nums font-mono"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Jumlah Botol Masuk:
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={restockDirectBottles}
-                    onChange={(e) => setRestockDirectBottles(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] tabular-nums font-mono"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                  Harga Beli / HPP per Botol:
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={restockCost}
-                  onChange={(e) => setRestockCost(Number(e.target.value) || 0)}
-                  className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] tabular-nums font-mono"
+                  className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
                 />
-              </div>
+              </Modal.Header>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                  Supplier / Asal Pengiriman:
-                </label>
-                <input
-                  type="text"
-                  value={restockSupplier}
-                  onChange={(e) => setRestockSupplier(e.target.value)}
-                  placeholder="Gudang Utama, Orang Tua, dll"
-                  className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
-                />
-              </div>
-
-              <div className="pt-2.5 border-t border-slate-200 dark:border-[#343440] space-y-1.5 bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border">
-                {(() => {
-                  const effectiveQty = restockMode === 'KRAT' ? restockKrat * restockBottlesPerKrat : restockDirectBottles;
-                  const totalCost = effectiveQty * restockCost;
-                  const newStockPredicted = restockProduct.stock + effectiveQty;
-
-                  return (
-                    <>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-600 dark:text-zinc-300 font-medium">Total Botol Masuk:</span>
-                        <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">+{effectiveQty} botol</span>
+              {restockProduct && (
+                <>
+                  <Modal.Body className="!mt-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3.5 text-xs">
+                    <div className="bg-[var(--surface-secondary)] p-3 rounded-xl border border-[var(--border)]">
+                      <p className="font-extrabold text-[var(--foreground)] text-sm">{restockProduct.name}</p>
+                      <div className="flex justify-between items-center mt-1 text-[var(--muted)]">
+                        <span>Stok Sistem Saat Ini:</span>
+                        <span className="font-extrabold text-[var(--foreground)] tabular-nums font-mono">{restockProduct.stock} Botol</span>
                       </div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-600 dark:text-zinc-300 font-medium">Total Biaya Masuk:</span>
-                        <span className="font-extrabold text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(totalCost)}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs pt-1.5 border-t border-slate-200 dark:border-[#343440]">
-                        <span className="text-[#0F172A] dark:text-[#F4F4F6] font-bold">Stok Akhir Formula Nanti:</span>
-                        <span className="font-extrabold text-[#2563EB] dark:text-[#C084FC] text-sm tabular-nums font-mono">{newStockPredicted} botol</span>
-                      </div>
-                    </>
-                  );
-                })()}
-                <p className="text-[10px] text-slate-500 dark:text-zinc-400 pt-1">
-                  *Dicatat aman ke <strong className="text-[#0F172A] dark:text-[#F4F4F6]">LOG_BARANG_MASUK</strong> (Kolom B:H).
-                </p>
-              </div>
+                    </div>
 
-              {restockFeedback && (
-                <div className={`p-3 rounded-xl text-xs font-medium ${
-                  restockFeedback.type === 'success' 
-                    ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35' 
-                    : restockFeedback.type === 'warning'
-                    ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35'
-                    : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35'
-                }`}>
-                  {restockFeedback.message}
-                </div>
+                    {/* Mode Restock: Krat vs Satuan Botol */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1.5">
+                        Metode Input Kuantitas:
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant={restockMode === 'KRAT' ? 'primary' : 'outline'}
+                          onPress={() => setRestockMode('KRAT')}
+                          className={`rounded-xl text-xs font-bold min-h-[44px] ${
+                            restockMode === 'KRAT' ? '' : 'bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)]'
+                          }`}
+                        >
+                          Per Krat ({restockBottlesPerKrat} btl/krat)
+                        </Button>
+
+                        <Button
+                          variant={restockMode === 'BOTTLE' ? 'primary' : 'outline'}
+                          onPress={() => setRestockMode('BOTTLE')}
+                          className={`rounded-xl text-xs font-bold min-h-[44px] ${
+                            restockMode === 'BOTTLE' ? '' : 'bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)]'
+                          }`}
+                        >
+                          Kuantitas Botol Langsung
+                        </Button>
+                      </div>
+                    </div>
+
+                    {restockMode === 'KRAT' ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                            Jumlah Krat:
+                          </label>
+                          <Input
+                            type="number"
+                            min={1}
+                            fullWidth
+                            variant="secondary"
+                            value={String(restockKrat)}
+                            onChange={(e) => setRestockKrat(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-extrabold text-[var(--foreground)] min-h-[44px] tabular-nums font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                            Botol / Krat:
+                          </label>
+                          <Input
+                            type="number"
+                            min={1}
+                            fullWidth
+                            variant="secondary"
+                            value={String(restockBottlesPerKrat)}
+                            onChange={(e) => setRestockBottlesPerKrat(Math.max(1, parseInt(e.target.value) || 12))}
+                            className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-extrabold text-[var(--foreground)] min-h-[44px] tabular-nums font-mono"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                          Jumlah Botol Masuk:
+                        </label>
+                        <Input
+                          type="number"
+                          min={1}
+                          fullWidth
+                          variant="secondary"
+                          value={String(restockDirectBottles)}
+                          onChange={(e) => setRestockDirectBottles(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-extrabold text-[var(--foreground)] min-h-[44px] tabular-nums font-mono"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                        Harga Beli / HPP per Botol:
+                      </label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        fullWidth
+                        variant="secondary"
+                        value={String(restockCost)}
+                        onChange={(e) => setRestockCost(Number(e.target.value) || 0)}
+                        className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-bold text-[var(--foreground)] min-h-[44px] tabular-nums font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                        Supplier / Asal Pengiriman:
+                      </label>
+                      <Input
+                        type="text"
+                        fullWidth
+                        variant="secondary"
+                        value={restockSupplier}
+                        onChange={(e) => setRestockSupplier(e.target.value)}
+                        placeholder="Gudang Utama, Orang Tua, dll"
+                        className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm text-[var(--foreground)] min-h-[44px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 bg-[var(--surface-secondary)] p-3 rounded-xl border border-[var(--border)]">
+                      {(() => {
+                        const effectiveQty = restockMode === 'KRAT' ? restockKrat * restockBottlesPerKrat : restockDirectBottles;
+                        const totalCost = effectiveQty * restockCost;
+                        const newStockPredicted = restockProduct.stock + effectiveQty;
+
+                        return (
+                          <>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-[var(--muted)] font-medium">Total Botol Masuk:</span>
+                              <span className="font-extrabold text-[var(--foreground)] tabular-nums font-mono">+{effectiveQty} botol</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-[var(--muted)] font-medium">Total Biaya Masuk:</span>
+                              <span className="font-extrabold text-amber-700 dark:text-[var(--warning)] font-mono tabular-nums">{formatRupiah(totalCost)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs pt-1.5 border-t border-[var(--border)]">
+                              <span className="text-[var(--foreground)] font-bold">Stok Akhir Formula Nanti:</span>
+                              <span className="font-extrabold text-[var(--accent)] text-sm tabular-nums font-mono">{newStockPredicted} botol</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                      <p className="text-[10px] text-[var(--muted)] pt-1">
+                        *Dicatat aman ke <strong className="text-[var(--foreground)]">LOG_BARANG_MASUK</strong> (Kolom B:H).
+                      </p>
+                    </div>
+
+                    {restockFeedback && (
+                      <div className={`p-3 rounded-xl text-xs font-medium border ${
+                        restockFeedback.type === 'success' 
+                          ? 'bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border-[var(--success)]/35' 
+                          : restockFeedback.type === 'warning'
+                          ? 'bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border-[var(--warning)]/35'
+                          : 'bg-[var(--danger-soft)] text-[var(--danger)] border-[var(--danger)]/35'
+                      }`}>
+                        {restockFeedback.message}
+                      </div>
+                    )}
+                  </Modal.Body>
+
+                  <Modal.Footer className="!mt-0 px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-secondary)] pb-safe flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      onPress={() => {
+                        setRestockProduct(null);
+                        setRestockFeedback(null);
+                      }}
+                      className="flex-1 rounded-xl bg-[var(--surface)] text-[var(--foreground)] border-[var(--border)] font-semibold text-xs min-h-[44px]"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      variant="primary"
+                      isDisabled={isSubmittingRestock}
+                      onPress={handleConfirmRestock}
+                      className="flex-1 rounded-xl font-bold text-xs min-h-[44px]"
+                    >
+                      {isSubmittingRestock ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Mencatat ke Sheets...</span>
+                        </>
+                      ) : (
+                        'Simpan Restock'
+                      )}
+                    </Button>
+                  </Modal.Footer>
+                </>
               )}
-            </div>
-
-            <div className="px-5 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] pb-safe flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setRestockProduct(null);
-                  setRestockFeedback(null);
-                }}
-                className="flex-1 py-3 rounded-xl bg-white dark:bg-[#1B1B20] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#343440] font-semibold text-xs min-h-[44px] active:scale-[0.97] cursor-pointer transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                disabled={isSubmittingRestock}
-                onClick={handleConfirmRestock}
-                className="flex-1 py-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] text-white font-bold text-xs min-h-[44px] flex items-center justify-center gap-1.5 active:scale-[0.97] cursor-pointer disabled:opacity-60 transition-colors dark:shadow-[0_0_16px_rgba(168,85,247,0.3)]"
-              >
-                {isSubmittingRestock ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Mencatat ke Sheets...</span>
-                  </>
-                ) : (
-                  'Simpan Restock'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
       {/* ========================================================================= */}
       {/* MODAL 2: KOREKSI STOK / STOCK OPNAME                                      */}
       {/* ========================================================================= */}
-      {correctingProduct && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-        >
-          <div
-            className="fixed inset-0"
-            onClick={() => {
-              setCorrectingProduct(null);
-              setCorrectionFeedback(null);
-            }}
-            aria-hidden="true"
-          />
-          <div className="relative z-10 bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-2xl border-t sm:border border-slate-200 dark:border-[#2B2B33] max-h-[92dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-            <div className="px-5 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-              <div className="flex items-center justify-between gap-2">
+      <Modal
+        isOpen={Boolean(correctingProduct)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCorrectingProduct(null);
+            setCorrectionFeedback(null);
+          }
+        }}
+      >
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="md" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Koreksi Stok (Stock Opname)"
+              className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] w-full flex flex-col"
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              <Modal.Header className="px-5 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] bg-[var(--surface-secondary)] flex-row items-center justify-between gap-2 shrink-0 pr-14">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35 flex items-center justify-center shrink-0">
+                  <Modal.Icon className="w-9 h-9 rounded-xl bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border border-[var(--warning)]/35 shrink-0">
                     <Scale className="w-4 h-4" />
-                  </div>
+                  </Modal.Icon>
                   <div className="min-w-0">
-                    <h3 className="font-extrabold text-sm sm:text-base text-[#0F172A] dark:text-[#F4F4F6] truncate">
+                    <Modal.Heading className="font-extrabold text-sm sm:text-base text-[var(--foreground)] truncate">
                       Koreksi Stok (Stock Opname)
-                    </h3>
-                    <span className="font-mono text-[11px] font-bold text-[#2563EB] dark:text-[#C084FC] block truncate">
-                      {correctingProduct.sku}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCorrectingProduct(null);
-                    setCorrectionFeedback(null);
-                  }}
-                  aria-label="Tutup modal koreksi stok"
-                  className="min-w-[44px] min-h-[44px] -mr-2 rounded-full bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] active:scale-[0.97] cursor-pointer shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3.5 text-xs">
-              <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border border-slate-200 dark:border-[#343440]">
-                <p className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] text-sm">{correctingProduct.name}</p>
-                <div className="flex justify-between items-center mt-1 text-slate-600 dark:text-zinc-300">
-                  <span>Stok Sistem Saat Ini:</span>
-                  <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] text-sm tabular-nums font-mono">{correctingProduct.stock} Botol</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                  Stok Fisik Aktual (Hasil Hitung Fisik):
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={physicalStockInput}
-                  onChange={(e) => setPhysicalStockInput(e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0))}
-                  placeholder="Masukkan jumlah botol riil di rak/gudang"
-                  className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] tabular-nums font-mono"
-                />
-              </div>
-
-              {/* Dynamic Delta Calculation & Rupiah Value */}
-              {(() => {
-                const physical = typeof physicalStockInput === 'number' ? physicalStockInput : 0;
-                const system = correctingProduct.stock;
-                const delta = physical - system;
-                const cost = correctingProduct.cost || 0;
-                const deltaRupiah = Math.abs(delta * cost);
-
-                return (
-                  <div className={`p-3 rounded-2xl border ${
-                    delta === 0
-                      ? 'bg-slate-50 dark:bg-[#24242B] border-slate-200 dark:border-[#343440] text-slate-600 dark:text-zinc-300'
-                      : delta > 0
-                      ? 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-200 dark:border-emerald-500/35 text-emerald-700 dark:text-emerald-400'
-                      : 'bg-red-50 dark:bg-red-500/15 border-red-200 dark:border-red-500/35 text-red-700 dark:text-red-400'
-                  }`}>
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-xs">Selisih Fisik vs Sistem:</span>
-                      <span className="font-extrabold text-sm font-mono tabular-nums">
-                        {delta > 0 ? `+${delta}` : delta} Botol
+                    </Modal.Heading>
+                    {correctingProduct && (
+                      <span className="font-mono text-[11px] font-bold text-[var(--accent)] block truncate">
+                        {correctingProduct.sku}
                       </span>
-                    </div>
-
-                    <div className="flex justify-between items-center mt-1 text-xs">
-                      <span>Nilai Rupiah Selisih:</span>
-                      <span className="font-extrabold font-mono tabular-nums">
-                        {delta === 0 ? 'Rp 0' : `${delta > 0 ? '+' : '-'}${formatRupiah(deltaRupiah)}`}
-                      </span>
-                    </div>
-
-                    {delta === 0 ? (
-                      <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1.5 font-semibold flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                        <span>Stok fisik sama dengan stok sistem (Selisih 0 tidak dapat disimpan).</span>
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-slate-600 dark:text-zinc-300 mt-1.5">
-                        {delta > 0 
-                          ? `*Stok fisik berlebih +${delta} botol. Akan dicatat penambahan ke LOG_BARANG_MASUK.` 
-                          : `*Stok fisik kurang ${delta} botol. Akan dicatat penyesuaian minus ke LOG_BARANG_MASUK.`}
-                      </p>
                     )}
                   </div>
-                );
-              })()}
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                  Alasan Koreksi (Wajib Dipilih):
-                </label>
-                <select
-                  value={correctionReason}
-                  onChange={(e) => setCorrectionReason(e.target.value)}
-                  className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-semibold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
-                >
-                  {CORRECTION_REASONS.map((r) => (
-                    <option key={r.value} value={r.value} className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                  Catatan Tambahan (Opsional):
-                </label>
-                <textarea
-                  rows={2}
-                  value={correctionNotes}
-                  onChange={(e) => setCorrectionNotes(e.target.value)}
-                  placeholder="Contoh: Ditemukan 2 botol pecah di kardus belakang rak"
-                  className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7]"
-                />
-              </div>
-
-              {correctionFeedback && (
-                <div className={`p-3 rounded-xl text-xs font-medium ${
-                  correctionFeedback.type === 'success' 
-                    ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35' 
-                    : correctionFeedback.type === 'warning'
-                    ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35'
-                    : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35'
-                }`}>
-                  {correctionFeedback.message}
                 </div>
+
+                <Modal.CloseTrigger
+                  aria-label="Tutup modal koreksi stok"
+                  className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
+                />
+              </Modal.Header>
+
+              {correctingProduct && (
+                <>
+                  <Modal.Body className="!mt-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3.5 text-xs">
+                    <div className="bg-[var(--surface-secondary)] p-3 rounded-xl border border-[var(--border)]">
+                      <p className="font-extrabold text-[var(--foreground)] text-sm">{correctingProduct.name}</p>
+                      <div className="flex justify-between items-center mt-1 text-[var(--muted)]">
+                        <span>Stok Sistem Saat Ini:</span>
+                        <span className="font-extrabold text-[var(--foreground)] text-sm tabular-nums font-mono">{correctingProduct.stock} Botol</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                        Stok Fisik Aktual (Hasil Hitung Fisik):
+                      </label>
+                      <Input
+                        type="number"
+                        min={0}
+                        fullWidth
+                        variant="secondary"
+                        value={physicalStockInput === '' ? '' : String(physicalStockInput)}
+                        onChange={(e) => setPhysicalStockInput(e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0))}
+                        placeholder="Masukkan jumlah botol riil di rak/gudang"
+                        className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-extrabold text-[var(--foreground)] min-h-[44px] tabular-nums font-mono"
+                      />
+                    </div>
+
+                    {/* Dynamic Delta Calculation & Rupiah Value */}
+                    {(() => {
+                      const physical = typeof physicalStockInput === 'number' ? physicalStockInput : 0;
+                      const system = correctingProduct.stock;
+                      const delta = physical - system;
+                      const cost = correctingProduct.cost || 0;
+                      const deltaRupiah = Math.abs(delta * cost);
+
+                      return (
+                        <div className={`p-3 rounded-2xl border ${
+                          delta === 0
+                            ? 'bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--muted)]'
+                            : delta > 0
+                            ? 'bg-[var(--success-soft)] border-[var(--success)]/35 text-emerald-700 dark:text-[var(--success)]'
+                            : 'bg-[var(--danger-soft)] border-[var(--danger)]/35 text-[var(--danger)]'
+                        }`}>
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-xs">Selisih Fisik vs Sistem:</span>
+                            <span className="font-extrabold text-sm font-mono tabular-nums">
+                              {delta > 0 ? `+${delta}` : delta} Botol
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center mt-1 text-xs">
+                            <span>Nilai Rupiah Selisih:</span>
+                            <span className="font-extrabold font-mono tabular-nums">
+                              {delta === 0 ? 'Rp 0' : `${delta > 0 ? '+' : '-'}${formatRupiah(deltaRupiah)}`}
+                            </span>
+                          </div>
+
+                          {delta === 0 ? (
+                            <p className="text-[11px] text-amber-700 dark:text-[var(--warning)] mt-1.5 font-semibold flex items-center gap-1">
+                              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>Stok fisik sama dengan stok sistem (Selisih 0 tidak dapat disimpan).</span>
+                            </p>
+                          ) : (
+                            <p className="text-[11px] text-[var(--muted)] mt-1.5">
+                              {delta > 0 
+                                ? `*Stok fisik berlebih +${delta} botol. Akan dicatat penambahan ke LOG_BARANG_MASUK.` 
+                                : `*Stok fisik kurang ${delta} botol. Akan dicatat penyesuaian minus ke LOG_BARANG_MASUK.`}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                        Alasan Koreksi (Wajib Dipilih):
+                      </label>
+                      <select
+                        value={correctionReason}
+                        onChange={(e) => setCorrectionReason(e.target.value)}
+                        className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs font-semibold text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)] min-h-[44px] cursor-pointer"
+                      >
+                        {CORRECTION_REASONS.map((r) => (
+                          <option key={r.value} value={r.value}>
+                            {r.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                        Catatan Tambahan (Opsional):
+                      </label>
+                      <TextArea
+                        rows={2}
+                        fullWidth
+                        variant="secondary"
+                        value={correctionNotes}
+                        onChange={(e) => setCorrectionNotes(e.target.value)}
+                        placeholder="Contoh: Ditemukan 2 botol pecah di kardus belakang rak"
+                        className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs text-[var(--foreground)]"
+                      />
+                    </div>
+
+                    {correctionFeedback && (
+                      <div className={`p-3 rounded-xl text-xs font-medium border ${
+                        correctionFeedback.type === 'success' 
+                          ? 'bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border-[var(--success)]/35' 
+                          : correctionFeedback.type === 'warning'
+                          ? 'bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border-[var(--warning)]/35'
+                          : 'bg-[var(--danger-soft)] text-[var(--danger)] border-[var(--danger)]/35'
+                      }`}>
+                        {correctionFeedback.message}
+                      </div>
+                    )}
+                  </Modal.Body>
+
+                  <Modal.Footer className="!mt-0 px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-secondary)] pb-safe flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      onPress={() => {
+                        setCorrectingProduct(null);
+                        setCorrectionFeedback(null);
+                      }}
+                      className="flex-1 rounded-xl bg-[var(--surface)] text-[var(--foreground)] border-[var(--border)] font-semibold text-xs min-h-[44px]"
+                    >
+                      Batal
+                    </Button>
+
+                    {(() => {
+                      const physical = typeof physicalStockInput === 'number' ? physicalStockInput : 0;
+                      const isZeroDelta = physical === correctingProduct.stock;
+
+                      return (
+                        <Button
+                          variant="primary"
+                          isDisabled={isSubmittingCorrection || isZeroDelta}
+                          onPress={handleConfirmCorrection}
+                          className="flex-1 rounded-xl font-bold text-xs min-h-[44px]"
+                        >
+                          {isSubmittingCorrection ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Menyimpan ke Sheets...</span>
+                            </>
+                          ) : (
+                            'Simpan Koreksi'
+                          )}
+                        </Button>
+                      );
+                    })()}
+                  </Modal.Footer>
+                </>
               )}
-            </div>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
-            <div className="px-5 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] pb-safe flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setCorrectingProduct(null);
-                  setCorrectionFeedback(null);
-                }}
-                className="flex-1 py-3 rounded-xl bg-white hover:bg-slate-100 dark:bg-[#1B1B20] dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#343440] font-semibold text-xs min-h-[44px] active:scale-[0.97] cursor-pointer transition-colors"
-              >
-                Batal
-              </button>
+      {/* ========================================================================= */}
+      {/* MODAL 3: TAMBAH PRODUK BARU (DATABASE_PRODUK B:L)                         */}
+      {/* ========================================================================= */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onOpenChange={(open) => {
+          if (!open) setIsAddModalOpen(false);
+        }}
+      >
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="lg" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Tambah Master Produk Baru"
+              className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] w-full flex flex-col"
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              <form onSubmit={handleSaveNewProduct} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <Modal.Header className="px-5 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] bg-[var(--surface-secondary)] flex-row items-center justify-between gap-2 shrink-0 pr-14">
+                  <div className="min-w-0">
+                    <Modal.Heading className="font-extrabold text-sm sm:text-base text-[var(--foreground)] truncate">
+                      Tambah Master Produk Baru
+                    </Modal.Heading>
+                    <p className="text-[11px] text-[var(--muted)]">
+                      Menulis hanya Kolom B:L di spreadsheet (Formula M:Q terlindungi)
+                    </p>
+                  </div>
 
-              {(() => {
-                const physical = typeof physicalStockInput === 'number' ? physicalStockInput : 0;
-                const isZeroDelta = physical === correctingProduct.stock;
+                  <Modal.CloseTrigger
+                    aria-label="Tutup modal tambah produk"
+                    className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
+                  />
+                </Modal.Header>
 
-                return (
-                  <button
-                    type="button"
-                    disabled={isSubmittingCorrection || isZeroDelta}
-                    onClick={handleConfirmCorrection}
-                    className="flex-1 py-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] dark:shadow-[0_0_16px_rgba(168,85,247,0.3)] text-white font-bold text-xs min-h-[44px] flex items-center justify-center gap-1.5 active:scale-[0.97] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                <Modal.Body className="!mt-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3.5 text-xs">
+                  {/* SKU & Auto Generate Button */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider">
+                        SKU / ID Produk (Unik):
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleAutoGenerateSku}
+                        className="text-[11px] font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer min-h-[32px]"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Auto SKU</span>
+                      </button>
+                    </div>
+                    <Input
+                      type="text"
+                      required
+                      fullWidth
+                      variant="secondary"
+                      value={newSku}
+                      onChange={(e) => setNewSku(e.target.value.toUpperCase())}
+                      placeholder="ORTU-BEV-001"
+                      className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-mono font-bold text-[var(--foreground)] min-h-[44px]"
+                    />
+                  </div>
+
+                  {/* Nama Produk & Kategori */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                        Nama Produk:
+                      </label>
+                      <Input
+                        type="text"
+                        required
+                        fullWidth
+                        variant="secondary"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        placeholder="Contoh: Soju Chum Churum Original"
+                        className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm text-[var(--foreground)] min-h-[44px]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                        Kategori Menu:
+                      </label>
+                      <select
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs font-semibold text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)] min-h-[44px] cursor-pointer"
+                      >
+                        {presentCategories.length > 0 ? (
+                          presentCategories.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))
+                        ) : (
+                          <>
+                            <option value="ANGGUR">ANGGUR</option>
+                            <option value="BIR">BIR</option>
+                            <option value="SOJU">SOJU</option>
+                            <option value="VODKA">VODKA</option>
+                            <option value="WHISKY">WHISKY</option>
+                            <option value="RUM">RUM</option>
+                            <option value="JAMU">JAMU</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Botol/Krat & Harga/Krat (Auto Compute HPP) */}
+                  <div className="bg-[var(--surface-secondary)] p-3.5 rounded-2xl border border-[var(--border)] space-y-2.5">
+                    <span className="text-[11px] font-bold text-[var(--foreground)] uppercase tracking-wider block">
+                      Perhitungan Harga Beli / HPP:
+                    </span>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-[var(--muted)] uppercase mb-1">
+                          Botol per Krat:
+                        </label>
+                        <Input
+                          type="number"
+                          min={1}
+                          fullWidth
+                          value={String(newBotolPerKrat)}
+                          onChange={(e) => {
+                            const btk = Math.max(1, parseInt(e.target.value) || 1);
+                            setNewBotolPerKrat(btk);
+                            if (newHargaPerKrat > 0) {
+                              setNewCost(Math.round(newHargaPerKrat / btk));
+                            }
+                          }}
+                          className="w-full p-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--foreground)] min-h-[42px] tabular-nums font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-semibold text-[var(--muted)] uppercase mb-1">
+                          Harga / Krat (Rp):
+                        </label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          fullWidth
+                          value={String(newHargaPerKrat)}
+                          onChange={(e) => {
+                            const hpk = Number(e.target.value) || 0;
+                            setNewHargaPerKrat(hpk);
+                            if (newBotolPerKrat > 0) {
+                              setNewCost(Math.round(hpk / newBotolPerKrat));
+                            }
+                          }}
+                          className="w-full p-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--foreground)] min-h-[42px] tabular-nums font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[var(--muted)] uppercase mb-1">
+                        Harga Beli HPP Satuan (Harga/Krat ÷ Botol):
+                      </label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        fullWidth
+                        value={String(newCost)}
+                        onChange={(e) => setNewCost(Number(e.target.value) || 0)}
+                        className="w-full p-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--foreground)] min-h-[42px] tabular-nums font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Harga Jual Biasa, Harga Merah, & Margin Calculation */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                        Harga Jual Biasa:
+                      </label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        required
+                        fullWidth
+                        variant="secondary"
+                        value={String(newPrice)}
+                        onChange={(e) => setNewPrice(Number(e.target.value) || 0)}
+                        placeholder="Rp"
+                        className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-extrabold text-[var(--foreground)] min-h-[44px] tabular-nums font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-amber-700 dark:text-[var(--warning)] uppercase tracking-wider mb-1">
+                        Harga Merah (Reseller):
+                      </label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        fullWidth
+                        value={newRedPrice === 0 ? '' : String(newRedPrice)}
+                        onChange={(e) => setNewRedPrice(Number(e.target.value) || 0)}
+                        placeholder="Make up reseller"
+                        className="w-full p-2.5 bg-[var(--warning-soft)] border border-[var(--warning)]/35 rounded-xl text-sm font-mono font-bold text-amber-700 dark:text-[var(--warning)] min-h-[44px] tabular-nums"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Margin Preview & Warning Alert (< 20%) */}
+                  {(() => {
+                    const { nominal, percent } = calculateMargin(newPrice, newCost);
+                    const isLowMargin = percent < 20 && newPrice > 0;
+
+                    return (
+                      <div className={`p-3 rounded-2xl border ${isLowMargin ? 'bg-[var(--warning-soft)] border-[var(--warning)]/35' : 'bg-[var(--success-soft)] border-[var(--success)]/35'}`}>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-[var(--foreground)]">Margin Keuntungan:</span>
+                          <span className={`font-extrabold font-mono text-sm tabular-nums ${isLowMargin ? 'text-amber-700 dark:text-[var(--warning)]' : 'text-emerald-700 dark:text-[var(--success)]'}`}>
+                            +{formatRupiah(nominal)} ({percent.toFixed(1)}%)
+                          </span>
+                        </div>
+
+                        {isLowMargin && (
+                          <p className="text-[11px] text-amber-700 dark:text-[var(--warning)] mt-1 font-semibold flex items-center gap-1">
+                            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>Peringatan: Margin keuntungan di bawah 20%! Pertimbangkan menaikkan harga jual.</span>
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Stok Awal & Catatan */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                        Stok Awal (Kolom K):
+                      </label>
+                      <Input
+                        type="number"
+                        min={0}
+                        fullWidth
+                        variant="secondary"
+                        value={String(newInitialStock)}
+                        onChange={(e) => setNewInitialStock(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-bold text-[var(--foreground)] min-h-[44px] tabular-nums font-mono"
+                      />
+                      <p className="text-[10px] text-[var(--muted)] mt-1">
+                        *Hanya ditulis ke Kolom K (tidak dicatat ke LOG_BARANG_MASUK).
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                        Catatan / Supplier:
+                      </label>
+                      <Input
+                        type="text"
+                        fullWidth
+                        variant="secondary"
+                        value={newNotes}
+                        onChange={(e) => setNewNotes(e.target.value)}
+                        placeholder="Gudang Kediri, supplier..."
+                        className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs text-[var(--foreground)] min-h-[44px]"
+                      />
+                    </div>
+                  </div>
+
+                  {addFeedback && (
+                    <div className="p-3 bg-[var(--danger-soft)] text-[var(--danger)] border border-[var(--danger)]/35 rounded-xl text-xs font-semibold">
+                      {addFeedback}
+                    </div>
+                  )}
+                </Modal.Body>
+
+                <Modal.Footer className="!mt-0 px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-secondary)] pb-safe flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    onPress={() => setIsAddModalOpen(false)}
+                    className="flex-1 rounded-xl bg-[var(--surface)] text-[var(--foreground)] border-[var(--border)] font-semibold text-xs min-h-[44px]"
                   >
-                    {isSubmittingCorrection ? (
+                    Batal
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    isDisabled={isSubmittingAdd}
+                    className="flex-1 rounded-xl font-bold text-xs min-h-[44px]"
+                  >
+                    {isSubmittingAdd ? (
                       <>
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                         <span>Menyimpan ke Sheets...</span>
                       </>
                     ) : (
-                      'Simpan Koreksi'
+                      'Simpan Produk Baru'
                     )}
-                  </button>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* MODAL 3: TAMBAH PRODUK BARU (DATABASE_PRODUK B:L)                         */}
-      {/* ========================================================================= */}
-      {isAddModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-        >
-          <div className="fixed inset-0" onClick={() => setIsAddModalOpen(false)} aria-hidden="true" />
-          <form onSubmit={handleSaveNewProduct} className="relative z-10 bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border-t sm:border border-slate-200 dark:border-[#2B2B33] max-h-[92dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-            <div className="px-5 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-sm sm:text-base text-[#0F172A] dark:text-[#F4F4F6] truncate">
-                    Tambah Master Produk Baru
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-                    Menulis hanya Kolom B:L di spreadsheet (Formula M:Q terlindungi)
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  aria-label="Tutup modal tambah produk"
-                  className="min-w-[44px] min-h-[44px] -mr-2 rounded-full bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] active:scale-[0.97] cursor-pointer shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3.5 text-xs">
-              {/* SKU & Auto Generate Button */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                    SKU / ID Produk (Unik):
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleAutoGenerateSku}
-                    className="text-[11px] font-bold text-[#2563EB] dark:text-[#C084FC] hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    <span>Auto SKU</span>
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  required
-                  value={newSku}
-                  onChange={(e) => setNewSku(e.target.value.toUpperCase())}
-                  placeholder="ORTU-BEV-001"
-                  className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-mono font-bold text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
-                />
-              </div>
-
-              {/* Nama Produk & Kategori */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Nama Produk:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Contoh: Soju Chum Churum Original"
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Kategori Menu:
-                  </label>
-                  <select
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-semibold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
-                  >
-                    {presentCategories.length > 0 ? (
-                      presentCategories.map((c) => (
-                        <option key={c} value={c} className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">
-                          {c}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="ANGGUR" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">ANGGUR</option>
-                        <option value="BIR" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">BIR</option>
-                        <option value="SOJU" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">SOJU</option>
-                        <option value="VODKA" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">VODKA</option>
-                        <option value="WHISKY" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">WHISKY</option>
-                        <option value="RUM" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">RUM</option>
-                        <option value="JAMU" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">JAMU</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              {/* Botol/Krat & Harga/Krat (Auto Compute HPP) */}
-              <div className="bg-slate-50 dark:bg-[#24242B] p-3.5 rounded-2xl border border-slate-200 dark:border-[#343440] space-y-2.5">
-                <span className="text-[11px] font-bold text-[#0F172A] dark:text-[#F4F4F6] uppercase tracking-wider block">
-                  Perhitungan Harga Beli / HPP:
-                </span>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
-                      Botol per Krat:
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={newBotolPerKrat}
-                      onChange={(e) => {
-                        const btk = Math.max(1, parseInt(e.target.value) || 1);
-                        setNewBotolPerKrat(btk);
-                        if (newHargaPerKrat > 0) {
-                          setNewCost(Math.round(newHargaPerKrat / btk));
-                        }
-                      }}
-                      className="w-full p-2.5 bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[42px] tabular-nums font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
-                      Harga / Krat (Rp):
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={newHargaPerKrat}
-                      onChange={(e) => {
-                        const hpk = Number(e.target.value) || 0;
-                        setNewHargaPerKrat(hpk);
-                        if (newBotolPerKrat > 0) {
-                          setNewCost(Math.round(hpk / newBotolPerKrat));
-                        }
-                      }}
-                      className="w-full p-2.5 bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[42px] tabular-nums font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
-                    Harga Beli HPP Satuan (Harga/Krat ÷ Botol):
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={newCost}
-                    onChange={(e) => setNewCost(Number(e.target.value) || 0)}
-                    className="w-full p-2.5 bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[42px] tabular-nums font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Harga Jual Biasa, Harga Merah, & Margin Calculation */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Harga Jual Biasa:
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    required
-                    value={newPrice}
-                    onChange={(e) => setNewPrice(Number(e.target.value) || 0)}
-                    placeholder="Rp"
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] tabular-nums font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1">
-                    Harga Merah (Reseller):
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={newRedPrice === 0 ? '' : newRedPrice}
-                    onChange={(e) => setNewRedPrice(Number(e.target.value) || 0)}
-                    placeholder="Make up reseller"
-                    className="w-full p-2.5 bg-red-50/40 dark:bg-red-500/10 border border-red-200 dark:border-red-500/35 rounded-xl text-sm font-mono font-bold text-red-700 dark:text-red-400 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-red-500 min-h-[44px] tabular-nums"
-                  />
-                </div>
-              </div>
-
-              {/* Margin Preview & Warning Alert (< 20%) */}
-              {(() => {
-                const { nominal, percent } = calculateMargin(newPrice, newCost);
-                const isLowMargin = percent < 20 && newPrice > 0;
-
-                return (
-                  <div className={`p-3 rounded-2xl border ${isLowMargin ? 'bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/35' : 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-200 dark:border-emerald-500/35'}`}>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6]">Margin Keuntungan:</span>
-                      <span className={`font-extrabold font-mono text-sm tabular-nums ${isLowMargin ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                        +{formatRupiah(nominal)} ({percent.toFixed(1)}%)
-                      </span>
-                    </div>
-
-                    {isLowMargin && (
-                      <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 font-semibold flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                        <span>Peringatan: Margin keuntungan di bawah 20%! Pertimbangkan menaikkan harga jual.</span>
-                      </p>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Stok Awal & Catatan */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Stok Awal (Kolom K):
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newInitialStock}
-                    onChange={(e) => setNewInitialStock(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] tabular-nums font-mono"
-                  />
-                  <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1">
-                    *Hanya ditulis ke Kolom K (tidak dicatat ke LOG_BARANG_MASUK).
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Catatan / Supplier:
-                  </label>
-                  <input
-                    type="text"
-                    value={newNotes}
-                    onChange={(e) => setNewNotes(e.target.value)}
-                    placeholder="Gudang Kediri, supplier..."
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
-                  />
-                </div>
-              </div>
-
-              {addFeedback && (
-                <div className="p-3 bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35 rounded-xl text-xs font-semibold">
-                  {addFeedback}
-                </div>
-              )}
-            </div>
-
-            <div className="px-5 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] pb-safe flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="flex-1 py-3 rounded-xl bg-white hover:bg-slate-100 dark:bg-[#1B1B20] dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#343440] font-semibold text-xs min-h-[44px] active:scale-[0.97] cursor-pointer transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmittingAdd}
-                className="flex-1 py-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] dark:shadow-[0_0_16px_rgba(168,85,247,0.3)] text-white font-bold text-xs min-h-[44px] flex items-center justify-center gap-1.5 active:scale-[0.97] cursor-pointer disabled:opacity-60 transition-colors"
-              >
-                {isSubmittingAdd ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Menyimpan ke Sheets...</span>
-                  </>
-                ) : (
-                  'Simpan Produk Baru'
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+                  </Button>
+                </Modal.Footer>
+              </form>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
       {/* ========================================================================= */}
       {/* MODAL 4: EDIT PRODUK (SKU READONLY, HANYA B:L)                           */}
       {/* ========================================================================= */}
-      {editingProduct && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-        >
-          <div className="fixed inset-0" onClick={() => setEditingProduct(null)} aria-hidden="true" />
-          <form onSubmit={handleSaveEditProduct} className="relative z-10 bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border-t sm:border border-slate-200 dark:border-[#2B2B33] max-h-[92dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-            <div className="px-5 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-sm sm:text-base text-[#0F172A] dark:text-[#F4F4F6] truncate">
-                    Edit Info &amp; Harga Produk
-                  </h3>
-                  <span className="font-mono text-[11px] font-bold text-[#2563EB] dark:text-[#C084FC] block truncate">
-                    SKU: {editingProduct.sku} (Readonly)
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setEditingProduct(null)}
-                  aria-label="Tutup modal edit produk"
-                  className="min-w-[44px] min-h-[44px] -mr-2 rounded-full bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] active:scale-[0.97] cursor-pointer shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3.5 text-xs">
-              <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border border-slate-200 dark:border-[#343440] flex justify-between items-center">
-                <span className="text-slate-600 dark:text-zinc-300 font-medium">Stok Formula Saat Ini:</span>
-                <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">{editingProduct.stock} Botol</span>
-              </div>
-
-              {/* Nama & Kategori */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Nama Produk:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Kategori:
-                  </label>
-                  <select
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value)}
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-semibold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
-                  >
-                    {presentCategories.map((c) => (
-                      <option key={c} value={c} className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Harga Jual Biasa & Merah */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Harga Jual Biasa:
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    required
-                    value={editPrice}
-                    onChange={(e) => setEditPrice(Number(e.target.value) || 0)}
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] tabular-nums font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1">
-                    Harga Merah (Reseller):
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={editRedPrice === 0 ? '' : editRedPrice}
-                    onChange={(e) => setEditRedPrice(Number(e.target.value) || 0)}
-                    className="w-full p-2.5 bg-red-50/40 dark:bg-red-500/10 border border-red-200 dark:border-red-500/35 rounded-xl text-sm font-mono font-bold text-red-700 dark:text-red-400 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-red-500 min-h-[44px] tabular-nums"
-                  />
-                </div>
-              </div>
-
-              {/* Harga HPP */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Harga Beli HPP Satuan:
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={editCost}
-                    onChange={(e) => setEditCost(Number(e.target.value) || 0)}
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] tabular-nums font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                    Catatan:
-                  </label>
-                  <input
-                    type="text"
-                    value={editNotes}
-                    onChange={(e) => setEditNotes(e.target.value)}
-                    placeholder="Catatan..."
-                    className="w-full p-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
-                  />
-                </div>
-              </div>
-
-              {/* Margin preview */}
-              {(() => {
-                const { nominal, percent } = calculateMargin(editPrice, editCost);
-                const isLowMargin = percent < 20 && editPrice > 0;
-
-                return (
-                  <div className={`p-3 rounded-2xl border ${isLowMargin ? 'bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/35' : 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-200 dark:border-emerald-500/35'}`}>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6]">Margin Keuntungan Baru:</span>
-                      <span className={`font-extrabold font-mono text-sm tabular-nums ${isLowMargin ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                        +{formatRupiah(nominal)} ({percent.toFixed(1)}%)
+      <Modal
+        isOpen={Boolean(editingProduct)}
+        onOpenChange={(open) => {
+          if (!open) setEditingProduct(null);
+        }}
+      >
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="lg" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Edit Info & Harga Produk"
+              className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] w-full flex flex-col"
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              {editingProduct && (
+                <form onSubmit={handleSaveEditProduct} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <Modal.Header className="px-5 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] bg-[var(--surface-secondary)] flex-row items-center justify-between gap-2 shrink-0 pr-14">
+                    <div className="min-w-0">
+                      <Modal.Heading className="font-extrabold text-sm sm:text-base text-[var(--foreground)] truncate">
+                        Edit Info &amp; Harga Produk
+                      </Modal.Heading>
+                      <span className="font-mono text-[11px] font-bold text-[var(--accent)] block truncate">
+                        SKU: {editingProduct.sku} (Readonly)
                       </span>
                     </div>
-                    {isLowMargin && (
-                      <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 font-semibold">
-                        Peringatan: Margin di bawah 20%.
-                      </p>
+
+                    <Modal.CloseTrigger
+                      aria-label="Tutup modal edit produk"
+                      className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
+                    />
+                  </Modal.Header>
+
+                  <Modal.Body className="!mt-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3.5 text-xs">
+                    <div className="bg-[var(--surface-secondary)] p-3 rounded-xl border border-[var(--border)] flex justify-between items-center">
+                      <span className="text-[var(--muted)] font-medium">Stok Formula Saat Ini:</span>
+                      <span className="font-extrabold text-[var(--foreground)] tabular-nums font-mono">{editingProduct.stock} Botol</span>
+                    </div>
+
+                    {/* Nama & Kategori */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                          Nama Produk:
+                        </label>
+                        <Input
+                          type="text"
+                          required
+                          fullWidth
+                          variant="secondary"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-bold text-[var(--foreground)] min-h-[44px]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                          Kategori:
+                        </label>
+                        <select
+                          value={editCategory}
+                          onChange={(e) => setEditCategory(e.target.value)}
+                          className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs font-semibold text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)] min-h-[44px] cursor-pointer"
+                        >
+                          {presentCategories.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Harga Jual Biasa & Merah */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                          Harga Jual Biasa:
+                        </label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          required
+                          fullWidth
+                          variant="secondary"
+                          value={String(editPrice)}
+                          onChange={(e) => setEditPrice(Number(e.target.value) || 0)}
+                          className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-extrabold text-[var(--foreground)] min-h-[44px] tabular-nums font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-amber-700 dark:text-[var(--warning)] uppercase tracking-wider mb-1">
+                          Harga Merah (Reseller):
+                        </label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          fullWidth
+                          value={editRedPrice === 0 ? '' : String(editRedPrice)}
+                          onChange={(e) => setEditRedPrice(Number(e.target.value) || 0)}
+                          className="w-full p-2.5 bg-[var(--warning-soft)] border border-[var(--warning)]/35 rounded-xl text-sm font-mono font-bold text-amber-700 dark:text-[var(--warning)] min-h-[44px] tabular-nums"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Harga HPP */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                          Harga Beli HPP Satuan:
+                        </label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          fullWidth
+                          variant="secondary"
+                          value={String(editCost)}
+                          onChange={(e) => setEditCost(Number(e.target.value) || 0)}
+                          className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-bold text-[var(--foreground)] min-h-[44px] tabular-nums font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">
+                          Catatan:
+                        </label>
+                        <Input
+                          type="text"
+                          fullWidth
+                          variant="secondary"
+                          value={editNotes}
+                          onChange={(e) => setEditNotes(e.target.value)}
+                          placeholder="Catatan..."
+                          className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs text-[var(--foreground)] min-h-[44px]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Margin preview */}
+                    {(() => {
+                      const { nominal, percent } = calculateMargin(editPrice, editCost);
+                      const isLowMargin = percent < 20 && editPrice > 0;
+
+                      return (
+                        <div className={`p-3 rounded-2xl border ${isLowMargin ? 'bg-[var(--warning-soft)] border-[var(--warning)]/35' : 'bg-[var(--success-soft)] border-[var(--success)]/35'}`}>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-[var(--foreground)]">Margin Keuntungan Baru:</span>
+                            <span className={`font-extrabold font-mono text-sm tabular-nums ${isLowMargin ? 'text-amber-700 dark:text-[var(--warning)]' : 'text-emerald-700 dark:text-[var(--success)]'}`}>
+                              +{formatRupiah(nominal)} ({percent.toFixed(1)}%)
+                            </span>
+                          </div>
+                          {isLowMargin && (
+                            <p className="text-[11px] text-amber-700 dark:text-[var(--warning)] mt-1 font-semibold">
+                              Peringatan: Margin di bawah 20%.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {editFeedback && (
+                      <div className="p-3 bg-[var(--danger-soft)] text-[var(--danger)] border border-[var(--danger)]/35 rounded-xl text-xs font-semibold">
+                        {editFeedback}
+                      </div>
                     )}
-                  </div>
-                );
-              })()}
+                  </Modal.Body>
 
-              {editFeedback && (
-                <div className="p-3 bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35 rounded-xl text-xs font-semibold">
-                  {editFeedback}
-                </div>
+                  <Modal.Footer className="!mt-0 px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-secondary)] pb-safe flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      onPress={() => setEditingProduct(null)}
+                      className="flex-1 rounded-xl bg-[var(--surface)] text-[var(--foreground)] border-[var(--border)] font-semibold text-xs min-h-[44px]"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      isDisabled={isSubmittingEdit}
+                      className="flex-1 rounded-xl font-bold text-xs min-h-[44px]"
+                    >
+                      {isSubmittingEdit ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Menyimpan ke Sheets...</span>
+                        </>
+                      ) : (
+                        'Perbarui Info'
+                      )}
+                    </Button>
+                  </Modal.Footer>
+                </form>
               )}
-            </div>
-
-            <div className="px-5 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] pb-safe flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setEditingProduct(null)}
-                className="flex-1 py-3 rounded-xl bg-white hover:bg-slate-100 dark:bg-[#1B1B20] dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#343440] font-semibold text-xs min-h-[44px] active:scale-[0.97] cursor-pointer transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmittingEdit}
-                className="flex-1 py-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] dark:shadow-[0_0_16px_rgba(168,85,247,0.3)] text-white font-bold text-xs min-h-[44px] flex items-center justify-center gap-1.5 active:scale-[0.97] cursor-pointer disabled:opacity-60 transition-colors"
-              >
-                {isSubmittingEdit ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Menyimpan ke Sheets...</span>
-                  </>
-                ) : (
-                  'Perbarui Info'
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </div>
   );
 };

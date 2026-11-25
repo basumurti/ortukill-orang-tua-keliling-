@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Button, Card, Chip, Input } from '@heroui/react';
 import { 
   FileCode2, 
   Copy, 
@@ -331,167 +332,213 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-24 text-[#0F172A] dark:text-[#F4F4F6] min-w-0">
+    <div className="space-y-4 max-w-7xl mx-auto pb-24 text-[var(--foreground)] min-w-0">
       {/* Top Banner */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] shadow-none flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-start sm:items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center flex-shrink-0">
+      <Card className="bg-[var(--surface)] rounded-3xl p-4 sm:p-5 border border-[var(--border)] shadow-none flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent)] flex items-center justify-center flex-shrink-0">
             <FileSpreadsheet className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base sm:text-lg font-black text-[#0F172A] dark:text-[#F4F4F6] tracking-tight uppercase">
+              <h2 className="text-base sm:text-lg font-black text-[var(--foreground)] tracking-tight uppercase">
                 Integrasi Google Spreadsheet
               </h2>
-              <span
-                className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
+              <Chip
+                size="sm"
+                variant="soft"
+                color={scriptVersion?.upToDate ? 'success' : 'warning'}
+                className={`border ${
                   scriptVersion?.upToDate
-                    ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35'
-                    : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/35'
+                    ? 'bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border-[var(--success)]/30'
+                    : 'bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border-[var(--warning)]/30'
                 }`}
-                title={scriptVersion?.message || 'Versi Apps Script yang sedang terpasang di Google Sheets'}
               >
-                {checkingVersion
-                  ? 'Cek versi script…'
-                  : scriptVersion
-                  ? scriptVersion.upToDate
-                    ? `Script ${scriptVersion.installedVersion} ✓ terbaru`
-                    : `Script ${scriptVersion.installedVersion || '?'} — perlu diperbarui`
-                  : 'Versi script tidak diketahui'}
-              </span>
-              <button
+                <Chip.Label className="text-[10px] font-bold">
+                  {checkingVersion
+                    ? 'Cek versi script…'
+                    : scriptVersion
+                    ? scriptVersion.upToDate
+                      ? `Script ${scriptVersion.installedVersion} ✓ terbaru`
+                      : `Script ${scriptVersion.installedVersion || '?'} — perlu diperbarui`
+                    : 'Versi script tidak diketahui'}
+                </Chip.Label>
+              </Chip>
+              <Button
                 type="button"
-                onClick={checkScriptVersion}
-                disabled={checkingVersion}
-                className="text-[11px] font-bold px-2.5 py-1 rounded-full border border-slate-200 dark:border-[#343440] bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-600 dark:text-zinc-300 cursor-pointer disabled:opacity-50 transition-colors"
-                title="Periksa ulang versi Apps Script yang terpasang"
+                size="sm"
+                variant="outline"
+                onPress={checkScriptVersion}
+                isDisabled={checkingVersion}
+                aria-label="Periksa ulang versi Apps Script yang terpasang"
+                className="text-[11px] font-bold px-3 rounded-full border border-[var(--border)] bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] text-[var(--muted)] hover:text-[var(--foreground)] min-h-[36px]"
               >
                 Cek ulang
-              </button>
+              </Button>
             </div>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+            <p className="text-xs text-[var(--muted)] mt-0.5">
               Sinkronisasi data real-time: Master Produk B70:H (Read-Only) & Log Penjualan B7:M (Harga Biasa)
             </p>
           </div>
         </div>
 
-        <button
-          onClick={handleCopyCode}
+        <Button
+          type="button"
+          variant="primary"
+          onPress={handleCopyCode}
           id="btn-copy-gas-code"
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] text-white text-xs font-bold transition-colors cursor-pointer shadow-none whitespace-nowrap min-h-[44px]"
+          className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 text-xs font-bold whitespace-nowrap min-h-[44px] rounded-xl px-4 shrink-0"
         >
-          {copied ? <Check className="w-4 h-4 text-emerald-300 stroke-[3]" /> : <Copy className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4 text-[var(--success)] stroke-[3]" /> : <Copy className="w-4 h-4" />}
           <span>{copied ? 'Tersalin ke Clipboard!' : 'Salin Kode .gs Terbaru'}</span>
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       {/* PERINGATAN: script di Google Sheets masih versi lama */}
       {scriptVersion && scriptVersion.upToDate === false && (
-        <div className="bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 rounded-2xl p-4 text-xs text-amber-900 dark:text-amber-200 space-y-1.5">
-          <div className="font-extrabold flex items-center gap-1.5 text-amber-900 dark:text-amber-300">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-            Script yang terpasang di Google Sheets masih <span className="font-black text-amber-700 dark:text-amber-300">{scriptVersion.installedVersion || 'versi lama'}</span>, sedangkan aplikasi ini memakai <span className="font-black text-emerald-700 dark:text-emerald-400">{scriptVersion.expectedVersion}</span>.
+        <Card className="bg-[var(--warning-soft)] border border-[var(--warning)]/35 rounded-2xl p-4 text-xs text-amber-900 dark:text-amber-200 space-y-1.5 shadow-none gap-1.5">
+          <div className="font-extrabold flex items-center gap-1.5 text-amber-900 dark:text-[var(--warning)]">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-700 dark:text-[var(--warning)]" />
+            <span>
+              Script yang terpasang di Google Sheets masih{' '}
+              <span className="font-black text-amber-800 dark:text-[var(--warning)]">
+                {scriptVersion.installedVersion || 'versi lama'}
+              </span>
+              , sedangkan aplikasi ini memakai{' '}
+              <span className="font-black text-emerald-700 dark:text-[var(--success)]">
+                {scriptVersion.expectedVersion}
+              </span>
+              .
+            </span>
           </div>
           <div className="leading-relaxed text-amber-800 dark:text-amber-200/90">
-            Akibatnya tombol <strong className="text-amber-950 dark:text-amber-100">VOID / Hapus</strong> hanya <strong className="text-amber-950 dark:text-amber-100">menandai</strong> transaksi jadi <code className="bg-white dark:bg-[#1B1B20] border border-amber-200 dark:border-amber-500/35 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded font-mono">VOIDED-…</code> dan <strong className="text-amber-950 dark:text-amber-100">barisnya tetap ada</strong> di Google Sheets.
+            Akibatnya tombol <strong className="text-amber-950 dark:text-amber-100">VOID / Hapus</strong> hanya{' '}
+            <strong className="text-amber-950 dark:text-amber-100">menandai</strong> transaksi jadi{' '}
+            <code className="bg-[var(--surface)] border border-[var(--warning)]/35 text-amber-800 dark:text-[var(--warning)] px-1.5 py-0.5 rounded font-mono">
+              VOIDED-…
+            </code>{' '}
+            dan <strong className="text-amber-950 dark:text-amber-100">barisnya tetap ada</strong> di Google Sheets.
           </div>
           <div className="leading-relaxed text-amber-800 dark:text-amber-200/90">
-            <strong className="text-amber-950 dark:text-amber-100">Cara memperbaiki:</strong> klik <strong className="text-amber-950 dark:text-amber-100">“Salin Kode .gs Terbaru”</strong> di atas → di editor Apps Script tekan <strong className="text-amber-950 dark:text-amber-100">Ctrl+A</strong> lalu <strong className="text-amber-950 dark:text-amber-100">Ctrl+V</strong> (timpa semua) → <strong className="text-amber-950 dark:text-amber-100">Simpan</strong> → <strong className="text-amber-950 dark:text-amber-100">Deploy → Manage deployments → ikon pensil → Version: “New version” → Deploy</strong>.
+            <strong className="text-amber-950 dark:text-amber-100">Cara memperbaiki:</strong> klik{' '}
+            <strong className="text-amber-950 dark:text-amber-100">“Salin Kode .gs Terbaru”</strong> di atas → di editor Apps Script tekan{' '}
+            <strong className="text-amber-950 dark:text-amber-100">Ctrl+A</strong> lalu{' '}
+            <strong className="text-amber-950 dark:text-amber-100">Ctrl+V</strong> (timpa semua) →{' '}
+            <strong className="text-amber-950 dark:text-amber-100">Simpan</strong> →{' '}
+            <strong className="text-amber-950 dark:text-amber-100">Deploy → Manage deployments → ikon pensil → Version: “New version” → Deploy</strong>.
           </div>
-          <div className="text-[11px] text-amber-700 dark:text-amber-300">
+          <div className="text-[11px] text-amber-800 dark:text-[var(--warning)]">
             Sesudah deploy, klik <strong className="text-amber-950 dark:text-amber-100">Cek ulang</strong> di atas — kalau sudah hijau, tombol VOID akan benar-benar menghapus barisnya.
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Unified Logic: Penulisan Bersih & Hapus/VOID Otomatis Tanpa Benturan */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-3">
+      <Card className="bg-[var(--surface)] rounded-2xl p-4 border border-[var(--border)] shadow-none space-y-3 gap-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/35 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-none">
+            <div className="w-9 h-9 rounded-xl bg-[var(--success-soft)] border border-[var(--success)]/30 text-emerald-700 dark:text-[var(--success)] flex items-center justify-center flex-shrink-0 mt-0.5">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] text-sm">
+                <span className="font-extrabold text-[var(--foreground)] text-sm">
                   Sistem Terpadu: Penulisan Bersih & Penghapusan Otomatis (Anti-Benturan)
                 </span>
-                <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Harmonis & Aktif
-                </span>
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color="success"
+                  className="bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border border-[var(--success)]/30"
+                >
+                  <Chip.Label className="text-[9px] font-black uppercase tracking-wider">Harmonis & Aktif</Chip.Label>
+                </Chip>
               </div>
-              <p className="text-slate-500 dark:text-zinc-400 text-xs mt-1 leading-relaxed">
+              <p className="text-[var(--muted)] text-xs mt-1 leading-relaxed">
                 Logika penulisan dan penghapusan diatur secara sinkron agar tidak saling menghalangi:
               </p>
             </div>
           </div>
 
-          <button
-            onClick={handleCleanDuplicates}
-            disabled={cleaningDuplicates}
-            className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] disabled:opacity-50 text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer shadow-none whitespace-nowrap min-h-[44px] flex-shrink-0"
-            title="Bersihkan baris ganda yang tidak sengaja terinput di Google Sheets"
+          <Button
+            type="button"
+            variant="outline"
+            onPress={handleCleanDuplicates}
+            isDisabled={cleaningDuplicates}
+            aria-label="Bersihkan baris ganda yang tidak sengaja terinput di Google Sheets"
+            className="bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] border border-[var(--border)] text-[var(--foreground)] text-xs font-bold rounded-xl whitespace-nowrap min-h-[44px] px-3.5 flex-shrink-0"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-slate-600 dark:text-zinc-300 ${cleaningDuplicates ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-[var(--muted)] ${cleaningDuplicates ? 'animate-spin' : ''}`} />
             <span>{cleaningDuplicates ? 'Membersihkan Duplikat...' : 'Bersihkan Duplikat di Sheets'}</span>
-          </button>
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[11px] pt-2 border-t border-slate-100 dark:border-[#2B2B33]">
-          <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border border-slate-200 dark:border-[#343440]">
-            <span className="font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">✓ 1. Saat Transaksi Kasir Dibuat (Write):</span>
-            <span className="text-slate-600 dark:text-zinc-300 leading-normal">
-              Dicatat langsung ke sheet <strong className="text-[#0F172A] dark:text-[#F4F4F6]">LOG_PENJUALAN</strong> (dan ongkir ke <strong className="text-[#0F172A] dark:text-[#F4F4F6]">LAIN-LAIN</strong>) sekali saja tanpa dobel.
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[11px] pt-2 border-t border-[var(--border)]">
+          <div className="bg-[var(--surface-secondary)] p-3 rounded-xl border border-[var(--border)]">
+            <span className="font-bold text-emerald-700 dark:text-[var(--success)] block mb-0.5">
+              ✓ 1. Saat Transaksi Kasir Dibuat (Write):
+            </span>
+            <span className="text-[var(--muted)] leading-normal">
+              Dicatat langsung ke sheet <strong className="text-[var(--foreground)]">LOG_PENJUALAN</strong> (dan ongkir ke{' '}
+              <strong className="text-[var(--foreground)]">LAIN-LAIN</strong>) sekali saja tanpa dobel.
             </span>
           </div>
 
-          <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border border-slate-200 dark:border-[#343440]">
-            <span className="font-bold text-red-600 dark:text-red-400 block mb-0.5">✓ 2. Saat Transaksi Di-VOID / Dihapus (Delete):</span>
-            <span className="text-slate-600 dark:text-zinc-300 leading-normal">
-              Seluruh baris transaksi langsung <strong className="text-[#0F172A] dark:text-[#F4F4F6]">dihapus permanen (deleteRow)</strong> dari Google Sheets, dan kunci anti-duplikat langsung dilepas seketika.
+          <div className="bg-[var(--surface-secondary)] p-3 rounded-xl border border-[var(--border)]">
+            <span className="font-bold text-red-700 dark:text-[var(--danger)] block mb-0.5">
+              ✓ 2. Saat Transaksi Di-VOID / Dihapus (Delete):
+            </span>
+            <span className="text-[var(--muted)] leading-normal">
+              Seluruh baris transaksi langsung <strong className="text-[var(--foreground)]">dihapus permanen (deleteRow)</strong> dari Google Sheets, dan kunci anti-duplikat langsung dilepas seketika.
             </span>
           </div>
         </div>
-      </div>
+      </Card>
 
-      {/* NEW: Test & Verify LOG_PENJUALAN Write & Delete Card */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 sm:p-5 border border-blue-200 dark:border-purple-500/40 shadow-none space-y-3">
+      {/* Test & Verify LOG_PENJUALAN Write & Delete Card */}
+      <Card className="bg-[var(--surface)] rounded-2xl p-4 sm:p-5 border border-[var(--accent)]/35 shadow-none space-y-3 gap-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-start sm:items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center font-black flex-shrink-0">
+            <div className="w-9 h-9 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent)] flex items-center justify-center font-black flex-shrink-0">
               🧪
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6]">
+                <h3 className="text-sm font-extrabold text-[var(--foreground)]">
                   Uji Coba Otomatis: Tulis & Hapus LOG_PENJUALAN
                 </h3>
-                <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
-                  v3.5 Siap Diuji
-                </span>
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color="success"
+                  className="bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border border-[var(--success)]/30"
+                >
+                  <Chip.Label className="text-[10px] font-black uppercase">v3.5 Siap Diuji</Chip.Label>
+                </Chip>
               </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Menguji penulisan transaksi kasir ke <strong className="text-[#0F172A] dark:text-[#F4F4F6]">LOG_PENJUALAN</strong> dan langsung menghapusnya kembali untuk memastikan sistem 100% normal.
+              <p className="text-xs text-[var(--muted)] mt-0.5">
+                Menguji penulisan transaksi kasir ke <strong className="text-[var(--foreground)]">LOG_PENJUALAN</strong> dan langsung menghapusnya kembali untuk memastikan sistem 100% normal.
               </p>
             </div>
           </div>
 
-          <button
+          <Button
             type="button"
-            onClick={handleTestWriteDelete}
-            disabled={testingWriteDelete}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer shadow-none min-h-[44px] flex-shrink-0"
+            variant="primary"
+            onPress={handleTestWriteDelete}
+            isDisabled={testingWriteDelete}
+            className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 text-xs font-bold rounded-xl min-h-[44px] px-4 flex-shrink-0"
           >
             <RefreshCw className={`w-4 h-4 ${testingWriteDelete ? 'animate-spin' : ''}`} />
             <span>{testingWriteDelete ? 'Menguji Tulis & Hapus...' : 'Jalankan Tes Tulis & Hapus Sekarang'}</span>
-          </button>
+          </Button>
         </div>
 
         {/* Live Test Diagnostic Output */}
         {testingWriteDelete && (
-          <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 text-xs text-amber-800 dark:text-amber-200 space-y-2 animate-in fade-in">
-            <div className="flex items-center gap-2 font-bold text-amber-950 dark:text-amber-300">
-              <RefreshCw className="w-4 h-4 animate-spin text-amber-600 dark:text-amber-400" />
+          <div className="p-3.5 rounded-xl bg-[var(--warning-soft)] border border-[var(--warning)]/35 text-xs text-amber-800 dark:text-amber-200 space-y-2">
+            <div className="flex items-center gap-2 font-bold text-amber-950 dark:text-[var(--warning)]">
+              <RefreshCw className="w-4 h-4 animate-spin text-amber-700 dark:text-[var(--warning)]" />
               <span>Sedang memproses pengujian pipeline Google Sheets...</span>
             </div>
             <ul className="text-[11px] text-amber-800 dark:text-amber-200/90 space-y-1 list-disc list-inside">
@@ -503,42 +550,46 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
         )}
 
         {writeDeleteResult && (
-          <div className={`p-4 rounded-xl border text-xs space-y-2.5 animate-in fade-in ${
-            writeDeleteResult.success 
-              ? 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-200 dark:border-emerald-500/35 text-emerald-900 dark:text-emerald-200' 
-              : 'bg-red-50 dark:bg-red-500/15 border-red-200 dark:border-red-500/35 text-red-900 dark:text-red-200'
-          }`}>
+          <div
+            className={`p-4 rounded-xl border text-xs space-y-2.5 ${
+              writeDeleteResult.success
+                ? 'bg-[var(--success-soft)] border-[var(--success)]/35 text-emerald-900 dark:text-emerald-200'
+                : 'bg-[var(--danger-soft)] border-[var(--danger)]/35 text-red-900 dark:text-red-200'
+            }`}
+          >
             <div className="flex items-center gap-2">
               {writeDeleteResult.success ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-[var(--success)] flex-shrink-0" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                <AlertCircle className="w-5 h-5 text-red-700 dark:text-[var(--danger)] flex-shrink-0" />
               )}
-              <h4 className="font-extrabold text-xs sm:text-sm text-[#0F172A] dark:text-[#F4F4F6]">
+              <h4 className="font-extrabold text-xs sm:text-sm text-[var(--foreground)]">
                 {writeDeleteResult.message}
               </h4>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
-              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-lg border border-slate-200 dark:border-[#343440] space-y-1">
-                <span className="font-bold text-slate-500 dark:text-zinc-400 block">1. Status Penulisan (WRITE):</span>
-                <span className="text-[#0F172A] dark:text-[#F4F4F6] font-semibold">
-                  {writeDeleteResult.writeResult?.message || (writeDeleteResult.stage === 'WRITE' ? 'Gagal pada tahap penulisan' : 'Berhasil')}
+              <div className="bg-[var(--surface)] p-2.5 rounded-lg border border-[var(--border)] space-y-1">
+                <span className="font-bold text-[var(--muted)] block">1. Status Penulisan (WRITE):</span>
+                <span className="text-[var(--foreground)] font-semibold">
+                  {writeDeleteResult.writeResult?.message ||
+                    (writeDeleteResult.stage === 'WRITE' ? 'Gagal pada tahap penulisan' : 'Berhasil')}
                 </span>
                 {writeDeleteResult.writeResult?.startRow && (
-                  <span className="block font-mono text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
+                  <span className="block font-mono text-[10px] text-emerald-700 dark:text-[var(--success)] font-bold">
                     Tercatat di baris: {writeDeleteResult.writeResult.startRow}
                   </span>
                 )}
               </div>
 
-              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-lg border border-slate-200 dark:border-[#343440] space-y-1">
-                <span className="font-bold text-slate-500 dark:text-zinc-400 block">2. Status Penghapusan (DELETE):</span>
-                <span className="text-[#0F172A] dark:text-[#F4F4F6] font-semibold">
-                  {writeDeleteResult.deleteResult?.message || (writeDeleteResult.success ? 'Berhasil dihapus' : 'Belum selesai')}
+              <div className="bg-[var(--surface)] p-2.5 rounded-lg border border-[var(--border)] space-y-1">
+                <span className="font-bold text-[var(--muted)] block">2. Status Penghapusan (DELETE):</span>
+                <span className="text-[var(--foreground)] font-semibold">
+                  {writeDeleteResult.deleteResult?.message ||
+                    (writeDeleteResult.success ? 'Berhasil dihapus' : 'Belum selesai')}
                 </span>
                 {writeDeleteResult.deleteResult?.deletedSalesRows !== undefined && (
-                  <span className="block font-mono text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
+                  <span className="block font-mono text-[10px] text-emerald-700 dark:text-[var(--success)] font-bold">
                     Baris dihapus: {writeDeleteResult.deleteResult.deletedSalesRows} baris
                   </span>
                 )}
@@ -546,346 +597,404 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
             </div>
 
             {writeDeleteResult.testId && (
-              <p className="text-[10px] text-slate-600 dark:text-zinc-400 font-mono">
+              <p className="text-[10px] text-[var(--muted)] font-mono">
                 ID Uji Coba: {writeDeleteResult.testId}
               </p>
             )}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* URL Input & Quick Sync Controls */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-3">
+      <Card className="bg-[var(--surface)] rounded-2xl p-4 sm:p-5 border border-[var(--border)] shadow-none space-y-3 gap-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
-            <h3 className="text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6]">
+            <Terminal className="w-4 h-4 text-[var(--accent)]" />
+            <h3 className="text-sm font-extrabold text-[var(--foreground)]">
               Koneksi Web App Google Apps Script
             </h3>
           </div>
           {diagnostic?.success ? (
-            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/35 px-2.5 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>TERHUBUNG</span>
-            </span>
+            <Chip
+              size="sm"
+              variant="soft"
+              color="success"
+              className="bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border border-[var(--success)]/30"
+            >
+              <Chip.Label className="text-[11px] font-bold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--success)] animate-pulse" />
+                <span>TERHUBUNG</span>
+              </Chip.Label>
+            </Chip>
           ) : (
-            <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 px-2.5 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span>Belum Terhubung</span>
-            </span>
+            <Chip
+              size="sm"
+              variant="soft"
+              color="warning"
+              className="bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border border-[var(--warning)]/30"
+            >
+              <Chip.Label className="text-[11px] font-bold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--warning)]" />
+                <span>Belum Terhubung</span>
+              </Chip.Label>
+            </Chip>
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-[var(--surface-secondary)] border border-[var(--border)]">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center flex-shrink-0">
-              <Star className="w-4 h-4 fill-[#2563EB] dark:fill-[#C084FC]" />
+            <span className="w-8 h-8 rounded-xl bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent)] flex items-center justify-center flex-shrink-0">
+              <Star className="w-4 h-4 fill-[var(--accent)]" />
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6]">URL Utama Toko:</span>
-                <span className="text-[10px] bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/35">
-                  Tersimpan Permanen
-                </span>
+                <span className="text-xs font-bold text-[var(--foreground)]">URL Utama Toko:</span>
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color="success"
+                  className="bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border border-[var(--success)]/30"
+                >
+                  <Chip.Label className="text-[10px] font-bold">Tersimpan Permanen</Chip.Label>
+                </Chip>
               </div>
-              <p className="text-[11px] font-mono text-slate-500 dark:text-zinc-400 truncate max-w-full sm:max-w-md mt-0.5" title={primaryStoreUrl}>
+              <p className="text-[11px] font-mono text-[var(--muted)] truncate max-w-full sm:max-w-md mt-0.5" title={primaryStoreUrl}>
                 {primaryStoreUrl}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
-            {/* Tombol beralih kembali ke URL Utama jika input berbeda */}
             {webAppUrl.trim() !== primaryStoreUrl.trim() && (
-              <button
+              <Button
                 type="button"
-                onClick={handleUsePrimaryUrl}
-                className="text-[11px] font-bold text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] bg-white dark:bg-[#1B1B20] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-none min-h-[40px]"
-                title="Gunakan URL Utama Toko saat ini"
+                size="sm"
+                variant="outline"
+                onPress={handleUsePrimaryUrl}
+                aria-label="Gunakan URL Utama Toko saat ini"
+                className="text-[11px] font-bold text-[var(--foreground)] bg-[var(--surface)] hover:bg-[var(--surface-tertiary)] border border-[var(--border)] px-3 rounded-xl min-h-[44px]"
               >
-                <RotateCcw className="w-3 h-3 text-slate-500 dark:text-zinc-400" />
+                <RotateCcw className="w-3 h-3 text-[var(--muted)]" />
                 <span>Gunakan URL Utama</span>
-              </button>
+              </Button>
             )}
 
-            {/* Tombol Jadikan URL yang sedang diketik sebagai URL Utama Toko */}
-            <button
+            <Button
               type="button"
-              onClick={handleSetCurrentAsPrimary}
-              disabled={!webAppUrl.trim() || webAppUrl.trim() === primaryStoreUrl.trim()}
-              className="text-[11px] font-bold text-[#2563EB] dark:text-[#C084FC] bg-blue-50 dark:bg-purple-500/15 hover:bg-blue-100 dark:hover:bg-purple-500/25 border border-blue-200 dark:border-purple-500/40 px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-none disabled:opacity-40 disabled:cursor-not-allowed min-h-[40px]"
-              title="Jadikan URL yang diketik di bawah sebagai URL Utama Toko"
+              size="sm"
+              variant="outline"
+              onPress={handleSetCurrentAsPrimary}
+              isDisabled={!webAppUrl.trim() || webAppUrl.trim() === primaryStoreUrl.trim()}
+              aria-label="Jadikan URL yang diketik di bawah sebagai URL Utama Toko"
+              className="text-[11px] font-bold text-[var(--accent)] bg-[var(--accent-soft)] hover:opacity-90 border border-[var(--accent)]/30 px-3 rounded-xl min-h-[44px]"
             >
               <Star className="w-3 h-3" />
               <span>Jadikan URL Utama</span>
-            </button>
+            </Button>
 
-            {/* Tombol Ubah URL Utama Toko */}
-            <button
+            <Button
               type="button"
-              onClick={handleStartEditPrimary}
-              className="text-[11px] font-bold text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] bg-white dark:bg-[#1B1B20] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-none min-h-[40px]"
-              title="Ketik atau paste URL Utama Toko baru"
+              size="sm"
+              variant="outline"
+              onPress={handleStartEditPrimary}
+              aria-label="Ketik atau paste URL Utama Toko baru"
+              className="text-[11px] font-bold text-[var(--foreground)] bg-[var(--surface)] hover:bg-[var(--surface-tertiary)] border border-[var(--border)] px-3 rounded-xl min-h-[44px]"
             >
-              <Pencil className="w-3 h-3 text-slate-500 dark:text-zinc-400" />
+              <Pencil className="w-3 h-3 text-[var(--muted)]" />
               <span>Ubah URL Utama</span>
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Panel input inline jika user klik "Ubah URL Utama" */}
         {isEditingPrimary && (
-          <div className="p-3.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 rounded-2xl space-y-2 animate-in fade-in">
+          <div className="p-3.5 bg-[var(--warning-soft)] border border-[var(--warning)]/35 rounded-2xl space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
-                <Pencil className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="text-xs font-bold text-amber-900 dark:text-[var(--warning)] flex items-center gap-1.5">
+                <Pencil className="w-3.5 h-3.5 text-amber-700 dark:text-[var(--warning)]" />
                 Masukkan URL Utama Toko yang Baru:
               </span>
-              <button
+              <Button
                 type="button"
-                onClick={() => setIsEditingPrimary(false)}
-                className="text-[11px] text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] font-semibold cursor-pointer px-2 py-1"
+                size="sm"
+                variant="ghost"
+                onPress={() => setIsEditingPrimary(false)}
+                className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)] font-semibold px-2 min-h-[36px]"
               >
                 Batal
-              </button>
+              </Button>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
-              <input
+              <Input
                 type="url"
+                fullWidth
+                variant="secondary"
                 value={primaryInputDraft}
                 onChange={(e) => setPrimaryInputDraft(e.target.value)}
                 placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-                className="flex-1 px-3 py-2.5 bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-mono text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
+                className="flex-1 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs font-mono text-[var(--foreground)] min-h-[44px]"
               />
-              <button
+              <Button
                 type="button"
-                onClick={handleSaveEditedPrimary}
-                className="px-4 py-2.5 bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] text-white text-xs font-bold rounded-xl transition-colors shadow-none cursor-pointer whitespace-nowrap min-h-[44px]"
+                variant="primary"
+                onPress={handleSaveEditedPrimary}
+                className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 text-xs font-bold rounded-xl whitespace-nowrap min-h-[44px] px-4"
               >
                 Simpan Sebagai URL Utama
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         <div className="flex flex-col sm:flex-row gap-2">
-          <input
+          <Input
             type="url"
+            fullWidth
+            variant="secondary"
             value={webAppUrl}
             onChange={(e) => setWebAppUrl(e.target.value)}
             placeholder="https://script.google.com/macros/s/AKfycbx.../exec"
-            className="flex-1 px-3.5 py-2.5 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-mono text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:bg-white dark:focus:bg-[#1B1B20] focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
+            className="flex-1 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs font-mono text-[var(--foreground)] min-h-[44px]"
           />
           <div className="flex gap-2">
-            <button
-              onClick={handleSaveAndTest}
-              disabled={testing}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 min-h-[44px]"
+            <Button
+              type="button"
+              variant="outline"
+              onPress={handleSaveAndTest}
+              isDisabled={testing}
+              className="flex-1 sm:flex-initial bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] border border-[var(--border)] text-[var(--foreground)] text-xs font-bold rounded-xl min-h-[44px] px-3.5"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-slate-600 dark:text-zinc-300 ${testing ? 'animate-spin text-[#2563EB] dark:text-[#C084FC]' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-[var(--muted)] ${testing ? 'animate-spin text-[var(--accent)]' : ''}`} />
               <span>{testing ? 'Menguji...' : 'Uji Koneksi'}</span>
-            </button>
-            <button
-              onClick={handlePullAllData}
-              disabled={syncing || !webAppUrl.trim()}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 shadow-none min-h-[44px]"
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onPress={handlePullAllData}
+              isDisabled={syncing || !webAppUrl.trim()}
+              className="flex-1 sm:flex-initial bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 text-xs font-bold uppercase tracking-wider rounded-xl min-h-[44px] px-4"
             >
               <ArrowDownCircle className={`w-4 h-4 ${syncing ? 'animate-bounce' : ''}`} />
               <span>{syncing ? 'Menarik...' : 'Tarik Data'}</span>
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Notifications */}
         {successMessage && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/35 text-emerald-800 dark:text-emerald-300 text-xs font-medium">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--success-soft)] border border-[var(--success)]/35 text-emerald-800 dark:text-[var(--success)] text-xs font-medium">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-[var(--success)] flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
 
         {errorMessage && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/35 text-red-700 dark:text-red-300 text-xs font-medium">
-            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--danger-soft)] border border-[var(--danger)]/35 text-red-700 dark:text-[var(--danger)] text-xs font-medium">
+            <AlertCircle className="w-4 h-4 text-red-700 dark:text-[var(--danger)] flex-shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* Diagnostics Panel */}
         {diagnostic && diagnostic.success && (
-          <div className="bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-2xl p-3.5 space-y-2 mt-2">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#343440] pb-2">
-              <span className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] flex items-center gap-1.5">
-                <Database className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#C084FC]" />
+          <div className="bg-[var(--surface-secondary)] border border-[var(--border)] rounded-2xl p-3.5 space-y-2 mt-2">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
+              <span className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-[var(--accent)]" />
                 Hasil Diagnostik Spreadsheet
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium">
+              <span className="text-[10px] text-[var(--muted)] font-medium">
                 {diagnostic.timezone || 'Asia/Jakarta'}
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-xl border border-slate-200 dark:border-[#343440]">
-                <p className="text-slate-500 dark:text-zinc-400 text-[10px] uppercase font-bold">Sheet Produk</p>
-                <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 truncate">
+              <div className="bg-[var(--surface)] p-2.5 rounded-xl border border-[var(--border)]">
+                <p className="text-[var(--muted)] text-[10px] uppercase font-bold">Sheet Produk</p>
+                <p className="font-bold text-[var(--foreground)] mt-0.5 truncate">
                   {diagnostic.sheetsStatus?.productsSheetName || 'DASHBOARD_MUTASI_&_PROFIT'}
                 </p>
-                <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
+                <p className="text-[10px] text-[var(--muted)] mt-0.5 tabular-nums">
                   {diagnostic.sheetsStatus?.productsRowCount ? `${diagnostic.sheetsStatus.productsRowCount} baris` : 'Baris 71+'} (Read)
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-xl border border-slate-200 dark:border-[#343440]">
-                <p className="text-slate-500 dark:text-zinc-400 text-[10px] uppercase font-bold">Log Penjualan</p>
-                <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 truncate">
+              <div className="bg-[var(--surface)] p-2.5 rounded-xl border border-[var(--border)]">
+                <p className="text-[var(--muted)] text-[10px] uppercase font-bold">Log Penjualan</p>
+                <p className="font-bold text-[var(--foreground)] mt-0.5 truncate">
                   {diagnostic.sheetsStatus?.salesLogSheetName || 'LOG_PENJUALAN'}
                 </p>
-                <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
+                <p className="text-[10px] text-[var(--muted)] mt-0.5 tabular-nums">
                   {diagnostic.sheetsStatus?.salesLogRowCount ? `${diagnostic.sheetsStatus.salesLogRowCount} baris` : 'Baris 8+'} (Write)
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-xl border border-slate-200 dark:border-[#343440]">
-                <p className="text-slate-500 dark:text-zinc-400 text-[10px] uppercase font-bold">Barang Masuk</p>
-                <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 truncate">LOG_BARANG_MASUK</p>
-                <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
+              <div className="bg-[var(--surface)] p-2.5 rounded-xl border border-[var(--border)]">
+                <p className="text-[var(--muted)] text-[10px] uppercase font-bold">Barang Masuk</p>
+                <p className="font-bold text-[var(--foreground)] mt-0.5 truncate">LOG_BARANG_MASUK</p>
+                <p className="text-[10px] text-[var(--muted)] mt-0.5 tabular-nums">
                   {diagnostic.sheetsStatus?.barangMasukRowCount ? `${diagnostic.sheetsStatus.barangMasukRowCount} baris` : 'Baris 5+'} (Write)
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-[#1B1B20] p-2.5 rounded-xl border border-slate-200 dark:border-[#343440]">
-                <p className="text-emerald-700 dark:text-emerald-400 text-[10px] uppercase font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <div className="bg-[var(--surface)] p-2.5 rounded-xl border border-[var(--border)]">
+                <p className="text-emerald-700 dark:text-[var(--success)] text-[10px] uppercase font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
                   Sheet LAIN-LAIN
                 </p>
-                <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 truncate">LAIN-LAIN</p>
-                <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium mt-0.5 tabular-nums">
+                <p className="font-bold text-[var(--foreground)] mt-0.5 truncate">LAIN-LAIN</p>
+                <p className="text-[10px] text-emerald-700 dark:text-[var(--success)] font-medium mt-0.5 tabular-nums">
                   {diagnostic.sheetsStatus?.pengeluaranLainRowCount ? `${diagnostic.sheetsStatus.pengeluaranLainRowCount} baris` : 'A4:F'} (Read & Write)
                 </p>
               </div>
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Column J Category Assistant Card */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-[#2B2B33] pb-3">
+      <Card className="bg-[var(--surface)] rounded-3xl p-4 sm:p-5 border border-[var(--border)] shadow-none space-y-4 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border)] pb-3">
           <div className="flex items-start sm:items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent)] flex items-center justify-center flex-shrink-0">
               <Tag className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm sm:text-base font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight">
+                <h3 className="text-sm sm:text-base font-extrabold text-[var(--foreground)] tracking-tight">
                   Kategori Produk Kolom J (B70:J)
                 </h3>
-                <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-200 dark:border-emerald-500/35">
-                  Sinkron Aktif
-                </span>
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color="success"
+                  className="bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border border-[var(--success)]/30"
+                >
+                  <Chip.Label className="text-[10px] font-bold">Sinkron Aktif</Chip.Label>
+                </Chip>
               </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Range <code className="bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] px-1.5 py-0.5 rounded font-mono text-[11px] text-[#0F172A] dark:text-[#F4F4F6] font-bold">DASHBOARD_MUTASI_&_PROFIT B70:J</code> (Cell J70: Header KATEGORI, Cell J71+: Data Kategori).
+              <p className="text-xs text-[var(--muted)] mt-0.5">
+                Range{' '}
+                <code className="bg-[var(--surface-secondary)] border border-[var(--border)] px-1.5 py-0.5 rounded font-mono text-[11px] text-[var(--foreground)] font-bold">
+                  DASHBOARD_MUTASI_&_PROFIT B70:J
+                </code>{' '}
+                (Cell J70: Header KATEGORI, Cell J71+: Data Kategori).
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={handleCopyColumnJValues}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
-              title="Salin semua kategori untuk langsung di-paste di sel J71 Google Sheets"
+            <Button
+              type="button"
+              variant="outline"
+              onPress={handleCopyColumnJValues}
+              aria-label="Salin semua kategori untuk langsung di-paste di sel J71 Google Sheets"
+              className="bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] border border-[var(--border)] text-[var(--foreground)] text-xs font-bold rounded-xl min-h-[44px] px-3"
             >
-              {copiedCategories ? <CheckCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-300" />}
+              {copiedCategories ? <CheckCheck className="w-3.5 h-3.5 text-[var(--success)]" /> : <Copy className="w-3.5 h-3.5 text-[var(--muted)]" />}
               <span>{copiedCategories ? 'Tersalin!' : 'Salin Data Kolom J'}</span>
-            </button>
+            </Button>
 
-            <button
-              onClick={handleFillCategoriesInSheet}
-              disabled={fillingCategories || !webAppUrl.trim()}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] text-white text-xs font-bold transition-colors cursor-pointer shadow-none disabled:opacity-50 min-h-[44px]"
-              title="Perintahkan Google Apps Script untuk mengisi Kolom J di Spreadsheet secara otomatis"
+            <Button
+              type="button"
+              variant="primary"
+              onPress={handleFillCategoriesInSheet}
+              isDisabled={fillingCategories || !webAppUrl.trim()}
+              aria-label="Perintahkan Google Apps Script untuk mengisi Kolom J di Spreadsheet secara otomatis"
+              className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 text-xs font-bold rounded-xl min-h-[44px] px-3.5"
             >
               <Sparkles className={`w-3.5 h-3.5 ${fillingCategories ? 'animate-spin' : ''}`} />
               <span>{fillingCategories ? 'Mengisi...' : '✨ Auto-Fill Kolom J di Sheets'}</span>
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Informational guide */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          <div className="p-3 bg-slate-50 dark:bg-[#24242B] rounded-2xl border border-slate-200 dark:border-[#343440]">
-            <span className="text-[10px] font-bold text-[#2563EB] dark:text-[#C084FC] uppercase tracking-wider block">Aturan Kolom J</span>
-            <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium mt-1 leading-snug">
+          <div className="p-3 bg-[var(--surface-secondary)] rounded-2xl border border-[var(--border)]">
+            <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-wider block">Aturan Kolom J</span>
+            <p className="text-xs text-[var(--muted)] font-medium mt-1 leading-snug">
               Jika Kolom J diisi di Google Sheets, sistem kasir akan langsung memakai kategori tersebut. Jika masih kosong, sistem menggunakan klasifikasi otomatis.
             </p>
           </div>
 
-          <div className="p-3 bg-slate-50 dark:bg-[#24242B] rounded-2xl border border-slate-200 dark:border-[#343440]">
-            <span className="text-[10px] font-bold text-[#2563EB] dark:text-[#C084FC] uppercase tracking-wider block">Opsi 1: Klik 1 Tombol</span>
-            <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium mt-1 leading-snug">
-              Klik <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Auto-Fill Kolom J di Sheets</strong> di atas. Apps Script akan otomatis mengisi cell J70 ('KATEGORI') dan baris 71 ke bawah dengan kategori yang tepat.
+          <div className="p-3 bg-[var(--surface-secondary)] rounded-2xl border border-[var(--border)]">
+            <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-wider block">Opsi 1: Klik 1 Tombol</span>
+            <p className="text-xs text-[var(--muted)] font-medium mt-1 leading-snug">
+              Klik <strong className="text-[var(--foreground)]">Auto-Fill Kolom J di Sheets</strong> di atas. Apps Script akan otomatis mengisi cell J70 ('KATEGORI') dan baris 71 ke bawah dengan kategori yang tepat.
             </p>
           </div>
 
-          <div className="p-3 bg-slate-50 dark:bg-[#24242B] rounded-2xl border border-slate-200 dark:border-[#343440]">
-            <span className="text-[10px] font-bold text-[#2563EB] dark:text-[#C084FC] uppercase tracking-wider block">Opsi 2: Salin & Paste Manual</span>
-            <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium mt-1 leading-snug">
-              Klik <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Salin Data Kolom J</strong>, lalu buka Google Sheets, klik sel <strong className="text-[#0F172A] dark:text-[#F4F4F6]">J71</strong>, dan tekan <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Ctrl + V</strong>.
+          <div className="p-3 bg-[var(--surface-secondary)] rounded-2xl border border-[var(--border)]">
+            <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-wider block">Opsi 2: Salin & Paste Manual</span>
+            <p className="text-xs text-[var(--muted)] font-medium mt-1 leading-snug">
+              Klik <strong className="text-[var(--foreground)]">Salin Data Kolom J</strong>, lalu buka Google Sheets, klik sel <strong className="text-[var(--foreground)]">J71</strong>, dan tekan <strong className="text-[var(--foreground)]">Ctrl + V</strong>.
             </p>
           </div>
         </div>
 
         {/* Toggle table preview */}
         <div className="pt-1">
-          <button
-            onClick={() => setShowCategoryTable(!showCategoryTable)}
-            className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:text-[#2563EB] dark:hover:text-[#C084FC] transition-colors cursor-pointer min-h-[40px]"
+          <Button
+            type="button"
+            variant="ghost"
+            onPress={() => setShowCategoryTable(!showCategoryTable)}
+            className="text-xs font-bold text-[var(--foreground)] hover:text-[var(--accent)] px-2 min-h-[44px]"
           >
-            <span>{showCategoryTable ? 'Sembunyikan Daftar Kategori Kolom J' : `Lihat Daftar Pemetaan Kategori Produk (${productsList.length} Item)`}</span>
+            <span>
+              {showCategoryTable
+                ? 'Sembunyikan Daftar Kategori Kolom J'
+                : `Lihat Daftar Pemetaan Kategori Produk (${productsList.length} Item)`}
+            </span>
             {showCategoryTable ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+          </Button>
 
           {showCategoryTable && (
-            <div className="mt-3 space-y-3 border border-slate-200 dark:border-[#343440] rounded-2xl p-3 bg-slate-50 dark:bg-[#24242B]">
+            <div className="mt-3 space-y-3 border border-[var(--border)] rounded-2xl p-3 bg-[var(--surface-secondary)]">
               {/* Filter controls */}
               <div className="flex flex-col sm:flex-row gap-2 items-center justify-between">
                 <div className="relative w-full sm:w-64">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                  <input
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none z-10" />
+                  <Input
                     type="text"
+                    fullWidth
+                    variant="secondary"
                     value={categorySearch}
                     onChange={(e) => setCategorySearch(e.target.value)}
                     placeholder="Cari SKU, Nama, atau Kategori..."
-                    className="w-full pl-8 pr-3 py-2 bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] rounded-xl text-xs text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[40px]"
+                    className="pl-8 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs text-[var(--foreground)] min-h-[44px]"
                   />
                 </div>
 
                 <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 w-full sm:w-auto max-w-full">
-                  <button
+                  <Button
                     type="button"
-                    onClick={() => setSelectedCatFilter('ALL')}
-                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors active:scale-[0.97] cursor-pointer whitespace-nowrap min-h-[38px] ${
+                    size="sm"
+                    variant={selectedCatFilter === 'ALL' ? 'primary' : 'outline'}
+                    onPress={() => setSelectedCatFilter('ALL')}
+                    className={`rounded-lg text-[11px] font-bold whitespace-nowrap min-h-[40px] px-3 ${
                       selectedCatFilter === 'ALL'
-                        ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white'
-                        : 'bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-[#2E2E37]'
+                        ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
+                        : 'bg-[var(--surface)] border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)]'
                     }`}
                   >
                     Semua ({productsList.length})
-                  </button>
-                  {uniqueCategories.map(cat => (
-                    <button
+                  </Button>
+                  {uniqueCategories.map((cat) => (
+                    <Button
                       type="button"
+                      size="sm"
                       key={cat}
-                      onClick={() => setSelectedCatFilter(cat)}
-                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors active:scale-[0.97] cursor-pointer whitespace-nowrap min-h-[38px] ${
+                      variant={selectedCatFilter === cat ? 'primary' : 'outline'}
+                      onPress={() => setSelectedCatFilter(cat)}
+                      className={`rounded-lg text-[11px] font-bold whitespace-nowrap min-h-[40px] px-3 ${
                         selectedCatFilter === cat
-                          ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white'
-                          : 'bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-[#2E2E37]'
+                          ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
+                          : 'bg-[var(--surface)] border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)]'
                       }`}
                     >
                       {cat}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -895,32 +1004,32 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
                 {filteredProducts.map((p, idx) => (
                   <div
                     key={p.id || p.sku || idx}
-                    className="rounded-xl border border-slate-200 dark:border-[#343440] bg-white dark:bg-[#1B1B20] p-2.5 space-y-1"
+                    className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5 space-y-1"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-[11px] font-bold text-[#0F172A] dark:text-[#F4F4F6] truncate">
-                        #{p.rowNumber || (71 + idx)} • {p.sku}
+                      <span className="font-mono text-[11px] font-bold text-[var(--foreground)] truncate">
+                        #{p.rowNumber || 71 + idx} • {p.sku}
                       </span>
-                      <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/40 shrink-0">
+                      <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 shrink-0">
                         {p.category}
                       </span>
                     </div>
-                    <p className="text-xs font-medium text-[#0F172A] dark:text-[#F4F4F6] break-words">
+                    <p className="text-xs font-medium text-[var(--foreground)] break-words">
                       {p.name}
                     </p>
                   </div>
                 ))}
                 {filteredProducts.length === 0 && (
-                  <div className="px-4 py-6 text-center text-slate-500 dark:text-zinc-400 text-xs bg-white dark:bg-[#1B1B20] rounded-xl border border-slate-200 dark:border-[#343440]">
+                  <div className="px-4 py-6 text-center text-[var(--muted)] text-xs bg-[var(--surface)] rounded-xl border border-[var(--border)]">
                     Tidak ditemukan produk yang cocok dengan pencarian.
                   </div>
                 )}
               </div>
 
               {/* Desktop Table (>=640px) */}
-              <div className="hidden sm:block max-h-72 overflow-y-auto overflow-x-auto rounded-xl border border-slate-200 dark:border-[#343440] bg-white dark:bg-[#1B1B20]">
+              <div className="hidden sm:block max-h-72 overflow-y-auto overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)]">
                 <table className="w-full text-left text-xs min-w-[460px]">
-                  <thead className="sticky top-0 bg-slate-50 dark:bg-[#24242B] border-b border-slate-200 dark:border-[#343440] text-slate-500 dark:text-zinc-400 font-bold uppercase text-[10px]">
+                  <thead className="sticky top-0 bg-[var(--surface-secondary)] border-b border-[var(--border)] text-[var(--muted)] font-bold uppercase text-[10px]">
                     <tr>
                       <th className="px-3 py-2.5 w-16">Baris Sheet</th>
                       <th className="px-3 py-2.5 w-28">SKU</th>
@@ -928,20 +1037,20 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
                       <th className="px-3 py-2.5">Kategori Kolom J</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-[#2B2B33]">
+                  <tbody className="divide-y divide-[var(--border)]">
                     {filteredProducts.map((p, idx) => (
-                      <tr key={p.id || p.sku || idx} className="hover:bg-slate-50 dark:hover:bg-[#24242B]/70 transition-colors">
-                        <td className="px-3 py-2 font-mono text-[11px] text-slate-500 dark:text-zinc-400 tabular-nums">
-                          {p.rowNumber || (71 + idx)}
+                      <tr key={p.id || p.sku || idx} className="hover:bg-[var(--surface-secondary)] transition-colors">
+                        <td className="px-3 py-2 font-mono text-[11px] text-[var(--muted)] tabular-nums">
+                          {p.rowNumber || 71 + idx}
                         </td>
-                        <td className="px-3 py-2 font-mono text-[#0F172A] dark:text-[#F4F4F6] font-bold">
+                        <td className="px-3 py-2 font-mono text-[var(--foreground)] font-bold">
                           {p.sku}
                         </td>
-                        <td className="px-3 py-2 text-[#0F172A] dark:text-[#F4F4F6] font-medium">
+                        <td className="px-3 py-2 text-[var(--foreground)] font-medium">
                           {p.name}
                         </td>
                         <td className="px-3 py-2">
-                          <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/40">
+                          <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30">
                             {p.category}
                           </span>
                         </td>
@@ -949,7 +1058,7 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
                     ))}
                     {filteredProducts.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="px-4 py-6 text-center text-slate-500 dark:text-zinc-400 text-xs">
+                        <td colSpan={4} className="px-4 py-6 text-center text-[var(--muted)] text-xs">
                           Tidak ditemukan produk yang cocok dengan pencarian.
                         </td>
                       </tr>
@@ -960,67 +1069,77 @@ export const GasIntegrationView: React.FC<GasIntegrationViewProps> = ({ onSyncCo
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* 3 Step Deployment Guide */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-1.5">
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 border border-[var(--border)] shadow-none space-y-1.5 gap-1.5">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center text-xs font-bold">
+            <span className="w-5 h-5 rounded-full bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent)] flex items-center justify-center text-xs font-bold">
               1
             </span>
-            <h4 className="font-bold text-xs text-[#0F172A] dark:text-[#F4F4F6]">Buka Spreadsheet</h4>
+            <h4 className="font-bold text-xs text-[var(--foreground)]">Buka Spreadsheet</h4>
           </div>
-          <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
-            Buka file Google Sheets ORTUKILL Anda. Klik menu <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Ekstensi</strong> &gt; <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Apps Script</strong>.
+          <p className="text-xs text-[var(--muted)] leading-relaxed">
+            Buka file Google Sheets ORTUKILL Anda. Klik menu <strong className="text-[var(--foreground)]">Ekstensi</strong> &gt;{' '}
+            <strong className="text-[var(--foreground)]">Apps Script</strong>.
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-1.5">
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 border border-[var(--border)] shadow-none space-y-1.5 gap-1.5">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center text-xs font-bold">
+            <span className="w-5 h-5 rounded-full bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent)] flex items-center justify-center text-xs font-bold">
               2
             </span>
-            <h4 className="font-bold text-xs text-[#0F172A] dark:text-[#F4F4F6]">Perbarui Kode.gs</h4>
+            <h4 className="font-bold text-xs text-[var(--foreground)]">Perbarui Kode.gs</h4>
           </div>
-          <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
-            Klik tombol "Salin Kode .gs Terbaru" di atas, ganti seluruh isi file <code className="text-[#0F172A] dark:text-[#F4F4F6] font-mono text-[10px] bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] px-1 py-0.5 rounded">Kode.gs</code>, lalu klik Simpan.
+          <p className="text-xs text-[var(--muted)] leading-relaxed">
+            Klik tombol "Salin Kode .gs Terbaru" di atas, ganti seluruh isi file{' '}
+            <code className="text-[var(--foreground)] font-mono text-[10px] bg-[var(--surface-secondary)] border border-[var(--border)] px-1 py-0.5 rounded">
+              Kode.gs
+            </code>
+            , lalu klik Simpan.
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] shadow-none space-y-1.5">
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 border border-[var(--border)] shadow-none space-y-1.5 gap-1.5">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center text-xs font-bold">
+            <span className="w-5 h-5 rounded-full bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent)] flex items-center justify-center text-xs font-bold">
               3
             </span>
-            <h4 className="font-bold text-xs text-[#0F172A] dark:text-[#F4F4F6]">Deployment Baru (Wajib Versi Baru)</h4>
+            <h4 className="font-bold text-xs text-[var(--foreground)]">Deployment Baru (Wajib Versi Baru)</h4>
           </div>
-          <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
-            Klik <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Terapkan (Deploy)</strong> &gt; <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Kelola penerapan (Manage deployments)</strong> &gt; Ikon pensil (Edit) &gt; Versi: <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Versi baru (New version)</strong> &gt; Terapkan. Pastikan Akses: <strong className="text-[#0F172A] dark:text-[#F4F4F6]">Siapa saja (Anyone)</strong>.
+          <p className="text-xs text-[var(--muted)] leading-relaxed">
+            Klik <strong className="text-[var(--foreground)]">Terapkan (Deploy)</strong> &gt;{' '}
+            <strong className="text-[var(--foreground)]">Kelola penerapan (Manage deployments)</strong> &gt; Ikon pensil (Edit) &gt; Versi:{' '}
+            <strong className="text-[var(--foreground)]">Versi baru (New version)</strong> &gt; Terapkan. Pastikan Akses:{' '}
+            <strong className="text-[var(--foreground)]">Siapa saja (Anyone)</strong>.
           </p>
-        </div>
+        </Card>
       </div>
 
       {/* Code Preview Box */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl border border-slate-200 dark:border-[#2B2B33] shadow-none overflow-hidden min-w-0">
-        <div className="px-4 py-3 bg-slate-50 dark:bg-[#24242B] border-b border-slate-200 dark:border-[#343440] flex items-center justify-between gap-2">
-          <span className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] flex items-center gap-2 min-w-0">
-            <FileCode2 className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC] shrink-0" />
+      <Card className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-none overflow-hidden min-w-0 p-0 gap-0">
+        <div className="px-4 py-3 bg-[var(--surface-secondary)] border-b border-[var(--border)] flex items-center justify-between gap-2">
+          <span className="text-xs font-bold text-[var(--foreground)] flex items-center gap-2 min-w-0">
+            <FileCode2 className="w-4 h-4 text-[var(--accent)] shrink-0" />
             <span className="truncate">Kode.gs (Google Apps Script Backend)</span>
           </span>
-          <button
+          <Button
             type="button"
-            onClick={handleCopyCode}
-            className="text-xs font-bold text-[#2563EB] dark:text-[#C084FC] hover:text-[#1D4ED8] dark:hover:text-[#A855F7] flex items-center gap-1 transition-colors active:scale-[0.97] cursor-pointer px-2.5 py-1.5 min-h-[40px] shrink-0"
+            size="sm"
+            variant="ghost"
+            onPress={handleCopyCode}
+            className="text-xs font-bold text-[var(--accent)] hover:bg-[var(--accent-soft)] px-2.5 min-h-[40px] shrink-0 rounded-lg"
           >
             <Copy className="w-3.5 h-3.5" />
             <span>Salin</span>
-          </button>
+          </Button>
         </div>
-        <pre className="p-4 text-[11px] font-mono text-slate-800 dark:text-zinc-200 overflow-x-auto max-h-72 leading-relaxed bg-slate-50/50 dark:bg-[#121215] select-all max-w-full">
+        <pre className="p-4 text-[11px] font-mono text-[var(--foreground)] overflow-x-auto max-h-72 leading-relaxed bg-[var(--background)] select-all max-w-full">
           {scriptCode}
         </pre>
-      </div>
+      </Card>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Button, Card, Chip, Input } from '@heroui/react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -706,130 +707,145 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {/* 1. STRIP KPI: Omzet, Cuan, Margin %, Nota, Botol & Delta vs Bulan Lalu (1..N) */}
       <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {/* KPI 1: Omzet */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between transition-colors">
-          <div className="flex items-center justify-between text-slate-500 dark:text-zinc-400 text-[11px] font-bold">
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-2 border border-[var(--border)] shadow-none justify-between">
+          <div className="flex items-center justify-between gap-1 text-[var(--muted)] text-[11px] font-bold">
             <span className="uppercase tracking-wider">Omzet</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-0.5 tabular-nums border ${
-              kpiStats.deltaOmset >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35' : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/35'
-            }`}>
+            <Chip
+              size="sm"
+              variant="soft"
+              color={kpiStats.deltaOmset >= 0 ? 'success' : 'danger'}
+              className="text-[10px] font-black tabular-nums border border-[var(--border)]"
+            >
               {kpiStats.deltaOmset >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {kpiStats.deltaOmset >= 0 ? `+${kpiStats.deltaOmset}%` : `${kpiStats.deltaOmset}%`}
-            </span>
+              <Chip.Label>{kpiStats.deltaOmset >= 0 ? `+${kpiStats.deltaOmset}%` : `${kpiStats.deltaOmset}%`}</Chip.Label>
+            </Chip>
           </div>
-          <div className="mt-2">
-            <p className="text-lg sm:text-xl font-black text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums">
+          <div>
+            <p className="text-lg sm:text-xl font-black text-[var(--foreground)] tracking-tight tabular-nums">
               {formatRupiah(kpiStats.omset)}
             </p>
-            <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevOmset_N)}`}>
+            <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevOmset_N)}`}>
               vs Bln Lalu: {formatRupiah(kpiStats.prevOmset_N)} (tgl 1..{kpiStats.N})
             </p>
           </div>
-        </div>
+        </Card>
 
         {/* KPI 2: Cuan (Margin Profit) */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between transition-colors">
-          <div className="flex items-center justify-between text-slate-500 dark:text-zinc-400 text-[11px] font-bold">
-            <span className="uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Cuan</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-0.5 tabular-nums border ${
-              kpiStats.deltaCuan >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35' : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/35'
-            }`}>
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-2 border border-[var(--border)] shadow-none justify-between">
+          <div className="flex items-center justify-between gap-1 text-[var(--muted)] text-[11px] font-bold">
+            <span className="uppercase tracking-wider text-emerald-700 dark:text-[var(--success)]">Cuan</span>
+            <Chip
+              size="sm"
+              variant="soft"
+              color={kpiStats.deltaCuan >= 0 ? 'success' : 'danger'}
+              className="text-[10px] font-black tabular-nums border border-[var(--border)]"
+            >
               {kpiStats.deltaCuan >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {kpiStats.deltaCuan >= 0 ? `+${kpiStats.deltaCuan}%` : `${kpiStats.deltaCuan}%`}
-            </span>
+              <Chip.Label>{kpiStats.deltaCuan >= 0 ? `+${kpiStats.deltaCuan}%` : `${kpiStats.deltaCuan}%`}</Chip.Label>
+            </Chip>
           </div>
-          <div className="mt-2">
-            <p className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">
+          <div>
+            <p className="text-lg sm:text-xl font-black text-emerald-700 dark:text-[var(--success)] tracking-tight tabular-nums">
               {formatRupiah(kpiStats.cuan)}
             </p>
-            <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevCuan_N)}`}>
+            <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevCuan_N)}`}>
               vs Bln Lalu: {formatRupiah(kpiStats.prevCuan_N)}
             </p>
           </div>
-        </div>
+        </Card>
 
         {/* KPI 3: Margin % */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between transition-colors">
-          <div className="flex items-center justify-between text-slate-500 dark:text-zinc-400 text-[11px] font-bold">
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-2 border border-[var(--border)] shadow-none justify-between">
+          <div className="flex items-center justify-between gap-1 text-[var(--muted)] text-[11px] font-bold">
             <span className="uppercase tracking-wider">Margin %</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-0.5 tabular-nums border ${
-              kpiStats.deltaMargin >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35' : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/35'
-            }`}>
+            <Chip
+              size="sm"
+              variant="soft"
+              color={kpiStats.deltaMargin >= 0 ? 'success' : 'danger'}
+              className="text-[10px] font-black tabular-nums border border-[var(--border)]"
+            >
               {kpiStats.deltaMargin >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {kpiStats.deltaMargin >= 0 ? `+${kpiStats.deltaMargin}%` : `${kpiStats.deltaMargin}%`}
-            </span>
+              <Chip.Label>{kpiStats.deltaMargin >= 0 ? `+${kpiStats.deltaMargin}%` : `${kpiStats.deltaMargin}%`}</Chip.Label>
+            </Chip>
           </div>
-          <div className="mt-2">
-            <p className="text-lg sm:text-xl font-black text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums">
+          <div>
+            <p className="text-lg sm:text-xl font-black text-[var(--foreground)] tracking-tight tabular-nums">
               {kpiStats.marginPct}%
             </p>
-            <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5">
+            <p className="text-[10px] text-[var(--muted)] mt-0.5">
               Rasio Laba Bersih Penjualan
             </p>
           </div>
-        </div>
+        </Card>
 
         {/* KPI 4: Total Nota */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between transition-colors">
-          <div className="flex items-center justify-between text-slate-500 dark:text-zinc-400 text-[11px] font-bold">
+        <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-2 border border-[var(--border)] shadow-none justify-between">
+          <div className="flex items-center justify-between gap-1 text-[var(--muted)] text-[11px] font-bold">
             <span className="uppercase tracking-wider">Nota</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-0.5 tabular-nums border ${
-              kpiStats.deltaNota >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35' : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/35'
-            }`}>
+            <Chip
+              size="sm"
+              variant="soft"
+              color={kpiStats.deltaNota >= 0 ? 'success' : 'danger'}
+              className="text-[10px] font-black tabular-nums border border-[var(--border)]"
+            >
               {kpiStats.deltaNota >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {kpiStats.deltaNota >= 0 ? `+${kpiStats.deltaNota}%` : `${kpiStats.deltaNota}%`}
-            </span>
+              <Chip.Label>{kpiStats.deltaNota >= 0 ? `+${kpiStats.deltaNota}%` : `${kpiStats.deltaNota}%`}</Chip.Label>
+            </Chip>
           </div>
-          <div className="mt-2">
-            <p className="text-lg sm:text-xl font-black text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums">
-              {kpiStats.nota} <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">Nota</span>
+          <div>
+            <p className="text-lg sm:text-xl font-black text-[var(--foreground)] tracking-tight tabular-nums">
+              {kpiStats.nota} <span className="text-xs font-bold text-[var(--muted)]">Nota</span>
             </p>
-            <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate tabular-nums">
+            <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums">
               vs Bln Lalu: {kpiStats.prevNota_N} Nota (1..{kpiStats.N})
             </p>
           </div>
-        </div>
+        </Card>
 
         {/* KPI 5: Total Botol Fisik */}
-        <div className="col-span-2 lg:col-span-1 bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between transition-colors">
-          <div className="flex items-center justify-between text-slate-500 dark:text-zinc-400 text-[11px] font-bold">
+        <Card className="col-span-2 lg:col-span-1 bg-[var(--surface)] rounded-2xl p-4 gap-2 border border-[var(--border)] shadow-none justify-between">
+          <div className="flex items-center justify-between gap-1 text-[var(--muted)] text-[11px] font-bold">
             <span className="uppercase tracking-wider">Botol</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-0.5 tabular-nums border ${
-              kpiStats.deltaBotol >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35' : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/35'
-            }`}>
+            <Chip
+              size="sm"
+              variant="soft"
+              color={kpiStats.deltaBotol >= 0 ? 'success' : 'danger'}
+              className="text-[10px] font-black tabular-nums border border-[var(--border)]"
+            >
               {kpiStats.deltaBotol >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {kpiStats.deltaBotol >= 0 ? `+${kpiStats.deltaBotol}%` : `${kpiStats.deltaBotol}%`}
-            </span>
+              <Chip.Label>{kpiStats.deltaBotol >= 0 ? `+${kpiStats.deltaBotol}%` : `${kpiStats.deltaBotol}%`}</Chip.Label>
+            </Chip>
           </div>
-          <div className="mt-2">
-            <p className="text-lg sm:text-xl font-black text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums">
-              {kpiStats.botol} <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">Btl</span>
+          <div>
+            <p className="text-lg sm:text-xl font-black text-[var(--foreground)] tracking-tight tabular-nums">
+              {kpiStats.botol} <span className="text-xs font-bold text-[var(--muted)]">Btl</span>
             </p>
-            <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate tabular-nums">
+            <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums">
               vs Bln Lalu: {kpiStats.prevBotol_N} Btl (excl. promo)
             </p>
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* 2. KARTU TARGET: Satu progress bar + garis pace ideal + status 1 kalimat + proyeksi akhir bulan */}
-      <section className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-[#2B2B33] relative overflow-hidden transition-colors">
+      <Card className="bg-[var(--surface)] text-[var(--foreground)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 gap-4 border border-[var(--border)] shadow-none relative overflow-hidden">
         <div className="relative z-10 space-y-4">
           {/* Header Target: Judul & Tombol Kontrol */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-[#2B2B33]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--separator)]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center border border-blue-200 dark:border-purple-500/35 flex-shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center border border-[var(--accent)]/30 flex-shrink-0">
                 <Target className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-base sm:text-lg font-bold tracking-tight text-[#0F172A] dark:text-[#F4F4F6]">
+                  <h3 className="text-base sm:text-lg font-bold tracking-tight text-[var(--foreground)]">
                     Target Omzet {targetProgress.grainLabel}
                   </h3>
-                  <span className="bg-slate-100 dark:bg-[#24242B] text-slate-600 dark:text-zinc-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-[#343440]">
-                    Hari ke-{targetProgress.effectiveDay} dari {targetProgress.daysInCurMonth}
-                  </span>
+                  <Chip size="sm" variant="soft" color="default" className="border border-[var(--border)] text-[10px] font-bold">
+                    <Chip.Label>Hari ke-{targetProgress.effectiveDay} dari {targetProgress.daysInCurMonth}</Chip.Label>
+                  </Chip>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-[var(--muted)] mt-0.5">
                   Target dasar {formatRupiah(targetProgress.baseMonthlyTarget)} • Grain {targetProgress.grainLabel}
                 </p>
               </div>
@@ -838,59 +854,64 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             {/* Aksi: Maju +1 Hari & Edit Target */}
             <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
               {/* Toggle Offset +1 Hari */}
-              <button
+              <Button
                 type="button"
-                onClick={() => setDayOffset((prev) => (prev === 1 ? 0 : 1))}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors cursor-pointer min-h-[44px] ${
-                  dayOffset === 1
-                    ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white border-[#2563EB] dark:border-[#A855F7]'
-                    : 'bg-slate-50 dark:bg-[#24242B] text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-[#343440] hover:bg-slate-100 dark:hover:bg-[#2E2E37]'
-                }`}
-                title="Maju 1 hari untuk target & progress yang ditujukan buat hari ini"
+                size="sm"
+                variant={dayOffset === 1 ? 'primary' : 'outline'}
+                onPress={() => setDayOffset((prev) => (prev === 1 ? 0 : 1))}
+                aria-label="Maju 1 hari untuk target dan progress yang ditujukan buat hari ini"
+                className="rounded-full text-xs font-bold min-h-[44px] px-3.5"
               >
                 <Clock className="w-3.5 h-3.5" />
                 <span>{dayOffset === 1 ? '⏩ Maju +1 Hari' : '▶️ Hari Ini (+0)'}</span>
-              </button>
+              </Button>
 
               {/* Form Inline / Tombol Edit Target */}
               {isEditingTarget ? (
                 <form onSubmit={handleTargetSubmit} className="flex items-center gap-1.5 flex-wrap">
-                  <input
+                  <Input
                     type="number"
                     min="1"
                     step="1"
+                    variant="secondary"
                     value={targetInput}
                     onChange={(e) => setTargetInput(e.target.value)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#24242B] text-[#0F172A] dark:text-[#F4F4F6] font-bold text-xs w-32 border border-slate-200 dark:border-[#343440] focus:outline-none focus:bg-white dark:focus:bg-[#1B1B20] focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] tabular-nums"
+                    className="px-3 py-1.5 rounded-xl bg-[var(--surface-secondary)] text-[var(--foreground)] font-bold text-xs w-36 border border-[var(--border)] min-h-[44px] tabular-nums"
                     placeholder="50000000"
                     autoFocus
                   />
-                  <button
+                  <Button
                     type="submit"
-                    className="px-3.5 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] text-white font-bold text-xs cursor-pointer min-h-[44px]"
+                    size="sm"
+                    variant="primary"
+                    className="px-3.5 rounded-xl font-bold text-xs min-h-[44px]"
                   >
                     Simpan
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    onClick={() => setIsEditingTarget(false)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-white border border-slate-200 dark:border-[#343440] font-bold text-xs cursor-pointer min-h-[44px]"
+                    size="sm"
+                    variant="outline"
+                    onPress={() => setIsEditingTarget(false)}
+                    className="px-3 rounded-xl font-bold text-xs min-h-[44px]"
                   >
                     Batal
-                  </button>
+                  </Button>
                 </form>
               ) : (
-                <button
+                <Button
                   type="button"
-                  onClick={() => {
+                  size="sm"
+                  variant="outline"
+                  onPress={() => {
                     setTargetInput(String(salesTarget.targetAmount || 50000000));
                     setIsEditingTarget(true);
                   }}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold border border-slate-200 dark:border-[#343440] transition-colors cursor-pointer min-h-[44px]"
+                  className="px-3.5 rounded-full bg-[var(--surface-secondary)] text-[var(--foreground)] text-xs font-bold border border-[var(--border)] min-h-[44px]"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#C084FC]" />
+                  <Edit3 className="w-3.5 h-3.5 text-[var(--accent)]" />
                   <span>Edit Target</span>
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -898,36 +919,36 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           {/* Progress Bar Tunggal dengan Garis Pace Ideal */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-bold gap-2 flex-wrap">
-              <span className="text-slate-600 dark:text-zinc-300">
-                Tercapai: <strong className="text-[#0F172A] dark:text-[#F4F4F6] text-sm font-black tabular-nums">{formatRupiah(targetProgress.achieved)}</strong>
+              <span className="text-[var(--muted)]">
+                Tercapai: <strong className="text-[var(--foreground)] text-sm font-black tabular-nums">{formatRupiah(targetProgress.achieved)}</strong>
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-slate-500 dark:text-zinc-400 text-[11px] tabular-nums">
+                <span className="text-[var(--muted)] text-[11px] tabular-nums">
                   Pace Ideal: {targetProgress.idealPacePercent}%
                 </span>
-                <span className="text-[#2563EB] dark:text-[#C084FC] font-black text-sm tabular-nums">
+                <span className="text-[var(--accent)] font-black text-sm tabular-nums">
                   {targetProgress.rawPercent}% Tercapai
                 </span>
               </div>
             </div>
 
             {/* Container Bar: Actual Fill + Vertical Ideal Pace Line */}
-            <div className="relative w-full h-5 bg-slate-100 dark:bg-[#24242B] rounded-full p-0.5 border border-slate-200 dark:border-[#343440] overflow-hidden">
+            <div className="relative w-full h-5 bg-[var(--surface-secondary)] rounded-full p-0.5 border border-[var(--border)] overflow-hidden">
               {/* Actual Progress Fill */}
               <div
-                className="h-full rounded-full bg-[#2563EB] dark:bg-[#A855F7] transition-[width] duration-700"
+                className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-700"
                 style={{ width: `${targetProgress.percent}%` }}
               />
 
               {/* Garis Pace Ideal */}
               <div
-                className="absolute top-0 bottom-0 w-1 bg-[#0F172A]/80 dark:bg-white/80 z-10"
+                className="absolute top-0 bottom-0 w-1 bg-[var(--foreground)]/80 z-10"
                 style={{ left: `${targetProgress.idealPacePercent}%` }}
                 title={`Garis Pace Ideal: ${formatRupiah(targetProgress.idealPace)} (${targetProgress.idealPacePercent}%)`}
               />
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 pt-0.5">
+            <div className="flex items-center justify-between text-[11px] text-[var(--muted)] pt-0.5">
               <span className="tabular-nums">Target: {formatRupiah(targetProgress.target)}</span>
               <span className="tabular-nums">Sisa: {formatRupiah(targetProgress.remaining)}</span>
             </div>
@@ -935,49 +956,52 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
           {/* Status Satu Kalimat & Proyeksi Akhir Bulan */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1">
-            <div className="md:col-span-7 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-2xl p-3 flex items-center gap-2.5">
-              <Flame className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0" />
-              <p className="text-xs text-slate-700 dark:text-zinc-200 leading-snug font-medium">
+            <div className="md:col-span-7 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-2xl p-3 flex items-center gap-2.5">
+              <Flame className="w-4 h-4 text-amber-600 dark:text-[var(--warning)] flex-shrink-0" />
+              <p className="text-xs text-[var(--foreground)] leading-snug font-medium">
                 {targetProgress.statusSentence}
               </p>
             </div>
 
-            <div className="md:col-span-5 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-2xl p-3 flex items-center justify-between text-xs">
+            <div className="md:col-span-5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-2xl p-3 flex items-center justify-between text-xs">
               <div>
-                <span className="text-[10px] text-slate-500 dark:text-zinc-400 uppercase tracking-wider block font-bold">
+                <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider block font-bold">
                   Proyeksi Akhir Bulan
                 </span>
-                <span className="font-black text-[#0F172A] dark:text-[#F4F4F6] text-sm tabular-nums">
+                <span className="font-black text-[var(--foreground)] text-sm tabular-nums">
                   {formatRupiah(targetProgress.projectedMonthEnd)}
                 </span>
               </div>
-              <span className={`px-2.5 py-1 rounded-xl text-xs font-black tabular-nums border ${
-                targetProgress.projectedPercent >= 100 
-                  ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35' 
-                  : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/35'
-              }`}>
-                {targetProgress.projectedPercent}% Target
-              </span>
+              <Chip
+                size="sm"
+                variant="soft"
+                color={targetProgress.projectedPercent >= 100 ? 'success' : 'warning'}
+                className="font-black tabular-nums border border-[var(--border)]"
+              >
+                <Chip.Label className={targetProgress.projectedPercent >= 100 ? 'text-emerald-700 dark:text-[var(--success)]' : 'text-amber-700 dark:text-[var(--warning)]'}>
+                  {targetProgress.projectedPercent}% Target
+                </Chip.Label>
+              </Chip>
             </div>
           </div>
         </div>
-      </section>
+      </Card>
 
       {/* 3. COMPOSED CHART: Bar Omzet + Line Cuan, Sumbu Y rb/jt, Hari Kosong Tetap Tampil */}
-      <section className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-[#2B2B33] space-y-3 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-[#2B2B33]">
+      <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 gap-3 border border-[var(--border)] shadow-none">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[var(--separator)]">
           <div>
-            <h3 className="font-bold text-[#0F172A] dark:text-[#F4F4F6] text-base flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-[#2563EB] dark:text-[#C084FC]" />
-              <span>Grafik Omzet & Cuan Harian</span>
+            <h3 className="font-bold text-[var(--foreground)] text-base flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-[var(--accent)]" />
+              <span>Grafik Omzet &amp; Cuan Harian</span>
             </h3>
-            <p className="text-xs text-slate-500 dark:text-zinc-400">
+            <p className="text-xs text-[var(--muted)]">
               Bar: Omzet Penjualan • Line: Cuan (Margin Profit) • Semua hari 1..{activeMonthInfo.daysInCurMonth}
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs font-bold text-slate-600 dark:text-zinc-300">
+          <div className="flex items-center gap-3 text-xs font-bold text-[var(--muted)]">
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-xs bg-[#2563EB] dark:bg-[#A855F7]" />
+              <span className="w-3 h-3 rounded-xs bg-[var(--accent)]" />
               <span>Omzet (Bar)</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -990,15 +1014,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         <div className="w-full h-72 pt-1">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartTrendData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#2B2B33' : '#E2E8F0'} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#27272e' : '#e4e4e7'} />
               <XAxis 
                 dataKey="dateLabel" 
-                tick={{ fontSize: 10, fill: isDarkMode ? '#A1A1AA' : '#64748B' }} 
+                tick={{ fontSize: 10, fill: isDarkMode ? '#a1a1aa' : '#64748b' }} 
                 axisLine={false} 
                 tickLine={false}
               />
               <YAxis 
-                tick={{ fontSize: 10, fill: isDarkMode ? '#A1A1AA' : '#64748B' }} 
+                tick={{ fontSize: 10, fill: isDarkMode ? '#a1a1aa' : '#64748b' }} 
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatYAxisRbJt}
@@ -1010,10 +1034,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 ]}
                 labelFormatter={(label) => `Tanggal: ${label}`}
                 contentStyle={{ 
-                  backgroundColor: isDarkMode ? '#1B1B20' : '#FFFFFF',
+                  backgroundColor: isDarkMode ? '#1e1e24' : '#ffffff',
                   borderRadius: '14px', 
-                  border: isDarkMode ? '1px solid #343440' : '1px solid #E2E8F0', 
-                  color: isDarkMode ? '#F4F4F6' : '#0F172A',
+                  border: isDarkMode ? '1px solid #32323c' : '1px solid #e4e4e7', 
+                  color: isDarkMode ? '#fafafa' : '#18181b',
                   fontSize: '12px',
                   fontWeight: 600,
                   boxShadow: isDarkMode ? '0 8px 24px rgba(0, 0, 0, 0.5)' : '0 8px 24px rgba(15, 23, 42, 0.08)'
@@ -1021,7 +1045,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               />
               <Bar 
                 dataKey="omset" 
-                fill={isDarkMode ? '#A855F7' : '#2563EB'} 
+                fill={isDarkMode ? '#e6499e' : '#c82d85'} 
                 radius={[4, 4, 0, 0]} 
                 maxBarSize={28}
               />
@@ -1036,132 +1060,132 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-      </section>
+      </Card>
 
       {/* 4. INSIGHT 2 KOLOM: Hari Terbaik, Jam Teramai, Metode Bayar % */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Kolom 1: Hari Terbaik & Jam Teramai */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-4 transition-colors">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-[#2B2B33]">
-            <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-            <h4 className="font-bold text-[#0F172A] dark:text-[#F4F4F6] text-sm">Pola & Rekor Waktu Penjualan</h4>
+        <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 gap-4 border border-[var(--border)] shadow-none">
+          <div className="flex items-center gap-2 pb-2 border-b border-[var(--separator)]">
+            <Sparkles className="w-4 h-4 text-amber-600 dark:text-[var(--warning)]" />
+            <h4 className="font-bold text-[var(--foreground)] text-sm">Pola &amp; Rekor Waktu Penjualan</h4>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Hari Terbaik */}
-            <div className="bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-2xl p-3.5 space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 block">
+            <div className="bg-[var(--surface-secondary)] border border-[var(--border)] rounded-2xl p-3.5 space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-[var(--warning)] block">
                 ⭐ Hari Terbaik
               </span>
-              <p className="text-base font-black text-[#0F172A] dark:text-[#F4F4F6]">
+              <p className="text-base font-black text-[var(--foreground)]">
                 {insights.bestDayFormatted}
               </p>
-              <div className="text-[11px] text-slate-600 dark:text-zinc-300 pt-0.5">
-                Omzet: <strong className="text-[#0F172A] dark:text-[#F4F4F6] tabular-nums">{formatRupiah(insights.bestDayOmset)}</strong>
+              <div className="text-[11px] text-[var(--muted)] pt-0.5">
+                Omzet: <strong className="text-[var(--foreground)] tabular-nums">{formatRupiah(insights.bestDayOmset)}</strong>
               </div>
-              <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
+              <div className="text-[10px] text-emerald-700 dark:text-[var(--success)] font-bold tabular-nums">
                 Cuan: {formatRupiah(insights.bestDayMargin)}
               </div>
             </div>
 
             {/* Jam Teramai */}
-            <div className="bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-2xl p-3.5 space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+            <div className="bg-[var(--surface-secondary)] border border-[var(--border)] rounded-2xl p-3.5 space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[var(--muted)] block">
                 ⏰ Jam Teramai
               </span>
-              <p className="text-base font-black text-[#0F172A] dark:text-[#F4F4F6]">
+              <p className="text-base font-black text-[var(--foreground)]">
                 {insights.peakHourFormatted}
               </p>
-              <div className="text-[11px] text-slate-600 dark:text-zinc-300 pt-0.5">
-                Total Nota: <strong className="text-[#0F172A] dark:text-[#F4F4F6] tabular-nums">{insights.peakHourCount} Transaksi</strong>
+              <div className="text-[11px] text-[var(--muted)] pt-0.5">
+                Total Nota: <strong className="text-[var(--foreground)] tabular-nums">{insights.peakHourCount} Transaksi</strong>
               </div>
-              <div className="text-[10px] text-slate-500 dark:text-zinc-400 tabular-nums">
+              <div className="text-[10px] text-[var(--muted)] tabular-nums">
                 Volume: {formatRupiah(insights.peakHourOmset)}
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Kolom 2: Metode Bayar % */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-3 transition-colors">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-[#2B2B33]">
+        <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 gap-3 border border-[var(--border)] shadow-none">
+          <div className="flex items-center justify-between pb-2 border-b border-[var(--separator)]">
             <div className="flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
-              <h4 className="font-bold text-[#0F172A] dark:text-[#F4F4F6] text-sm">Metode Pembayaran</h4>
+              <Receipt className="w-4 h-4 text-[var(--accent)]" />
+              <h4 className="font-bold text-[var(--foreground)] text-sm">Metode Pembayaran</h4>
             </div>
-            <span className="text-[11px] text-slate-500 dark:text-zinc-400">Distribusi % Omzet</span>
+            <span className="text-[11px] text-[var(--muted)]">Distribusi % Omzet</span>
           </div>
 
           <div className="space-y-2.5 pt-1">
             {insights.paymentList.map((pm) => (
               <div key={pm.method} className="space-y-1">
                 <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-[#0F172A] dark:text-[#F4F4F6]">{pm.method} ({pm.count}x)</span>
+                  <span className="text-[var(--foreground)]">{pm.method} ({pm.count}x)</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-500 dark:text-zinc-400 text-[11px] tabular-nums">{formatRupiah(pm.total)}</span>
-                    <span className="text-[#2563EB] dark:text-[#C084FC] font-black tabular-nums">{pm.percent}%</span>
+                    <span className="text-[var(--muted)] text-[11px] tabular-nums">{formatRupiah(pm.total)}</span>
+                    <span className="text-[var(--accent)] font-black tabular-nums">{pm.percent}%</span>
                   </div>
                 </div>
-                <div className="w-full h-2 bg-slate-100 dark:bg-[#24242B] rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-[var(--surface-secondary)] rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-[#2563EB] dark:bg-[#A855F7] rounded-full transition-[width] duration-500"
+                    className="h-full bg-[var(--accent)] rounded-full transition-[width] duration-500"
                     style={{ width: `${pm.percent}%` }}
                   />
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* 5. TOP 8 PRODUK: Toggle Qty | Omzet | Cuan, plus margin % */}
-      <section className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-[#2B2B33] space-y-4 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-[#2B2B33]">
+      <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 gap-4 border border-[var(--border)] shadow-none">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--separator)]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold flex-shrink-0">
-              <Trophy className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <div className="w-9 h-9 rounded-2xl bg-[var(--warning-soft)] border border-[var(--warning)]/35 text-amber-700 dark:text-[var(--warning)] flex items-center justify-center font-bold flex-shrink-0">
+              <Trophy className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-[#0F172A] dark:text-[#F4F4F6] text-base">Top 8 Produk Terlaris</h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">Peringkat kontribusi produk (ekslusif tanpa baris promo/diskon)</p>
+              <h3 className="font-bold text-[var(--foreground)] text-base">Top 8 Produk Terlaris</h3>
+              <p className="text-xs text-[var(--muted)]">Peringkat kontribusi produk (ekslusif tanpa baris promo/diskon)</p>
             </div>
           </div>
 
           {/* Toggle Metrik: Qty | Omzet | Cuan */}
-          <div className="flex items-center bg-slate-100 dark:bg-[#24242B] p-1 rounded-full border border-slate-200 dark:border-[#343440] self-start sm:self-auto">
-            <button
+          <div className="flex items-center bg-[var(--surface-secondary)] p-1 rounded-full border border-[var(--border)] self-start sm:self-auto gap-1">
+            <Button
               type="button"
-              onClick={() => setProductRankingMetric('QTY')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer min-h-[36px] ${
-                productRankingMetric === 'QTY'
-                  ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white'
+              size="sm"
+              variant={productRankingMetric === 'QTY' ? 'primary' : 'ghost'}
+              onPress={() => setProductRankingMetric('QTY')}
+              className={`px-3.5 rounded-full text-xs font-bold min-h-[38px] ${
+                productRankingMetric === 'QTY' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
               Qty
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              onClick={() => setProductRankingMetric('OMZET')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer min-h-[36px] ${
-                productRankingMetric === 'OMZET'
-                  ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white'
+              size="sm"
+              variant={productRankingMetric === 'OMZET' ? 'primary' : 'ghost'}
+              onPress={() => setProductRankingMetric('OMZET')}
+              className={`px-3.5 rounded-full text-xs font-bold min-h-[38px] ${
+                productRankingMetric === 'OMZET' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
               Omzet
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              onClick={() => setProductRankingMetric('CUAN')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer min-h-[36px] ${
-                productRankingMetric === 'CUAN'
-                  ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white'
+              size="sm"
+              variant={productRankingMetric === 'CUAN' ? 'primary' : 'ghost'}
+              onPress={() => setProductRankingMetric('CUAN')}
+              className={`px-3.5 rounded-full text-xs font-bold min-h-[38px] ${
+                productRankingMetric === 'CUAN' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
               Cuan
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -1169,149 +1193,147 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {topProducts.map((p) => {
             const rankBadges = ['🥇 #1', '🥈 #2', '🥉 #3'];
-            const rankColor = p.rank === 1 
-              ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/35' 
-              : p.rank === 2 
-              ? 'bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border-blue-200 dark:border-purple-500/35' 
-              : p.rank === 3 
-              ? 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/35' 
-              : 'bg-white dark:bg-[#1B1B20] text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-[#343440]';
+            const rankChipColor = p.rank === 1 ? 'warning' : p.rank === 2 ? 'accent' : p.rank === 3 ? 'danger' : 'default';
 
             return (
               <div
                 key={p.sku}
-                className="p-3.5 rounded-2xl border border-slate-200 dark:border-[#343440] bg-slate-50 dark:bg-[#24242B] space-y-2 transition-colors"
+                className="p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--surface-secondary)] space-y-2 transition-colors"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full border flex-shrink-0 ${rankColor}`}>
-                      {rankBadges[p.rank - 1] || `#${p.rank}`}
-                    </span>
-                    <span className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] truncate">
+                    <Chip size="sm" variant="soft" color={rankChipColor} className="text-[11px] font-extrabold border border-[var(--border)] flex-shrink-0">
+                      <Chip.Label>{rankBadges[p.rank - 1] || `#${p.rank}`}</Chip.Label>
+                    </Chip>
+                    <span className="text-xs font-bold text-[var(--foreground)] truncate">
                       {p.name}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <span className="text-xs font-bold text-[#2563EB] dark:text-[#C084FC] bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/35 px-2.5 py-0.5 rounded-full tabular-nums">
-                      {productRankingMetric === 'QTY' && `${p.qty} Btl`}
-                      {productRankingMetric === 'OMZET' && formatRupiah(p.revenue)}
-                      {productRankingMetric === 'CUAN' && formatRupiah(p.margin)}
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/35 tabular-nums" title="Margin Persentase">
-                      {p.marginPct}%
-                    </span>
+                    <Chip size="sm" variant="soft" color="accent" className="text-xs font-bold border border-[var(--border)] tabular-nums">
+                      <Chip.Label>
+                        {productRankingMetric === 'QTY' && `${p.qty} Btl`}
+                        {productRankingMetric === 'OMZET' && formatRupiah(p.revenue)}
+                        {productRankingMetric === 'CUAN' && formatRupiah(p.margin)}
+                      </Chip.Label>
+                    </Chip>
+                    <Chip size="sm" variant="soft" color="success" className="text-[10px] font-bold border border-[var(--border)] tabular-nums">
+                      <Chip.Label className="text-emerald-700 dark:text-[var(--success)]">{p.marginPct}%</Chip.Label>
+                    </Chip>
                   </div>
                 </div>
 
                 {/* Relative Progress Bar */}
-                <div className="w-full h-1.5 bg-slate-200 dark:bg-[#121215] rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-[var(--surface)] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#2563EB] dark:bg-[#A855F7] rounded-full transition-[width] duration-500"
+                    className="h-full bg-[var(--accent)] rounded-full transition-[width] duration-500"
                     style={{ width: `${p.percentOfTop}%` }}
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 gap-2 flex-wrap">
-                  <span>Qty: <strong className="text-[#0F172A] dark:text-[#F4F4F6] tabular-nums">{p.qty} btl</strong></span>
-                  <span>Omzet: <strong className="text-[#0F172A] dark:text-[#F4F4F6] tabular-nums">{formatRupiah(p.revenue)}</strong></span>
-                  <span>Cuan: <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">{formatRupiah(p.margin)}</strong></span>
+                <div className="flex items-center justify-between text-[11px] text-[var(--muted)] gap-2 flex-wrap">
+                  <span>Qty: <strong className="text-[var(--foreground)] tabular-nums">{p.qty} btl</strong></span>
+                  <span>Omzet: <strong className="text-[var(--foreground)] tabular-nums">{formatRupiah(p.revenue)}</strong></span>
+                  <span>Cuan: <strong className="text-emerald-700 dark:text-[var(--success)] tabular-nums">{formatRupiah(p.margin)}</strong></span>
                 </div>
               </div>
             );
           })}
         </div>
-      </section>
+      </Card>
 
       {/* 6. ARUS KAS SATU BARIS: Omzet − Restok − Operasional = Bersih */}
-      <section className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-3.5 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-[#2B2B33]">
+      <Card className="bg-[var(--surface)] text-[var(--foreground)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 gap-3.5 border border-[var(--border)] shadow-none">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[var(--separator)]">
           <div className="flex items-center gap-2">
-            <CircleDollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            <h3 className="font-bold text-sm sm:text-base text-[#0F172A] dark:text-[#F4F4F6]">Arus Kas Terpadu Periode Ini</h3>
+            <CircleDollarSign className="w-5 h-5 text-emerald-700 dark:text-[var(--success)]" />
+            <h3 className="font-bold text-sm sm:text-base text-[var(--foreground)]">Arus Kas Terpadu Periode Ini</h3>
           </div>
-          <button
+          <Button
             type="button"
-            onClick={onGoToKas}
-            className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#343440] transition-colors cursor-pointer self-start sm:self-auto min-h-[44px]"
+            size="sm"
+            variant="secondary"
+            onPress={onGoToKas}
+            className="text-xs font-bold bg-[var(--surface-secondary)] text-[var(--foreground)] px-3.5 rounded-xl border border-[var(--border)] self-start sm:self-auto min-h-[44px]"
           >
             <span>Buku Kas</span>
-            <ArrowRight className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
-          </button>
+            <ArrowRight className="w-3.5 h-3.5 text-[var(--muted)]" />
+          </Button>
         </div>
 
         {/* Kalimat Penjelasan */}
-        <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+        <p className="text-xs text-[var(--muted)] leading-relaxed">
           Cuan = laba jualan. Arus kas = uang masuk dikurangi semua uang keluar termasuk belanja stok.
         </p>
 
         {/* Persamaan Satu Baris (Mobile Wrap) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-2.5 items-center">
           {/* Omzet Penjualan */}
-          <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-2xl border border-slate-200 dark:border-[#343440]">
-            <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">Omzet Penjualan</p>
-            <p className="text-sm sm:text-base font-black text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 truncate tabular-nums">
+          <div className="bg-[var(--surface-secondary)] p-3 rounded-2xl border border-[var(--border)]">
+            <p className="text-[10px] text-[var(--muted)] font-bold uppercase tracking-wider">Omzet Penjualan</p>
+            <p className="text-sm sm:text-base font-black text-[var(--foreground)] mt-0.5 truncate tabular-nums">
               {formatRupiah(cashFlowBar.omzet)}
             </p>
           </div>
 
           {/* Operator − */}
-          <div className="hidden lg:flex justify-center text-slate-400 dark:text-zinc-500 font-black text-lg select-none">
+          <div className="hidden lg:flex justify-center text-[var(--muted)] font-black text-lg select-none">
             −
           </div>
 
           {/* Restok Barang */}
-          <div className="bg-blue-50/70 dark:bg-purple-500/15 p-3 rounded-2xl border border-blue-200 dark:border-purple-500/35 transition-colors">
+          <div className="bg-[var(--accent-soft)] p-3 rounded-2xl border border-[var(--accent)]/30 transition-colors">
             <div className="flex items-center justify-between gap-1">
-              <p className="text-[10px] text-[#2563EB] dark:text-[#C084FC] font-bold uppercase tracking-wider">Restok Barang</p>
+              <p className="text-[10px] text-[var(--accent)] font-bold uppercase tracking-wider">Restok Barang</p>
               {cashFlowBar.restokCount > 0 && (
-                <span className="text-[9px] text-[#2563EB] dark:text-[#C084FC] font-bold px-1.5 py-0.5 rounded-md bg-white dark:bg-[#1B1B20] border border-blue-200 dark:border-purple-500/35 tabular-nums">
+                <span className="text-[9px] text-[var(--accent)] font-bold px-1.5 py-0.5 rounded-md bg-[var(--surface)] border border-[var(--accent)]/30 tabular-nums">
                   {cashFlowBar.restokCount} log
                 </span>
               )}
             </div>
-            <p className="text-sm sm:text-base font-black text-[#2563EB] dark:text-[#C084FC] mt-0.5 truncate tabular-nums">
+            <p className="text-sm sm:text-base font-black text-[var(--accent)] mt-0.5 truncate tabular-nums">
               −{formatRupiah(cashFlowBar.restokBarang)}
             </p>
-            <p className="text-[9px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate">
+            <p className="text-[9px] text-[var(--muted)] mt-0.5 truncate">
               History Barang Masuk Stock
             </p>
           </div>
 
           {/* Operator − */}
-          <div className="hidden lg:flex justify-center text-slate-400 dark:text-zinc-500 font-black text-lg select-none">
+          <div className="hidden lg:flex justify-center text-[var(--muted)] font-black text-lg select-none">
             −
           </div>
 
           {/* Pengeluaran Operasional */}
-          <div className="bg-amber-50/70 dark:bg-amber-500/15 p-3 rounded-2xl border border-amber-200 dark:border-amber-500/35">
-            <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold uppercase tracking-wider">Operasional</p>
-            <p className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400 mt-0.5 truncate tabular-nums">
+          <div className="bg-[var(--warning-soft)] p-3 rounded-2xl border border-[var(--warning)]/35">
+            <p className="text-[10px] text-amber-700 dark:text-[var(--warning)] font-bold uppercase tracking-wider">Operasional</p>
+            <p className="text-sm sm:text-base font-black text-amber-700 dark:text-[var(--warning)] mt-0.5 truncate tabular-nums">
               −{formatRupiah(cashFlowBar.operasional)}
             </p>
           </div>
 
           {/* Operator = */}
-          <div className="hidden lg:flex justify-center text-slate-400 dark:text-zinc-500 font-black text-lg select-none">
+          <div className="hidden lg:flex justify-center text-[var(--muted)] font-black text-lg select-none">
             =
           </div>
 
           {/* Kas Bersih */}
           <div className={`col-span-2 sm:col-span-1 lg:col-span-1 p-3 rounded-2xl border ${
             cashFlowBar.bersih >= 0
-              ? 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-200 dark:border-emerald-500/35'
-              : 'bg-red-50 dark:bg-red-500/15 border-red-200 dark:border-red-500/35'
+              ? 'bg-[var(--success-soft)] border-[var(--success)]/35'
+              : 'bg-[var(--danger-soft)] border-[var(--danger)]/35'
           }`}>
             <p className={`text-[10px] font-bold uppercase tracking-wider ${
-              cashFlowBar.bersih >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'
+              cashFlowBar.bersih >= 0 ? 'text-emerald-700 dark:text-[var(--success)]' : 'text-red-700 dark:text-[var(--danger)]'
             }`}>Arus Kas Bersih</p>
             <p className={`text-sm sm:text-base font-black mt-0.5 truncate tabular-nums ${
-              cashFlowBar.bersih >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+              cashFlowBar.bersih >= 0 ? 'text-emerald-700 dark:text-[var(--success)]' : 'text-red-700 dark:text-[var(--danger)]'
             }`}>
               {formatRupiah(cashFlowBar.bersih)}
             </p>
           </div>
         </div>
-      </section>
+      </Card>
     </div>
   );
 };

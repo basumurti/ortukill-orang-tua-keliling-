@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Button, Chip, Modal, Separator } from '@heroui/react';
 import {
   RefreshCw,
   Sparkles,
@@ -13,7 +14,6 @@ import {
   Sun,
   MoreVertical,
   RotateCcw,
-  X,
   CheckCircle2,
   AlertCircle,
   WifiOff,
@@ -99,10 +99,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const statusDotClass =
     resolvedSyncStatus === 'syncing'
-      ? 'bg-amber-400'
+      ? 'bg-[var(--warning)]'
       : resolvedSyncStatus === 'connected'
-      ? 'bg-emerald-500'
-      : 'bg-red-500';
+      ? 'bg-[var(--success)]'
+      : 'bg-[var(--danger)]';
 
   const syncAriaLabel =
     resolvedSyncStatus === 'syncing'
@@ -129,19 +129,21 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-white dark:bg-[#1B1B20] border-b border-slate-200 dark:border-[#2B2B33] select-none no-print pt-safe transition-colors duration-150">
+      <header className="sticky top-0 z-30 bg-[var(--surface)] border-b border-[var(--border)] select-none no-print pt-safe transition-colors duration-150">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-3 min-w-0">
           {/* Left: Brand Identity ("O" + Truncated Name + Shift & WIB Clock) */}
           <div className="flex items-center gap-2.5 min-w-0 flex-1 md:flex-initial">
-            <div className="w-9 h-9 rounded-xl bg-[#0F172A] dark:bg-[#9333EA] flex items-center justify-center text-white font-extrabold text-sm tracking-tight shrink-0 transition-colors">
+            <div className="w-9 h-9 rounded-xl bg-[var(--accent)] flex items-center justify-center text-[var(--accent-foreground)] font-extrabold text-sm tracking-tight shrink-0 transition-colors">
               O
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-sm sm:text-[15px] font-bold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight leading-none truncate">
+              <h1 className="text-sm sm:text-[15px] font-bold text-[var(--foreground)] tracking-tight leading-none truncate">
                 {brand.NAME}
               </h1>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1 leading-none truncate">
-                <span className="font-medium text-emerald-600 dark:text-emerald-400 shrink-0">Shift Aktif</span>
+              <p className="text-[11px] text-[var(--muted)] mt-1 flex items-center gap-1 leading-none truncate">
+                <span className="font-semibold text-emerald-600 dark:text-[var(--success)] shrink-0">
+                  Shift Aktif
+                </span>
                 <span aria-hidden="true">·</span>
                 <HeaderClock />
               </p>
@@ -151,36 +153,37 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Center: Desktop Navigation Tabs (hidden on mobile < 768px) */}
           <nav
             aria-label="Navigasi Utama"
-            className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-[#24242B] p-1 rounded-xl border border-slate-200 dark:border-[#343440] overflow-x-auto no-scrollbar min-w-0"
+            className="hidden md:flex items-center gap-1 bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)] overflow-x-auto no-scrollbar min-w-0"
           >
             {desktopNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
-                <button
+                <Button
                   key={item.id}
-                  type="button"
-                  onClick={() => setActiveTab(item.id)}
-                  className={`px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors active:scale-[0.97] cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 min-h-[36px] ${
+                  size="sm"
+                  variant={isActive ? 'outline' : 'ghost'}
+                  onPress={() => setActiveTab(item.id)}
+                  className={`px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 min-h-[36px] h-9 ${
                     isActive
-                      ? 'bg-white text-[#2563EB] shadow-xs border border-slate-200 dark:bg-[#1B1B20] dark:text-[#C084FC] dark:border-purple-500/45'
-                      : 'text-slate-600 hover:text-[#0F172A] hover:bg-white/60 dark:text-zinc-400 dark:hover:text-[#F4F4F6] dark:hover:bg-[#2E2E37]'
+                      ? 'bg-[var(--surface)] text-[var(--accent)] shadow-xs border-[var(--accent)]/35'
+                      : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5 shrink-0" />
                   <span>{item.label}</span>
                   {item.badge !== undefined && (
                     <span
-                      className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full num-tabular ${
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full num-tabular leading-none ${
                         isActive
-                          ? 'bg-blue-50 text-[#2563EB] dark:bg-purple-500/20 dark:text-[#C084FC]'
-                          : 'bg-slate-200 text-slate-700 dark:bg-[#2E2E37] dark:text-zinc-300'
+                          ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                          : 'bg-[var(--default)] text-[var(--default-foreground)]'
                       }`}
                     >
                       {item.badge}
                     </span>
                   )}
-                </button>
+                </Button>
               );
             })}
           </nav>
@@ -188,33 +191,24 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Right: 2 clean 44px icon controls on mobile (Sync + Menu ⋮), compact adaptive labels on desktop */}
           <div className="flex items-center gap-2 shrink-0">
             {/* 1. Sync Button with small status indicator dot */}
-            <button
-              type="button"
-              onClick={onSyncData}
-              disabled={isSyncing}
+            <Button
+              variant="outline"
+              onPress={onSyncData}
+              isDisabled={isSyncing}
               aria-label={syncAriaLabel}
-              title={
-                lastSynced
-                  ? `Terakhir sinkron ${lastSynced} WIB • Klik untuk muat ulang`
-                  : syncAriaLabel
-              }
-              className={`relative min-h-[44px] min-w-[44px] px-2.5 lg:px-3.5 py-1.5 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-colors active:scale-[0.97] cursor-pointer whitespace-nowrap disabled:opacity-75 ${
+              className={`relative min-h-[44px] min-w-[44px] px-2.5 lg:px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap ${
                 resolvedSyncStatus === 'syncing'
-                  ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/40 dark:text-amber-300 cursor-wait'
+                  ? 'bg-[var(--warning-soft)] border-[var(--warning)]/40 text-[var(--warning-soft-foreground)] cursor-wait'
                   : resolvedSyncStatus === 'error' || resolvedSyncStatus === 'offline'
-                  ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-500/15 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/20'
-                  : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-[#0F172A] dark:bg-[#24242B] dark:hover:bg-[#2E2E37] dark:border-[#343440] dark:text-[#F4F4F6]'
+                  ? 'bg-[var(--danger-soft)] border-[var(--danger)]/40 text-[var(--danger)]'
+                  : 'bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)]'
               }`}
             >
               <span className="relative flex items-center justify-center">
-                <RefreshCw
-                  className={`w-4 h-4 ${
-                    isSyncing ? 'animate-spin text-amber-600 dark:text-amber-300' : ''
-                  }`}
-                />
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                 <span
                   aria-hidden="true"
-                  className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-[#1B1B20] ${statusDotClass}`}
+                  className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ring-2 ring-[var(--surface)] ${statusDotClass}`}
                 />
               </span>
               <span className="hidden lg:inline">
@@ -224,225 +218,226 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'Sinkron'
                   : 'Coba lagi'}
               </span>
-            </button>
+            </Button>
 
             {/* AI Copilot quick button on xl desktop only */}
             {onOpenAiCopilot && (
-              <button
-                onClick={onOpenAiCopilot}
-                type="button"
+              <Button
+                variant="outline"
+                onPress={onOpenAiCopilot}
                 aria-label="Buka AI Copilot Kasir"
-                title="AI Copilot Kasir"
-                className="hidden xl:flex min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#0F172A] dark:bg-[#24242B] dark:hover:bg-[#2E2E37] dark:border-[#343440] dark:text-[#F4F4F6] items-center justify-center gap-1.5 text-xs font-bold transition-colors active:scale-[0.97] cursor-pointer whitespace-nowrap"
+                className="hidden xl:inline-flex min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)] text-xs font-bold whitespace-nowrap"
               >
-                <Sparkles className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
+                <Sparkles className="w-4 h-4 text-[var(--accent)]" />
                 <span>AI Kasir</span>
-              </button>
+              </Button>
             )}
 
             {/* 2. Menu ⋮ Button (Dark mode, AI Kasir, Sheets Info, Shift/Clock, Reset Data Demo) */}
-            <button
-              type="button"
+            <Button
+              isIconOnly
+              variant="outline"
               id="btn-header-menu"
-              onClick={() => setIsHeaderMenuOpen(true)}
+              onPress={() => setIsHeaderMenuOpen(true)}
               aria-label="Menu lainnya"
-              title="Menu pengaturan & info"
-              className="min-h-[44px] min-w-[44px] rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#0F172A] dark:bg-[#24242B] dark:hover:bg-[#2E2E37] dark:border-[#343440] dark:text-[#F4F4F6] flex items-center justify-center transition-colors active:scale-[0.97] cursor-pointer"
+              className="min-h-[44px] min-w-[44px] rounded-xl bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)]"
             >
               <MoreVertical className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Menu ⋮ Sheet / Modal */}
-      {isHeaderMenuOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu Pengaturan Header"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-        >
-          <div
-            className="fixed inset-0"
-            onClick={() => setIsHeaderMenuOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="relative z-10 w-full max-w-sm bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 dark:border-[#2B2B33] shadow-2xl max-h-[92dvh] flex flex-col overflow-hidden text-[#0F172A] dark:text-[#F4F4F6] animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-            {/* Fixed Top */}
-            <div className="px-4 sm:px-5 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-              <div className="flex items-center justify-between gap-2">
+      <Modal
+        isOpen={isHeaderMenuOpen}
+        onOpenChange={(open) => {
+          if (!open) setIsHeaderMenuOpen(false);
+        }}
+      >
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Menu Pengaturan Header"
+              className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] w-full"
+            >
+              {/* Drag Handle Indicator on Mobile */}
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+
+              {/* Fixed Top */}
+              <Modal.Header className="px-4 sm:px-5 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] bg-[var(--surface-secondary)] flex-row items-center justify-between gap-2 shrink-0 pr-14">
                 <div className="min-w-0">
-                  <h3 className="text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] truncate">
+                  <Modal.Heading className="text-sm font-extrabold text-[var(--foreground)] truncate">
                     {brand.NAME}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 mt-0.5 truncate">
+                  </Modal.Heading>
+                  <p className="text-[11px] text-[var(--muted)] flex items-center gap-1.5 mt-0.5 truncate">
                     <span>Shift Aktif</span>
                     <span aria-hidden="true">·</span>
                     <HeaderClock />
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsHeaderMenuOpen(false)}
+                <Modal.CloseTrigger
                   aria-label="Tutup menu"
-                  className="min-w-[44px] min-h-[44px] -mr-2 rounded-full flex items-center justify-center text-slate-500 hover:text-[#0F172A] hover:bg-white dark:text-zinc-400 dark:hover:text-[#F4F4F6] dark:hover:bg-[#2E2E37] transition-colors active:scale-[0.97] cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+                  className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
+                />
+              </Modal.Header>
 
-            {/* Scrollable Body */}
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-2.5 pb-safe">
-              {/* Sync Status Detail Card */}
-              <div className="p-3.5 rounded-2xl border border-slate-200 dark:border-[#343440] bg-slate-50 dark:bg-[#24242B] space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {resolvedSyncStatus === 'connected' ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    ) : resolvedSyncStatus === 'syncing' ? (
-                      <RefreshCw className="w-4 h-4 text-amber-600 dark:text-amber-400 animate-spin shrink-0" />
-                    ) : resolvedSyncStatus === 'offline' ? (
-                      <WifiOff className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
-                    )}
-                    <span className="text-xs font-bold truncate">
-                      {resolvedSyncStatus === 'connected'
-                        ? 'Google Sheets Terhubung'
-                        : resolvedSyncStatus === 'syncing'
-                        ? 'Menyinkronkan Google Sheets...'
-                        : resolvedSyncStatus === 'offline'
-                        ? 'Perangkat Offline'
-                        : 'Sinkronisasi Sheets Gagal'}
-                    </span>
+              {/* Scrollable Body */}
+              <Modal.Body className="!mt-0 p-4 space-y-2.5 pb-safe">
+                {/* Sync Status Detail Card */}
+                <div className="p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--surface-secondary)] space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {resolvedSyncStatus === 'connected' ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-[var(--success)] shrink-0" />
+                      ) : resolvedSyncStatus === 'syncing' ? (
+                        <RefreshCw className="w-4 h-4 text-amber-600 dark:text-[var(--warning)] animate-spin shrink-0" />
+                      ) : resolvedSyncStatus === 'offline' ? (
+                        <WifiOff className="w-4 h-4 text-amber-600 dark:text-[var(--warning)] shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-[var(--danger)] shrink-0" />
+                      )}
+                      <span className="text-xs font-bold text-[var(--foreground)] truncate">
+                        {resolvedSyncStatus === 'connected'
+                          ? 'Google Sheets Terhubung'
+                          : resolvedSyncStatus === 'syncing'
+                          ? 'Menyinkronkan Google Sheets...'
+                          : resolvedSyncStatus === 'offline'
+                          ? 'Perangkat Offline'
+                          : 'Sinkronisasi Sheets Gagal'}
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      isDisabled={isSyncing}
+                      onPress={() => {
+                        onSyncData();
+                        setIsHeaderMenuOpen(false);
+                      }}
+                      className="min-h-[38px] px-3 rounded-xl text-xs font-bold shrink-0"
+                    >
+                      {resolvedSyncStatus === 'error' ? 'Coba lagi' : 'Sinkron'}
+                    </Button>
                   </div>
+                  {(lastSynced || lastUpdateInfo?.formatted) && (
+                    <p className="text-[11px] text-[var(--muted)] break-words">
+                      {lastSynced
+                        ? `Sinkron terakhir: ${lastSynced} WIB`
+                        : `Pembaruan terakhir: ${lastUpdateInfo?.formatted}`}
+                    </p>
+                  )}
+                </div>
+
+                {/* Theme Toggle */}
+                {onToggleDarkMode && (
+                  <button
+                    type="button"
+                    id="btn-toggle-dark-mode"
+                    onClick={onToggleDarkMode}
+                    className="w-full min-h-[52px] flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-secondary)] transition-colors active:scale-[0.98] text-left cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          isDarkMode
+                            ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
+                            : 'bg-[var(--surface-secondary)] text-[var(--foreground)] border border-[var(--border)]'
+                        }`}
+                      >
+                        {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-bold text-[var(--foreground)] truncate">
+                          {isDarkMode ? 'Mode Gelap Aktif' : 'Mode Terang Aktif'}
+                        </p>
+                        <p className="text-[11px] text-[var(--muted)] truncate">
+                          Ketuk untuk ganti tampilan tema
+                        </p>
+                      </div>
+                    </div>
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color={isDarkMode ? 'accent' : 'default'}
+                      className="font-bold shrink-0"
+                    >
+                      <Chip.Label>{isDarkMode ? 'Gelap' : 'Terang'}</Chip.Label>
+                    </Chip>
+                  </button>
+                )}
+
+                {/* AI Copilot */}
+                {onOpenAiCopilot && (
                   <button
                     type="button"
                     onClick={() => {
-                      onSyncData();
                       setIsHeaderMenuOpen(false);
+                      onOpenAiCopilot();
                     }}
-                    disabled={isSyncing}
-                    className="min-h-[38px] px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] text-white text-xs font-bold transition-colors active:scale-[0.97] cursor-pointer shrink-0 disabled:opacity-50"
+                    className="w-full min-h-[52px] flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-secondary)] transition-colors active:scale-[0.98] text-left cursor-pointer"
                   >
-                    {resolvedSyncStatus === 'error' ? 'Coba lagi' : 'Sinkron'}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/25 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-bold text-[var(--foreground)] truncate">
+                          AI Copilot Kasir
+                        </p>
+                        <p className="text-[11px] text-[var(--muted)] truncate">
+                          Bantuan suara & teks cepat
+                        </p>
+                      </div>
+                    </div>
                   </button>
-                </div>
-                {(lastSynced || lastUpdateInfo?.formatted) && (
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 break-words">
-                    {lastSynced
-                      ? `Sinkron terakhir: ${lastSynced} WIB`
-                      : `Pembaruan terakhir: ${lastUpdateInfo?.formatted}`}
-                  </p>
                 )}
-              </div>
 
-              {/* Theme Toggle */}
-              {onToggleDarkMode && (
+                {/* Google Sheets Settings */}
                 <button
                   type="button"
-                  id="btn-toggle-dark-mode"
-                  onClick={onToggleDarkMode}
-                  className="w-full min-h-[52px] flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-[#343440] bg-white hover:bg-slate-50 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] transition-colors active:scale-[0.97] text-left cursor-pointer"
+                  onClick={() => {
+                    setIsHeaderMenuOpen(false);
+                    setActiveTab('gas');
+                  }}
+                  className="w-full min-h-[52px] flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-secondary)] transition-colors active:scale-[0.98] text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                        isDarkMode
-                          ? 'bg-[#9333EA] text-white'
-                          : 'bg-slate-100 text-slate-700 border border-slate-200'
-                      }`}
-                    >
-                      {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    <div className="w-10 h-10 rounded-xl bg-[var(--surface-secondary)] text-[var(--foreground)] border border-[var(--border)] flex items-center justify-center shrink-0">
+                      <FileSpreadsheet className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-bold truncate">
-                        {isDarkMode ? 'Mode Gelap Aktif' : 'Mode Terang Aktif'}
+                      <p className="text-xs sm:text-sm font-bold text-[var(--foreground)] truncate">
+                        Pengaturan Google Sheets
                       </p>
-                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
-                        Ketuk untuk ganti tampilan tema
+                      <p className="text-[11px] text-[var(--muted)] truncate">
+                        URL Web App, diagnostik & Kode.gs
                       </p>
                     </div>
                   </div>
-                  <span
-                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
-                      isDarkMode
-                        ? 'bg-purple-500/20 text-[#C084FC] border border-purple-500/40'
-                        : 'bg-slate-100 text-slate-700 border border-slate-200'
-                    }`}
+                </button>
+
+                {/* Separated Red Section at the very bottom: Reset Data Demo */}
+                <div className="pt-2 space-y-2.5">
+                  <Separator />
+                  <Button
+                    variant="danger-soft"
+                    fullWidth
+                    onPress={() => {
+                      setIsHeaderMenuOpen(false);
+                      setShowResetConfirm(true);
+                    }}
+                    className="min-h-[48px] justify-start px-3.5 rounded-xl text-xs font-bold border border-[var(--danger)]/25"
                   >
-                    {isDarkMode ? 'Gelap' : 'Terang'}
-                  </span>
-                </button>
-              )}
-
-              {/* AI Copilot */}
-              {onOpenAiCopilot && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsHeaderMenuOpen(false);
-                    onOpenAiCopilot();
-                  }}
-                  className="w-full min-h-[52px] flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-[#343440] bg-white hover:bg-slate-50 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] transition-colors active:scale-[0.97] text-left cursor-pointer"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] border border-blue-200 dark:bg-purple-500/15 dark:text-[#C084FC] dark:border-purple-500/40 flex items-center justify-center shrink-0">
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-bold truncate">AI Copilot Kasir</p>
-                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
-                        Bantuan suara & teks cepat
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              )}
-
-              {/* Google Sheets Settings */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsHeaderMenuOpen(false);
-                  setActiveTab('gas');
-                }}
-                className="w-full min-h-[52px] flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-[#343440] bg-white hover:bg-slate-50 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] transition-colors active:scale-[0.97] text-left cursor-pointer"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 dark:bg-[#1B1B20] dark:text-zinc-300 dark:border-[#343440] flex items-center justify-center shrink-0">
-                    <FileSpreadsheet className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-bold truncate">Pengaturan Google Sheets</p>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
-                      URL Web App, diagnotik & Kode.gs
-                    </p>
-                  </div>
+                    <RotateCcw className="w-4 h-4 shrink-0" />
+                    <span>Reset Data Demo ke Bawaan Awal</span>
+                  </Button>
                 </div>
-              </button>
-
-              {/* Separated Red Section at the very bottom: Reset Data Demo */}
-              <div className="pt-3 mt-2 border-t border-red-200 dark:border-red-500/30">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsHeaderMenuOpen(false);
-                    setShowResetConfirm(true);
-                  }}
-                  className="w-full min-h-[48px] flex items-center gap-3 p-3 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 dark:border-red-500/35 dark:bg-red-500/15 dark:hover:bg-red-500/25 dark:text-red-400 transition-colors active:scale-[0.97] text-left text-xs font-bold cursor-pointer"
-                >
-                  <RotateCcw className="w-4 h-4 shrink-0" />
-                  <span>Reset Data Demo ke Bawaan Awal</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
       {/* App Confirm Dialog untuk Reset Data Demo */}
       <AppConfirmDialog

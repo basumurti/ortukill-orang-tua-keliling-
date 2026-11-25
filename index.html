@@ -12,11 +12,12 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
     <script>
       (function () {
         try {
           var isDark = localStorage.getItem('ortukill_theme') === 'dark';
+          document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
           if (isDark) {
             document.documentElement.classList.add('dark');
           }
@@ -28,7 +29,7 @@
       })();
     </script>
   </head>
-  <body class="bg-[#F6F7F9] dark:bg-[#121215] text-[#0F172A] dark:text-[#F4F4F6] antialiased selection:bg-[#2563EB] dark:selection:bg-[#A855F7] selection:text-white min-h-dvh">
+  <body class="bg-[var(--background)] text-[var(--foreground)] antialiased selection:bg-[var(--accent)] selection:text-[var(--accent-foreground)] min-h-dvh">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

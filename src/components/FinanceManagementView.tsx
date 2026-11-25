@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Button, Card, Chip, Input, TextArea } from '@heroui/react';
 import { 
   PlusCircle, 
   MinusCircle, 
@@ -93,23 +94,23 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
 
   // Payment method options from screenshot Column H (BCA, CASH, GOPAY, JAGO)
   const paymentMethodOptions = [
-    { value: 'BCA', label: 'BCA', bg: 'bg-[#2563EB] dark:bg-[#9333EA] text-white', activeRing: 'ring-[#2563EB] dark:ring-[#A855F7]', badge: 'bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border-blue-200 dark:border-purple-500/40' },
-    { value: 'CASH', label: 'CASH', bg: 'bg-emerald-600 text-white font-bold', activeRing: 'ring-emerald-600 dark:ring-emerald-500', badge: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35' },
-    { value: 'GOPAY', label: 'GOPAY', bg: 'bg-[#2563EB] dark:bg-[#9333EA] text-white', activeRing: 'ring-[#2563EB] dark:ring-[#A855F7]', badge: 'bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border-blue-200 dark:border-purple-500/40' },
-    { value: 'JAGO', label: 'JAGO', bg: 'bg-amber-500 text-white font-bold', activeRing: 'ring-amber-500', badge: 'bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-500/35' },
-    { value: 'QRIS', label: 'QRIS', bg: 'bg-[#2563EB] dark:bg-[#9333EA] text-white', activeRing: 'ring-[#2563EB] dark:ring-[#A855F7]', badge: 'bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border-blue-200 dark:border-purple-500/40' },
+    { value: 'BCA', label: 'BCA', bg: 'bg-[var(--accent)] text-[var(--accent-foreground)]', activeRing: 'ring-[var(--accent)]', badge: 'bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]/30' },
+    { value: 'CASH', label: 'CASH', bg: 'bg-[var(--success)] text-[var(--success-foreground)] font-bold', activeRing: 'ring-[var(--success)]', badge: 'bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border-[var(--success)]/35' },
+    { value: 'GOPAY', label: 'GOPAY', bg: 'bg-[var(--accent)] text-[var(--accent-foreground)]', activeRing: 'ring-[var(--accent)]', badge: 'bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]/30' },
+    { value: 'JAGO', label: 'JAGO', bg: 'bg-[var(--warning)] text-[var(--warning-foreground)] font-bold', activeRing: 'ring-[var(--warning)]', badge: 'bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border-[var(--warning)]/35' },
+    { value: 'QRIS', label: 'QRIS', bg: 'bg-[var(--accent)] text-[var(--accent-foreground)]', activeRing: 'ring-[var(--accent)]', badge: 'bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]/30' },
   ];
 
   const categoryOptions = type === 'EXPENSE' ? [
-    { value: 'RESTOK_BARANG', label: 'Restok Barang', icon: Package, color: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/15' },
-    { value: 'PENGELUARAN_LAIN', label: 'Pengeluaran Lain-Lain', icon: MoreHorizontal, color: 'text-slate-600 dark:text-zinc-300 bg-slate-100 dark:bg-[#24242B]' },
-    { value: 'BENSIN', label: 'Bensin Motor / Kendaraan', icon: Fuel, color: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/15' },
-    { value: 'OPERASIONAL', label: 'Operasional & Perlengkapan', icon: Building2, color: 'text-[#2563EB] dark:text-[#C084FC] bg-blue-50 dark:bg-purple-500/15' },
-    { value: 'PEMBELIAN_STOK', label: 'Pembelian Stok / Kulakan', icon: ShoppingBag, color: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/15' },
+    { value: 'RESTOK_BARANG', label: 'Restok Barang', icon: Package, color: 'text-amber-700 dark:text-[var(--warning)] bg-[var(--warning-soft)]' },
+    { value: 'PENGELUARAN_LAIN', label: 'Pengeluaran Lain-Lain', icon: MoreHorizontal, color: 'text-[var(--muted)] bg-[var(--surface-secondary)]' },
+    { value: 'BENSIN', label: 'Bensin Motor / Kendaraan', icon: Fuel, color: 'text-amber-700 dark:text-[var(--warning)] bg-[var(--warning-soft)]' },
+    { value: 'OPERASIONAL', label: 'Operasional & Perlengkapan', icon: Building2, color: 'text-[var(--accent)] bg-[var(--accent-soft)]' },
+    { value: 'PEMBELIAN_STOK', label: 'Pembelian Stok / Kulakan', icon: ShoppingBag, color: 'text-amber-700 dark:text-[var(--warning)] bg-[var(--warning-soft)]' },
   ] : [
-    { value: 'ONGKIR', label: 'Ongkir Pengiriman (+)', icon: Truck, color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15' },
-    { value: 'TIPS', label: 'Tips & Bonus (+)', icon: Gift, color: 'text-[#2563EB] dark:text-[#C084FC] bg-blue-50 dark:bg-purple-500/15' },
-    { value: 'MODAL_LAIN', label: 'Modal / Pemasukan Lain (+)', icon: Wallet, color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15' },
+    { value: 'ONGKIR', label: 'Ongkir Pengiriman (+)', icon: Truck, color: 'text-emerald-700 dark:text-[var(--success)] bg-[var(--success-soft)]' },
+    { value: 'TIPS', label: 'Tips & Bonus (+)', icon: Gift, color: 'text-[var(--accent)] bg-[var(--accent-soft)]' },
+    { value: 'MODAL_LAIN', label: 'Modal / Pemasukan Lain (+)', icon: Wallet, color: 'text-emerald-700 dark:text-[var(--success)] bg-[var(--success-soft)]' },
   ];
 
   const handleTypeChange = (newType: FinanceType) => {
@@ -252,169 +253,178 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
   }, [filteredRecords, visibleCount]);
 
   return (
-    <div className="space-y-4 sm:space-y-5 pb-16 text-[#0F172A] dark:text-[#F4F4F6]">
+    <div className="space-y-4 sm:space-y-5 pb-16 text-[var(--foreground)]">
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed top-16 sm:top-20 right-4 left-4 sm:left-auto z-50 px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2.5 border ${
+          className={`fixed top-16 sm:top-20 right-4 left-4 sm:left-auto z-[100050] px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2.5 border ${
             toast.type === 'success'
-              ? 'bg-emerald-50 dark:bg-[#1B1B20] text-emerald-900 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/40'
+              ? 'bg-[var(--surface)] text-emerald-700 dark:text-[var(--success)] border-[var(--success)]/40'
               : toast.type === 'error'
-              ? 'bg-red-50 dark:bg-[#1B1B20] text-red-900 dark:text-red-400 border-red-200 dark:border-red-500/40'
-              : 'bg-blue-50 dark:bg-[#1B1B20] text-blue-900 dark:text-[#C084FC] border-blue-200 dark:border-purple-500/40'
+              ? 'bg-[var(--surface)] text-red-700 dark:text-[var(--danger)] border-[var(--danger)]/40'
+              : 'bg-[var(--surface)] text-[var(--accent)] border-[var(--accent)]/40'
           }`}
         >
           {toast.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-[var(--success)] flex-shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-red-700 dark:text-[var(--danger)] flex-shrink-0" />
           )}
           <span className="text-xs font-bold">{toast.message}</span>
         </div>
       )}
 
       {/* Header Banner - Google Sheet LAIN-LAIN Sync */}
-      <div className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6] rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] relative overflow-hidden">
+      <Card className="bg-[var(--surface)] text-[var(--foreground)] rounded-2xl p-4 sm:p-5 border border-[var(--border)] shadow-none relative overflow-hidden">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5 max-w-2xl">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/40 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <Chip size="sm" variant="soft" color="accent" className="border border-[var(--border)] text-[10px] font-extrabold uppercase tracking-wider">
                 <FileSpreadsheet className="w-3 h-3" />
-                Sheet LAIN-LAIN
-              </span>
-              <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Read & Write Google Sheets
-              </span>
-              <span className="text-slate-500 dark:text-zinc-400 text-xs font-mono">
+                <Chip.Label>Sheet LAIN-LAIN</Chip.Label>
+              </Chip>
+              <Chip size="sm" variant="soft" color="success" className="border border-[var(--success)]/35 text-[10px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)] animate-pulse" />
+                <Chip.Label>Read &amp; Write Google Sheets</Chip.Label>
+              </Chip>
+              <span className="text-[var(--muted)] text-xs font-mono">
                 ORTUKILL_KEDIRI • Kolom A-F
               </span>
             </div>
 
-            <h2 className="text-lg sm:text-xl font-extrabold uppercase tracking-tight flex items-center gap-2 text-[#0F172A] dark:text-[#F4F4F6]">
-              Buku Kas & Pengeluaran Lain-Lain
+            <h2 className="text-lg sm:text-xl font-extrabold uppercase tracking-tight flex items-center gap-2 text-[var(--foreground)]">
+              Buku Kas &amp; Pengeluaran Lain-Lain
             </h2>
 
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed">
-              Formulir dan riwayat ini terhubung langsung ke spreadsheet <strong className="text-[#0F172A] dark:text-[#F4F4F6]">ORTUKILL_KEDIRI</strong> tab <strong className="text-[#0F172A] dark:text-[#F4F4F6]">LAIN-LAIN</strong> (Tanggal, Keterangan, Harga, Jumlah, Total, Dibayar dengan). Setiap pengeluaran yang dicatat otomatis tersimpan ke baris spreadsheet!
+            <p className="text-xs sm:text-sm text-[var(--muted)] leading-relaxed">
+              Formulir dan riwayat ini terhubung langsung ke spreadsheet <strong className="text-[var(--foreground)]">ORTUKILL_KEDIRI</strong> tab <strong className="text-[var(--foreground)]">LAIN-LAIN</strong> (Tanggal, Keterangan, Harga, Jumlah, Total, Dibayar dengan). Setiap pengeluaran yang dicatat otomatis tersimpan ke baris spreadsheet!
             </p>
           </div>
 
           {/* Sync Action & Summary Stats Widget */}
           <div className="flex flex-col gap-2.5 w-full lg:w-auto lg:min-w-[270px]">
             {/* Sync Button */}
-            <button
+            <Button
               type="button"
-              onClick={handlePullFromSheet}
-              disabled={isPullingSheet || isSyncing}
-              className="w-full bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50 min-h-[44px]"
+              variant="secondary"
+              onPress={handlePullFromSheet}
+              isDisabled={isPullingSheet || isSyncing}
+              className="w-full bg-[var(--surface-secondary)] border border-[var(--border)] text-[var(--foreground)] px-4 rounded-xl font-bold text-xs min-h-[44px]"
             >
-              <RefreshCw className={`w-4 h-4 text-[#2563EB] dark:text-[#C084FC] ${isPullingSheet || isSyncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 text-[var(--accent)] ${isPullingSheet || isSyncing ? 'animate-spin' : ''}`} />
               <span>{isPullingSheet || isSyncing ? 'Menghubungkan ke Sheet...' : 'Tarik Data dari Sheet LAIN-LAIN'}</span>
-            </button>
+            </Button>
 
             {/* Quick Balance Preview */}
-            <div className="bg-slate-50 dark:bg-[#24242B] rounded-xl p-3 border border-slate-200 dark:border-[#343440]">
+            <div className="bg-[var(--surface-secondary)] rounded-xl p-3 border border-[var(--border)]">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium">Saldo Arus Kas:</span>
-                <span className={`text-sm font-extrabold tabular-nums font-mono ${netBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span className="text-[11px] text-[var(--muted)] font-medium">Saldo Arus Kas:</span>
+                <span className={`text-sm font-extrabold tabular-nums font-mono ${netBalance >= 0 ? 'text-emerald-700 dark:text-[var(--success)]' : 'text-red-700 dark:text-[var(--danger)]'}`}>
                   {formatRupiah(netBalance)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[11px] pt-1.5 mt-1.5 border-t border-slate-200 dark:border-[#343440]">
-                <span className="text-slate-500 dark:text-zinc-400">Total Pengeluaran:</span>
-                <span className="font-bold text-red-600 dark:text-red-400 tabular-nums font-mono">-{formatRupiah(totalExpense)}</span>
+              <div className="flex items-center justify-between text-[11px] pt-1.5 mt-1.5 border-t border-[var(--separator)]">
+                <span className="text-[var(--muted)]">Total Pengeluaran:</span>
+                <span className="font-bold text-red-700 dark:text-[var(--danger)] tabular-nums font-mono">-{formatRupiah(totalExpense)}</span>
               </div>
-              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-zinc-400 pt-1">
+              <div className="flex items-center justify-between text-[10px] text-[var(--muted)] pt-1">
                 <span>Tersinkron Sheet:</span>
-                <span className="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums font-mono">{syncedCount} baris</span>
+                <span className="font-bold text-emerald-700 dark:text-[var(--success)] tabular-nums font-mono">{syncedCount} baris</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Main Content Grid: Form Input (Left) + List & Stats (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
         {/* Left Column: Form Input matching Sheet LAIN-LAIN (Kolom A-F) */}
-        <div className="lg:col-span-5 bg-white dark:bg-[#1B1B20] rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#2B2B33]">
+        <Card className="lg:col-span-5 bg-[var(--surface)] rounded-2xl p-4 sm:p-5 gap-4 border border-[var(--border)] shadow-none">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--separator)]">
             <div>
-              <h3 className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] flex items-center gap-2 text-sm sm:text-base">
-                <Receipt className="w-5 h-5 text-[#2563EB] dark:text-[#C084FC]" />
+              <h3 className="font-extrabold text-[var(--foreground)] flex items-center gap-2 text-sm sm:text-base">
+                <Receipt className="w-5 h-5 text-[var(--accent)]" />
                 <span>Catat ke Sheet LAIN-LAIN</span>
               </h3>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">
                 Otomatis mengisi Kolom A s/d F di spreadsheet
               </p>
             </div>
-            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/35 px-2 py-0.5 rounded-full shrink-0">
-              Live Write
-            </span>
+            <Chip size="sm" variant="soft" color="success" className="text-[10px] font-bold border border-[var(--success)]/35 shrink-0">
+              <Chip.Label>Live Write</Chip.Label>
+            </Chip>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Toggle Switch Type: Pengeluaran (Sheet LAIN-LAIN) vs Pemasukan */}
-            <div className="grid grid-cols-2 gap-1.5 bg-slate-100 dark:bg-[#24242B] p-1 rounded-xl border border-slate-200 dark:border-[#343440]">
-              <button
+            <div className="grid grid-cols-2 gap-1.5 bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)]">
+              <Button
                 type="button"
-                onClick={() => handleTypeChange('EXPENSE')}
-                className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-bold text-xs transition-colors cursor-pointer min-h-[44px] ${
-                  type === 'EXPENSE'
-                    ? 'bg-red-600 text-white'
-                    : 'text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] hover:bg-white/70 dark:hover:bg-[#2E2E37]'
+                size="sm"
+                variant={type === 'EXPENSE' ? 'danger' : 'ghost'}
+                onPress={() => handleTypeChange('EXPENSE')}
+                className={`rounded-lg font-bold text-xs min-h-[44px] ${
+                  type === 'EXPENSE' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                 }`}
               >
                 <MinusCircle className="w-4 h-4 shrink-0" />
                 <span>Pengeluaran (Sheet)</span>
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
-                onClick={() => handleTypeChange('INCOME')}
-                className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-bold text-xs transition-colors cursor-pointer min-h-[44px] ${
+                size="sm"
+                variant={type === 'INCOME' ? 'primary' : 'ghost'}
+                onPress={() => handleTypeChange('INCOME')}
+                className={`rounded-lg font-bold text-xs min-h-[44px] ${
                   type === 'INCOME'
-                    ? 'bg-emerald-600 text-white'
-                    : 'text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] hover:bg-white/70 dark:hover:bg-[#2E2E37]'
+                    ? 'bg-[var(--success)] text-[var(--success-foreground)]'
+                    : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                 }`}
               >
                 <PlusCircle className="w-4 h-4 shrink-0" />
                 <span>Pemasukan (+)</span>
-              </button>
+              </Button>
             </div>
 
             {/* Kolom A: Tanggal */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5 flex items-center justify-between">
+              <label className="text-xs font-bold text-[var(--muted)] mb-1.5 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
+                  <Calendar className="w-3.5 h-3.5 text-[var(--muted)]" />
                   Tanggal Transaksi (Kolom A)
                 </span>
-                <button
+                <Button
                   type="button"
-                  onClick={() => setEntryDate(todayFormatted)}
-                  className="text-[10px] font-bold text-[#2563EB] dark:text-[#C084FC] hover:underline cursor-pointer"
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => setEntryDate(todayFormatted)}
+                  className="text-[10px] font-bold text-[var(--accent)] hover:underline h-auto py-0.5 px-1.5"
                 >
                   Hari Ini
-                </button>
+                </Button>
               </label>
-              <input
+              <Input
                 type="text"
+                fullWidth
+                variant="secondary"
                 value={entryDate}
                 onChange={(e) => setEntryDate(e.target.value)}
                 placeholder="DD/MM/YYYY (contoh: 24/09/2026)"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#343440] text-xs sm:text-sm font-semibold text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] bg-slate-50 dark:bg-[#24242B] focus:bg-white dark:focus:bg-[#1B1B20] min-h-[44px]"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border)] text-xs sm:text-sm font-semibold text-[var(--foreground)] bg-[var(--surface-secondary)] min-h-[44px]"
                 required
               />
             </div>
 
             {/* Kolom B: Keterangan */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">
+              <label className="block text-xs font-bold text-[var(--muted)] mb-1.5">
                 Keterangan / Keperluan (Kolom B)
               </label>
-              <textarea
+              <TextArea
                 rows={2}
+                fullWidth
+                variant="secondary"
                 placeholder={
                   type === 'EXPENSE'
                     ? 'Contoh: Beli bensin motor delivery, Plastik packing, Konsumsi karyawan...'
@@ -422,7 +432,7 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                 }
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#343440] text-xs sm:text-sm text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] bg-slate-50 dark:bg-[#24242B] focus:bg-white dark:focus:bg-[#1B1B20] font-medium"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border)] text-xs sm:text-sm text-[var(--foreground)] bg-[var(--surface-secondary)] font-medium"
                 required
               />
             </div>
@@ -431,26 +441,28 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Kolom C: Harga Satuan */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5 flex items-center justify-between gap-1">
+                <label className="text-xs font-bold text-[var(--muted)] mb-1.5 flex items-center justify-between gap-1">
                   <span>Harga Satuan (Kolom C)</span>
                   {type === 'EXPENSE' && (
-                    <span className="text-[9px] font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/35 px-1.5 py-0.5 rounded">
-                      Minus (-)
-                    </span>
+                    <Chip size="sm" variant="soft" color="danger" className="text-[9px] font-bold border border-[var(--danger)]/35">
+                      <Chip.Label>Minus (-)</Chip.Label>
+                    </Chip>
                   )}
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400 dark:text-zinc-500 text-xs">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-[var(--muted)] text-xs z-10 pointer-events-none">
                     Rp
                   </span>
-                  <input
+                  <Input
                     type="number"
                     min="0"
                     step="1"
+                    fullWidth
+                    variant="secondary"
                     placeholder="0"
                     value={unitPrice}
                     onChange={(e) => setUnitPrice(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#343440] text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] bg-slate-50 dark:bg-[#24242B] focus:bg-white dark:focus:bg-[#1B1B20] min-h-[44px] tabular-nums font-mono"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[var(--border)] text-sm font-extrabold text-[var(--foreground)] bg-[var(--surface-secondary)] min-h-[44px] tabular-nums font-mono"
                     required
                   />
                 </div>
@@ -458,16 +470,18 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
 
               {/* Kolom D: Jumlah (Qty) */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">
+                <label className="block text-xs font-bold text-[var(--muted)] mb-1.5">
                   Jumlah / Qty (Kolom D)
                 </label>
-                <input
+                <Input
                   type="number"
                   min="1"
                   step="1"
+                  fullWidth
+                  variant="secondary"
                   value={qty}
                   onChange={(e) => setQty(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#343440] text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] bg-slate-50 dark:bg-[#24242B] focus:bg-white dark:focus:bg-[#1B1B20] text-center min-h-[44px] tabular-nums font-mono"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border)] text-sm font-extrabold text-[var(--foreground)] bg-[var(--surface-secondary)] text-center min-h-[44px] tabular-nums font-mono"
                   required
                 />
               </div>
@@ -475,34 +489,36 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
 
             {/* Quick Price Buttons */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 mr-0.5">+ Cepat:</span>
+              <span className="text-[10px] font-bold text-[var(--muted)] mr-0.5">+ Cepat:</span>
               {[5000, 10000, 20000, 50000, 100000].map((val) => (
-                <button
+                <Button
                   key={val}
                   type="button"
-                  onClick={() => handleQuickAmount(val)}
-                  className="text-[11px] font-bold bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] border border-slate-200 dark:border-[#343440] px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                  size="sm"
+                  variant="outline"
+                  onPress={() => handleQuickAmount(val)}
+                  className="text-[11px] font-bold bg-[var(--surface-secondary)] text-[var(--foreground)] border border-[var(--border)] px-2.5 rounded-lg min-h-[36px]"
                 >
                   +{val / 1000}k
-                </button>
+                </Button>
               ))}
             </div>
 
             {/* Kolom E: Total (Live preview) */}
-            <div className="bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl p-3 flex items-center justify-between gap-2">
+            <div className="bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl p-3 flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <span className="text-[11px] font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-[var(--foreground)] uppercase tracking-wider block">
                   Total (Kolom E = C × D)
                 </span>
-                <span className="text-[10px] text-slate-500 dark:text-zinc-400 block truncate">
+                <span className="text-[10px] text-[var(--muted)] block truncate">
                   {formatRupiah(parsedPrice)} × {parsedQty} unit {type === 'EXPENSE' && '• Minus (-)'}
                 </span>
               </div>
               <div className="text-right shrink-0">
-                <span className={`text-base font-extrabold tabular-nums font-mono ${type === 'EXPENSE' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                <span className={`text-base font-extrabold tabular-nums font-mono ${type === 'EXPENSE' ? 'text-red-700 dark:text-[var(--danger)]' : 'text-emerald-700 dark:text-[var(--success)]'}`}>
                   {type === 'EXPENSE' ? '-' : '+'}{formatRupiah(calculatedTotal)}
                 </span>
-                <span className={`block text-[9px] font-bold ${type === 'EXPENSE' ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                <span className={`block text-[9px] font-bold ${type === 'EXPENSE' ? 'text-red-700 dark:text-[var(--danger)]' : 'text-emerald-700 dark:text-[var(--success)]'}`}>
                   {type === 'EXPENSE' ? 'Tercatat Minus di Sheet' : 'Tercatat Positif di Sheet'}
                 </span>
               </div>
@@ -510,27 +526,29 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
 
             {/* Kolom F: Dibayar dengan (BCA, CASH, GOPAY, JAGO) */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5 flex items-center justify-between">
+              <label className="text-xs font-bold text-[var(--muted)] mb-1.5 flex items-center justify-between">
                 <span>Dibayar dengan (Kolom F)</span>
-                <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">Dropdown H4:H7</span>
+                <span className="text-[10px] font-mono text-[var(--muted)]">Dropdown H4:H7</span>
               </label>
 
               <div className="grid grid-cols-4 gap-1.5">
                 {paymentMethodOptions.slice(0, 4).map((pm) => {
                   const isSelected = paymentMethod === pm.value;
                   return (
-                    <button
+                    <Button
                       key={pm.value}
                       type="button"
-                      onClick={() => setPaymentMethod(pm.value)}
-                      className={`py-2.5 px-1 rounded-xl text-xs font-bold transition-colors cursor-pointer border text-center min-h-[42px] ${
+                      size="sm"
+                      variant={isSelected ? 'primary' : 'outline'}
+                      onPress={() => setPaymentMethod(pm.value)}
+                      className={`px-1 rounded-xl text-xs font-bold min-h-[44px] ${
                         isSelected
                           ? `${pm.bg} ring-2 ${pm.activeRing} border-transparent`
-                          : 'bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-[#343440]'
+                          : 'bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)]'
                       }`}
                     >
                       {pm.label}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -538,7 +556,7 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
 
             {/* Kategori Pengeluaran */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">
+              <label className="block text-xs font-bold text-[var(--muted)] mb-1.5">
                 Kategori Operasional
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -546,19 +564,21 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                   const Icon = opt.icon;
                   const isSelected = category === opt.value;
                   return (
-                    <button
+                    <Button
                       key={opt.value}
                       type="button"
-                      onClick={() => setCategory(opt.value)}
-                      className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-colors cursor-pointer min-h-[42px] ${
+                      size="sm"
+                      variant={isSelected ? 'primary' : 'outline'}
+                      onPress={() => setCategory(opt.value)}
+                      className={`justify-start gap-2 px-2.5 rounded-xl border min-h-[44px] ${
                         isSelected
-                          ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white border-[#2563EB] dark:border-[#A855F7]'
-                          : 'bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border-slate-200 dark:border-[#343440] text-slate-700 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6]'
+                          ? ''
+                          : 'bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)]'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                       <span className="text-[11px] font-bold truncate">{opt.label}</span>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -566,34 +586,36 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
 
             {/* Pencatat / Kasir */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
+              <label className="block text-xs font-bold text-[var(--muted)] mb-1">
                 Kasir / Pencatat
               </label>
-              <input
+              <Input
                 type="text"
+                fullWidth
+                variant="secondary"
                 value={cashier}
                 onChange={(e) => setCashier(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#343440] text-xs sm:text-sm text-[#0F172A] dark:text-[#F4F4F6] bg-slate-50 dark:bg-[#24242B] focus:bg-white dark:focus:bg-[#1B1B20] font-medium focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border)] text-xs sm:text-sm text-[var(--foreground)] bg-[var(--surface-secondary)] font-medium min-h-[44px]"
               />
             </div>
 
             {/* Inline Form Error */}
             {formError && (
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/35 text-xs font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-[var(--danger-soft)] border border-[var(--danger)]/35 text-xs font-semibold text-red-700 dark:text-[var(--danger)] flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{formError}</span>
               </div>
             )}
 
             {/* Submit Button */}
-            <button
+            <Button
               type="submit"
-              disabled={isSubmitting}
-              className={`w-full py-3.5 rounded-xl font-extrabold text-xs sm:text-sm text-white transition-colors active:scale-[0.97] cursor-pointer flex items-center justify-center gap-2 ${
-                type === 'EXPENSE'
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-emerald-600 hover:bg-emerald-700'
-              } disabled:opacity-50 min-h-[48px]`}
+              fullWidth
+              variant={type === 'EXPENSE' ? 'danger' : 'primary'}
+              isDisabled={isSubmitting}
+              className={`rounded-xl font-extrabold text-xs sm:text-sm min-h-[48px] ${
+                type === 'INCOME' ? 'bg-[var(--success)] text-[var(--success-foreground)]' : ''
+              }`}
             >
               {isSubmitting ? (
                 <>
@@ -604,116 +626,126 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                 <>
                   <SendHorizontal className="w-4 h-4 shrink-0" />
                   <span className="truncate">
-                    Simpan & Tulis ke LAIN-LAIN ({formatRupiah(calculatedTotal)})
+                    Simpan &amp; Tulis ke LAIN-LAIN ({formatRupiah(calculatedTotal)})
                   </span>
                 </>
               )}
-            </button>
+            </Button>
           </form>
-        </div>
+        </Card>
 
         {/* Right Column: Breakdown Cards & Records Table */}
         <div className="lg:col-span-7 space-y-4">
           {/* Payment Method Breakdown Widget (BCA, CASH, GOPAY, JAGO) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            <div className="bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#2B2B33] rounded-2xl p-3">
-              <span className="text-[10px] font-extrabold text-[#2563EB] dark:text-[#C084FC] uppercase tracking-wider block">
+            <Card className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-3 gap-0.5 shadow-none">
+              <span className="text-[10px] font-extrabold text-[var(--accent)] uppercase tracking-wider block">
                 BCA
               </span>
-              <p className="text-sm sm:text-base font-extrabold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 tabular-nums font-mono">
+              <p className="text-sm sm:text-base font-extrabold text-[var(--foreground)] mt-0.5 tabular-nums font-mono">
                 {formatRupiah(expenseByMethod['BCA'] || 0)}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium">Pengeluaran Bank</span>
-            </div>
+              <span className="text-[10px] text-[var(--muted)] font-medium">Pengeluaran Bank</span>
+            </Card>
 
-            <div className="bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#2B2B33] rounded-2xl p-3">
-              <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
+            <Card className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-3 gap-0.5 shadow-none">
+              <span className="text-[10px] font-extrabold text-emerald-700 dark:text-[var(--success)] uppercase tracking-wider block">
                 CASH (Tunai)
               </span>
-              <p className="text-sm sm:text-base font-extrabold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 tabular-nums font-mono">
+              <p className="text-sm sm:text-base font-extrabold text-[var(--foreground)] mt-0.5 tabular-nums font-mono">
                 {formatRupiah(expenseByMethod['CASH'] || 0)}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium">Uang Kasir</span>
-            </div>
+              <span className="text-[10px] text-[var(--muted)] font-medium">Uang Kasir</span>
+            </Card>
 
-            <div className="bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#2B2B33] rounded-2xl p-3">
-              <span className="text-[10px] font-extrabold text-[#2563EB] dark:text-[#C084FC] uppercase tracking-wider block">
+            <Card className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-3 gap-0.5 shadow-none">
+              <span className="text-[10px] font-extrabold text-[var(--accent)] uppercase tracking-wider block">
                 GOPAY
               </span>
-              <p className="text-sm sm:text-base font-extrabold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 tabular-nums font-mono">
+              <p className="text-sm sm:text-base font-extrabold text-[var(--foreground)] mt-0.5 tabular-nums font-mono">
                 {formatRupiah(expenseByMethod['GOPAY'] || 0)}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium">E-Wallet</span>
-            </div>
+              <span className="text-[10px] text-[var(--muted)] font-medium">E-Wallet</span>
+            </Card>
 
-            <div className="bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#2B2B33] rounded-2xl p-3">
-              <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
+            <Card className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-3 gap-0.5 shadow-none">
+              <span className="text-[10px] font-extrabold text-amber-700 dark:text-[var(--warning)] uppercase tracking-wider block">
                 JAGO
               </span>
-              <p className="text-sm sm:text-base font-extrabold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 tabular-nums font-mono">
+              <p className="text-sm sm:text-base font-extrabold text-[var(--foreground)] mt-0.5 tabular-nums font-mono">
                 {formatRupiah(expenseByMethod['JAGO'] || 0)}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium">Bank Digital</span>
-            </div>
+              <span className="text-[10px] text-[var(--muted)] font-medium">Bank Digital</span>
+            </Card>
           </div>
 
           {/* Records Table Card */}
-          <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-[#2B2B33]">
+          <Card className="bg-[var(--surface)] rounded-2xl p-4 sm:p-5 gap-4 border border-[var(--border)] shadow-none">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--separator)]">
               <div>
-                <h3 className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] text-sm sm:text-base flex items-center gap-2 flex-wrap">
+                <h3 className="font-extrabold text-[var(--foreground)] text-sm sm:text-base flex items-center gap-2 flex-wrap">
                   <span>Data Sheet LAIN-LAIN</span>
-                  <span className="text-xs font-semibold text-slate-600 dark:text-zinc-300 bg-slate-100 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] px-2.5 py-0.5 rounded-full">
-                    {filteredRecords.length} transaksi
-                  </span>
+                  <Chip size="sm" variant="soft" color="default" className="border border-[var(--border)] text-xs font-semibold">
+                    <Chip.Label>{filteredRecords.length} transaksi</Chip.Label>
+                  </Chip>
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-[var(--muted)] mt-0.5">
                   Mencerminkan baris data di spreadsheet Google Sheets
                 </p>
               </div>
 
               {/* Type Filter Buttons */}
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#24242B] p-1 rounded-xl border border-slate-200 dark:border-[#343440] self-start sm:self-auto max-w-full overflow-x-auto no-scrollbar">
-                <button
+              <div className="flex items-center gap-1 bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)] self-start sm:self-auto max-w-full overflow-x-auto no-scrollbar">
+                <Button
                   type="button"
-                  onClick={() => setFilterType('ALL')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors active:scale-[0.97] cursor-pointer whitespace-nowrap min-h-[38px] ${
-                    filterType === 'ALL' ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white' : 'text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6]'
+                  size="sm"
+                  variant={filterType === 'ALL' ? 'primary' : 'ghost'}
+                  onPress={() => setFilterType('ALL')}
+                  className={`px-3 rounded-lg text-xs font-bold whitespace-nowrap min-h-[38px] ${
+                    filterType === 'ALL' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                   }`}
                 >
                   Semua
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  onClick={() => setFilterType('EXPENSE')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors active:scale-[0.97] cursor-pointer whitespace-nowrap min-h-[38px] ${
-                    filterType === 'EXPENSE' ? 'bg-red-600 text-white' : 'text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6]'
+                  size="sm"
+                  variant={filterType === 'EXPENSE' ? 'danger' : 'ghost'}
+                  onPress={() => setFilterType('EXPENSE')}
+                  className={`px-3 rounded-lg text-xs font-bold whitespace-nowrap min-h-[38px] ${
+                    filterType === 'EXPENSE' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                   }`}
                 >
                   Pengeluaran
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  onClick={() => setFilterType('INCOME')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors active:scale-[0.97] cursor-pointer whitespace-nowrap min-h-[38px] ${
-                    filterType === 'INCOME' ? 'bg-emerald-600 text-white' : 'text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6]'
+                  size="sm"
+                  variant={filterType === 'INCOME' ? 'primary' : 'ghost'}
+                  onPress={() => setFilterType('INCOME')}
+                  className={`px-3 rounded-lg text-xs font-bold whitespace-nowrap min-h-[38px] ${
+                    filterType === 'INCOME'
+                      ? 'bg-[var(--success)] text-[var(--success-foreground)]'
+                      : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                   }`}
                 >
                   Pemasukan
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Search and Payment Filter Row */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="relative flex-1 w-full">
-                <Search className="w-4 h-4 text-slate-400 dark:text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
+                <Search className="w-4 h-4 text-[var(--muted)] absolute left-3.5 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
+                <Input
                   type="text"
+                  fullWidth
+                  variant="secondary"
                   placeholder="Cari keterangan, kasir, tanggal..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-[#343440] text-xs sm:text-sm text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] bg-slate-50 dark:bg-[#24242B] focus:bg-white dark:focus:bg-[#1B1B20] font-medium min-h-[44px]"
+                  className="w-full pl-9 pr-4 py-2 rounded-xl border border-[var(--border)] text-xs sm:text-sm text-[var(--foreground)] bg-[var(--surface-secondary)] font-medium min-h-[44px]"
                 />
               </div>
 
@@ -722,7 +754,8 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                 <select
                   value={filterPaymentMethod}
                   onChange={(e) => setFilterPaymentMethod(e.target.value)}
-                  className="px-3 py-2 rounded-xl border border-slate-200 dark:border-[#343440] text-xs font-bold text-slate-700 dark:text-zinc-200 bg-slate-50 dark:bg-[#24242B] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] cursor-pointer"
+                  aria-label="Filter metode pembayaran buku kas"
+                  className="px-3 py-2 rounded-xl border border-[var(--border)] text-xs font-bold text-[var(--foreground)] bg-[var(--surface-secondary)] focus:outline-none focus:border-[var(--accent)] min-h-[44px] cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
                 >
                   <option value="ALL">Semua Bayar</option>
                   <option value="BCA">BCA</option>
@@ -735,7 +768,8 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                 <select
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
-                  className="px-3 py-2 rounded-xl border border-slate-200 dark:border-[#343440] text-xs font-bold text-slate-700 dark:text-zinc-200 bg-slate-50 dark:bg-[#24242B] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px] cursor-pointer"
+                  aria-label="Filter kategori operasional"
+                  className="px-3 py-2 rounded-xl border border-[var(--border)] text-xs font-bold text-[var(--foreground)] bg-[var(--surface-secondary)] focus:outline-none focus:border-[var(--accent)] min-h-[44px] cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
                 >
                   <option value="ALL">Semua Kategori</option>
                   <option value="RESTOK_BARANG">Restok Barang</option>
@@ -752,11 +786,11 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
 
             {/* Records List / Table */}
             {filteredRecords.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 dark:text-zinc-500 space-y-2">
-                <FileSpreadsheet className="w-10 h-10 mx-auto stroke-[1.5] text-slate-300 dark:text-zinc-600" />
-                <p className="text-xs font-semibold text-[#0F172A] dark:text-[#F4F4F6]">Belum ada data di sheet LAIN-LAIN</p>
-                <p className="text-[11px] text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
-                  Gunakan tombol "Tarik Data dari Sheet LAIN-LAIN" di atas untuk memuat data spreadsheet yang ada, atau isi form untuk menambah baru.
+              <div className="py-12 text-center text-[var(--muted)] space-y-2">
+                <FileSpreadsheet className="w-10 h-10 mx-auto stroke-[1.5] text-[var(--muted)] opacity-50" />
+                <p className="text-xs font-semibold text-[var(--foreground)]">Belum ada data di sheet LAIN-LAIN</p>
+                <p className="text-[11px] text-[var(--muted)] max-w-sm mx-auto">
+                  Gunakan tombol &quot;Tarik Data dari Sheet LAIN-LAIN&quot; di atas untuk memuat data spreadsheet yang ada, atau isi form untuk menambah baru.
                 </p>
               </div>
             ) : (
@@ -769,7 +803,7 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                   return (
                     <div
                       key={rec.id}
-                      className="p-3 sm:p-3.5 rounded-xl border border-slate-200 dark:border-[#343440] bg-slate-50/70 dark:bg-[#24242B] hover:bg-slate-50 dark:hover:bg-[#2E2E37] transition-colors group"
+                      className="p-3 sm:p-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] transition-colors group"
                     >
                       <div className="flex items-start justify-between gap-2.5">
                         <div className="flex items-start gap-2.5 min-w-0">
@@ -777,8 +811,8 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                           <div
                             className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 text-[11px] font-extrabold border ${
                               isExpense
-                                ? 'bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/35'
-                                : 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35'
+                                ? 'bg-[var(--danger-soft)] text-red-700 dark:text-[var(--danger)] border-[var(--danger)]/35'
+                                : 'bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border-[var(--success)]/35'
                             }`}
                           >
                             {rec.rowNumber ? `#${rec.rowNumber}` : (isExpense ? 'OUT' : 'IN')}
@@ -787,15 +821,15 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {/* Kolom A: Tanggal */}
-                              <span className="text-[11px] font-bold text-[#0F172A] dark:text-[#F4F4F6] bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] px-2 py-0.5 rounded-md flex items-center gap-1">
-                                <Calendar className="w-3 h-3 text-slate-400 dark:text-zinc-500" />
+                              <span className="text-[11px] font-bold text-[var(--foreground)] bg-[var(--surface)] border border-[var(--border)] px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <Calendar className="w-3 h-3 text-[var(--muted)]" />
                                 {rec.date}
                               </span>
 
                               {/* Kolom F: Dibayar dengan */}
                               <span
                                 className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border ${
-                                  matchedPm ? matchedPm.badge : 'bg-white dark:bg-[#1B1B20] text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-[#343440]'
+                                  matchedPm ? matchedPm.badge : 'bg-[var(--surface)] text-[var(--foreground)] border-[var(--border)]'
                                 }`}
                               >
                                 {pm}
@@ -803,33 +837,33 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
 
                               {/* Status Sync Badge */}
                               {rec.syncStatus === 'SYNCED' || rec.rowNumber ? (
-                                <span className="text-[9px] font-bold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                                <span className="text-[9px] font-bold bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border border-[var(--success)]/35 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
                                   <Check className="w-2.5 h-2.5" /> Sheet LAIN-LAIN
                                 </span>
                               ) : (
-                                <span className="text-[9px] font-bold bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35 px-1.5 py-0.5 rounded-md">
+                                <span className="text-[9px] font-bold bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border border-[var(--warning)]/35 px-1.5 py-0.5 rounded-md">
                                   Lokal
                                 </span>
                               )}
                             </div>
 
                             {/* Kolom B: Keterangan */}
-                            <p className="text-xs sm:text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6] mt-1.5 break-words">
+                            <p className="text-xs sm:text-sm font-bold text-[var(--foreground)] mt-1.5 break-words">
                               {rec.description}
                             </p>
 
                             {/* Breakdown Kolom C & D: Harga x Jumlah */}
-                            <div className="flex items-center flex-wrap gap-x-2.5 gap-y-0.5 mt-1 text-[11px] text-slate-500 dark:text-zinc-400">
+                            <div className="flex items-center flex-wrap gap-x-2.5 gap-y-0.5 mt-1 text-[11px] text-[var(--muted)]">
                               <span>
-                                Harga: <strong className="text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">{formatRupiah(rec.unitPrice || rec.amount)}</strong>
+                                Harga: <strong className="text-[var(--foreground)] tabular-nums font-mono">{formatRupiah(rec.unitPrice || rec.amount)}</strong>
                               </span>
                               <span>•</span>
                               <span>
-                                Qty: <strong className="text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">{rec.qty || 1}</strong>
+                                Qty: <strong className="text-[var(--foreground)] tabular-nums font-mono">{rec.qty || 1}</strong>
                               </span>
                               <span>•</span>
                               <span>
-                                Oleh: <span className="text-slate-600 dark:text-zinc-300">{rec.cashier || 'Kasir'}</span>
+                                Oleh: <span className="text-[var(--foreground)]">{rec.cashier || 'Kasir'}</span>
                               </span>
                             </div>
                           </div>
@@ -840,28 +874,27 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                           <div className="text-right">
                             <p
                               className={`text-xs sm:text-base font-extrabold tracking-tight tabular-nums font-mono ${
-                                isExpense ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
+                                isExpense ? 'text-red-700 dark:text-[var(--danger)]' : 'text-emerald-700 dark:text-[var(--success)]'
                               }`}
                             >
                               {isExpense ? '-' : '+'}{formatRupiah(rec.amount)}
                             </p>
-                            <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 block">
+                            <span className="text-[10px] font-medium text-[var(--muted)] block">
                               Kolom E
                             </span>
                           </div>
 
-                          <button
+                          <Button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPendingDeleteRecord(rec);
-                            }}
-                            className="p-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/15 hover:bg-red-100 dark:hover:bg-red-500/25 border border-red-200 dark:border-red-500/35 rounded-xl transition-colors active:scale-[0.97] cursor-pointer flex items-center justify-center flex-shrink-0 min-h-[44px] min-w-[44px]"
-                            title="Hapus dari Sheet & Lokal"
+                            isIconOnly
+                            size="sm"
+                            variant="outline"
+                            onPress={() => setPendingDeleteRecord(rec)}
                             aria-label={`Hapus ${rec.description}`}
+                            className="text-red-700 dark:text-[var(--danger)] bg-[var(--danger-soft)] border-[var(--danger)]/35 rounded-xl flex-shrink-0 min-h-[44px] min-w-[44px]"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -869,21 +902,23 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                 })}
                 {filteredRecords.length > visibleRecords.length && (
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">
-                    <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium tabular-nums">
+                    <span className="text-xs text-[var(--muted)] font-medium tabular-nums">
                       Menampilkan {visibleRecords.length} dari {filteredRecords.length} baris
                     </span>
-                    <button
+                    <Button
                       type="button"
-                      onClick={() => setVisibleCount((prev) => prev + 50)}
-                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors active:scale-[0.97] cursor-pointer min-h-[44px]"
+                      size="sm"
+                      variant="secondary"
+                      onPress={() => setVisibleCount((prev) => prev + 50)}
+                      className="w-full sm:w-auto px-4 rounded-xl border border-[var(--border)] text-xs font-bold min-h-[44px]"
                     >
                       Muat Lagi (+50)
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
 
@@ -899,9 +934,9 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                   ? `Hapus catatan "${pendingDeleteRecord.description}" dari sheet LAIN-LAIN (Baris ${pendingDeleteRecord.rowNumber}) dan daftar lokal?`
                   : `Hapus catatan keuangan "${pendingDeleteRecord.description}"?`}
               </p>
-              <div className="bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl p-2.5 text-xs flex items-center justify-between gap-2">
-                <span className="text-slate-500 dark:text-zinc-400">{pendingDeleteRecord.date} • {pendingDeleteRecord.paymentMethod}</span>
-                <span className="font-extrabold font-mono tabular-nums text-red-600 dark:text-red-400">
+              <div className="bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl p-2.5 text-xs flex items-center justify-between gap-2">
+                <span className="text-[var(--muted)]">{pendingDeleteRecord.date} • {pendingDeleteRecord.paymentMethod}</span>
+                <span className="font-extrabold font-mono tabular-nums text-red-700 dark:text-[var(--danger)]">
                   {pendingDeleteRecord.type === 'EXPENSE' ? '-' : '+'}{formatRupiah(pendingDeleteRecord.amount)}
                 </span>
               </div>

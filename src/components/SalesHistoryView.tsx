@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Button, Card, Chip, Input, Modal } from '@heroui/react';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -24,7 +25,6 @@ import {
   Flame,
   Award,
   Trash2,
-  X,
   Filter,
   Copy,
   Check,
@@ -1183,18 +1183,18 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
   return (
     <div className="space-y-5 sm:space-y-6 pb-20 animate-in fade-in duration-200">
       {/* Top Header & Executive Navigation Anchors */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] flex flex-col lg:flex-row lg:items-center justify-between gap-4 transition-colors">
+      <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-[var(--border)] shadow-none flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/35 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-              Laporan Keuangan &amp; Business Intelligence
-            </span>
-            <span className="text-slate-500 dark:text-zinc-400 text-xs font-medium">• ORTUKILL POS</span>
+            <Chip size="sm" variant="soft" color="accent" className="border border-[var(--border)] text-[10px] font-extrabold uppercase tracking-wider">
+              <Chip.Label>Laporan Keuangan &amp; Business Intelligence</Chip.Label>
+            </Chip>
+            <span className="text-[var(--muted)] text-xs font-medium">• ORTUKILL POS</span>
           </div>
-          <h2 className="text-lg sm:text-2xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight mt-1.5">
+          <h2 className="text-lg sm:text-2xl font-extrabold text-[var(--foreground)] tracking-tight mt-1.5">
             Pusat Keputusan Bisnis &amp; Laporan Keuangan
           </h2>
-          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+          <p className="text-xs text-[var(--muted)] mt-0.5">
             Evaluasi ringkas kinerja omzet, cuan bersih penjualan, stok kritis, dan buku kas.
           </p>
         </div>
@@ -1203,132 +1203,128 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
           <a
             href="#sec-report-wa"
-            className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-[#343440] min-h-[38px]"
+            className="px-3 py-2 rounded-xl bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] text-[var(--foreground)] transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-[var(--border)] min-h-[44px]"
           >
-            <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <FileText className="w-3.5 h-3.5 text-emerald-700 dark:text-[var(--success)]" />
             <span>Report WA</span>
           </a>
           <a
             href="#sec-arus-kas-bersih"
-            className="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 hover:bg-emerald-100 dark:hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-500/35 min-h-[38px]"
+            className="px-3 py-2 rounded-xl bg-[var(--success-soft)] hover:opacity-90 text-emerald-700 dark:text-[var(--success)] transition-opacity whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-[var(--success)]/35 min-h-[44px]"
           >
-            <CircleDollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <CircleDollarSign className="w-3.5 h-3.5 text-emerald-700 dark:text-[var(--success)]" />
             <span>Arus Kas Bersih</span>
           </a>
           <a
             href="#sec-kinerja"
-            className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-[#343440] min-h-[38px]"
+            className="px-3 py-2 rounded-xl bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] text-[var(--foreground)] transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-[var(--border)] min-h-[44px]"
           >
-            <TrendingUp className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#C084FC]" />
+            <TrendingUp className="w-3.5 h-3.5 text-[var(--accent)]" />
             <span>Kinerja &amp; Target</span>
           </a>
           <a
             href="#sec-produk-restok"
-            className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-[#343440] min-h-[38px]"
+            className="px-3 py-2 rounded-xl bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] text-[var(--foreground)] transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-[var(--border)] min-h-[44px]"
           >
-            <Boxes className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <Boxes className="w-3.5 h-3.5 text-amber-700 dark:text-[var(--warning)]" />
             <span>Produk &amp; Restock</span>
           </a>
           <a
             href="#sec-tren"
-            className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-[#343440] min-h-[38px]"
+            className="px-3 py-2 rounded-xl bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] text-[var(--foreground)] transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-[var(--border)] min-h-[44px]"
           >
-            <BarChart3 className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#C084FC]" />
+            <BarChart3 className="w-3.5 h-3.5 text-[var(--accent)]" />
             <span>Grafik Tren</span>
           </a>
           <a
             href="#sec-riwayat-nota"
-            className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-[#343440] min-h-[38px]"
+            className="px-3 py-2 rounded-xl bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] text-[var(--foreground)] transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-[var(--border)] min-h-[44px]"
           >
-            <Receipt className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-400" />
+            <Receipt className="w-3.5 h-3.5 text-[var(--muted)]" />
             <span>Riwayat Nota</span>
           </a>
           <a
             href="#sec-arus-kas"
-            className="px-3 py-2 rounded-xl bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] hover:bg-blue-100 dark:hover:bg-purple-500/25 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-blue-200 dark:border-purple-500/35 min-h-[38px]"
+            className="px-3 py-2 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] hover:opacity-90 transition-opacity whitespace-nowrap cursor-pointer flex items-center gap-1.5 border border-[var(--accent)]/30 min-h-[44px]"
           >
             <Wallet className="w-3.5 h-3.5" />
             <span>Buku Kas</span>
           </a>
         </div>
-      </div>
+      </Card>
 
       {/* Global Month & Time Filter Toolbar */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col lg:flex-row lg:items-center justify-between gap-3 transition-colors">
+      <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 border border-[var(--border)] shadow-none flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] bg-slate-50 dark:bg-[#24242B] px-3 py-2 rounded-xl border border-slate-200 dark:border-[#343440]">
-            <Calendar className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--foreground)] bg-[var(--surface-secondary)] px-3 py-2 rounded-xl border border-[var(--border)] min-h-[44px]">
+            <Calendar className="w-4 h-4 text-[var(--accent)]" />
             <span>Filter Periode Analisis:</span>
           </div>
 
           {/* Quick Target Grain (Harian, Mingguan, Bulanan) */}
-          <div className="flex items-center bg-slate-100 dark:bg-[#24242B] p-1 rounded-xl border border-slate-200 dark:border-[#343440]">
-            <button
-              onClick={() => setTargetGrain('HARIAN')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                targetGrain === 'HARIAN'
-                  ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white shadow-xs'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white'
+          <div className="flex items-center bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)]">
+            <Button
+              size="sm"
+              variant={targetGrain === 'HARIAN' ? 'primary' : 'ghost'}
+              onPress={() => setTargetGrain('HARIAN')}
+              className={`rounded-lg text-xs font-bold min-h-[38px] px-3 ${
+                targetGrain === 'HARIAN' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
               Harian
-            </button>
-            <button
-              onClick={() => setTargetGrain('MINGGUAN')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                targetGrain === 'MINGGUAN'
-                  ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white shadow-xs'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white'
+            </Button>
+            <Button
+              size="sm"
+              variant={targetGrain === 'MINGGUAN' ? 'primary' : 'ghost'}
+              onPress={() => setTargetGrain('MINGGUAN')}
+              className={`rounded-lg text-xs font-bold min-h-[38px] px-3 ${
+                targetGrain === 'MINGGUAN' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
               Mingguan
-            </button>
-            <button
-              onClick={() => setTargetGrain('BULANAN')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                targetGrain === 'BULANAN'
-                  ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white shadow-xs'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white'
+            </Button>
+            <Button
+              size="sm"
+              variant={targetGrain === 'BULANAN' ? 'primary' : 'ghost'}
+              onPress={() => setTargetGrain('BULANAN')}
+              className={`rounded-lg text-xs font-bold min-h-[38px] px-3 ${
+                targetGrain === 'BULANAN' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
               Bulanan
-            </button>
+            </Button>
           </div>
 
-          <div className="h-4 w-px bg-slate-200 dark:bg-[#343440] mx-1 hidden sm:block" />
+          <div className="h-4 w-px bg-[var(--separator)] mx-1 hidden sm:block" />
 
           {/* Quick Month Filter Buttons */}
-          <button
-            onClick={() => {
+          <Button
+            size="sm"
+            variant={selectedMonth === 'ALL' ? 'primary' : 'secondary'}
+            onPress={() => {
               setSelectedMonth('ALL');
               setTargetGrain('BULANAN');
             }}
-            className={`px-3.5 py-2 rounded-full text-xs font-bold transition-colors cursor-pointer ${
-              selectedMonth === 'ALL'
-                ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#2E2E37]'
-            }`}
+            className="rounded-full text-xs font-bold min-h-[44px] px-4"
           >
             Semua Bulan
-          </button>
+          </Button>
 
           {(() => {
             const now = new Date();
             const curStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             return (
-              <button
-                onClick={() => {
+              <Button
+                size="sm"
+                variant={selectedMonth === curStr ? 'primary' : 'secondary'}
+                onPress={() => {
                   setSelectedMonth(curStr);
                   setTargetGrain('BULANAN');
                 }}
-                className={`px-3.5 py-2 rounded-full text-xs font-bold transition-colors cursor-pointer ${
-                  selectedMonth === curStr
-                    ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white shadow-xs'
-                    : 'bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#2E2E37]'
-                }`}
+                className="rounded-full text-xs font-bold min-h-[44px] px-4"
               >
                 Bulan Ini ({formatMonthLabel(curStr)})
-              </button>
+              </Button>
             );
           })()}
 
@@ -1340,350 +1336,371 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
                 setSelectedMonth(e.target.value);
                 setTargetGrain('BULANAN');
               }}
-              className="appearance-none bg-slate-50 dark:bg-[#24242B] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold pl-3.5 pr-8 py-2 rounded-full border border-slate-200 dark:border-[#343440] hover:border-[#2563EB] dark:hover:border-[#A855F7] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] cursor-pointer min-h-[38px] [color-scheme:light] dark:[color-scheme:dark]"
+              aria-label="Pilih bulan analisis"
+              className="appearance-none bg-[var(--surface-secondary)] text-[var(--foreground)] text-xs font-bold pl-3.5 pr-8 py-2 rounded-full border border-[var(--border)] hover:border-[var(--accent)] focus:outline-none focus:border-[var(--accent)] cursor-pointer min-h-[44px] [color-scheme:light] dark:[color-scheme:dark]"
             >
-              <option value="ALL" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">Pilih Bulan Lain...</option>
+              <option value="ALL" className="bg-[var(--surface)] text-[var(--foreground)]">Pilih Bulan Lain...</option>
               {availableMonths.map((ym) => (
-                <option key={ym} value={ym} className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">
+                <option key={ym} value={ym} className="bg-[var(--surface)] text-[var(--foreground)]">
                   {formatMonthLabel(ym)} ({ym})
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
         {/* Active Month Indicator */}
         {selectedMonth !== 'ALL' && (
           <div className="flex items-center gap-2 self-start lg:self-auto">
-            <span className="text-xs font-bold bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] px-3 py-1 rounded-full border border-blue-200 dark:border-purple-500/35 flex items-center gap-1.5">
-              <span>Periode Aktif: <strong>{formatMonthLabel(selectedMonth)}</strong></span>
-            </span>
-            <button
-              onClick={() => setSelectedMonth('ALL')}
-              className="text-xs font-bold text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white underline cursor-pointer"
+            <Chip size="sm" variant="soft" color="accent" className="border border-[var(--border)] font-bold">
+              <Chip.Label>
+                Periode Aktif: <strong>{formatMonthLabel(selectedMonth)}</strong>
+              </Chip.Label>
+            </Chip>
+            <Button
+              size="sm"
+              variant="ghost"
+              onPress={() => setSelectedMonth('ALL')}
+              className="text-xs font-bold text-[var(--muted)] hover:text-[var(--foreground)] underline min-h-[44px]"
             >
               Reset
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ========================================================= */}
       {/* 1. REPORT HARIAN WHATSAPP (Sesuai Aturan Mutlak)          */}
       {/* ========================================================= */}
-      <section id="sec-report-wa" className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-[#2B2B33] space-y-4 transition-colors">
-        {/* Header Kartu: Judul di kiri & Pilihan Tanggal di sebelah kanan judul */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5 pb-4 border-b border-slate-200 dark:border-[#2B2B33]">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-200 dark:border-emerald-500/35">
-              <FileText className="w-5 h-5" />
+      <section id="sec-report-wa">
+        <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[var(--border)] shadow-none gap-4">
+          {/* Header Kartu: Judul di kiri & Pilihan Tanggal di sebelah kanan judul */}
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5 pb-4 border-b border-[var(--separator)]">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] flex items-center justify-center flex-shrink-0 border border-[var(--success)]/35">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-extrabold text-[var(--foreground)] tracking-tight">
+                    Report Harian (Teks &amp; WA)
+                  </h3>
+                  <Chip size="sm" variant="soft" color="success" className="border border-[var(--success)]/35 text-[10px] font-bold">
+                    <Chip.Label>Formula Sheets</Chip.Label>
+                  </Chip>
+                </div>
+                <p className="text-xs text-[var(--muted)] mt-0.5">
+                  Format teks rekap botol, omset, dan cuan siap kirim ke WhatsApp / Catatan.
+                </p>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base sm:text-lg font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight">
-                  Report Harian (Teks &amp; WA)
-                </h3>
-                <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/35">
-                  Formula Sheets
+
+            {/* Pilihan Tanggal di Sebelah Judul Kartu & Tombol Aksi */}
+            <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
+              {/* Navigasi Cepat Tanggal: <, Picker, > */}
+              <div className="flex items-center bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl p-1 gap-1 min-h-[44px]">
+                <Button
+                  type="button"
+                  isIconOnly
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => handleShiftReportDate(-1)}
+                  aria-label="Hari Sebelumnya"
+                  className="min-w-[40px] min-h-[40px] rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] text-xs font-bold"
+                >
+                  ◀
+                </Button>
+
+                <div className="relative flex items-center">
+                  <input
+                    type="date"
+                    value={selectedReportDate}
+                    onChange={(e) => e.target.value && setSelectedReportDate(e.target.value)}
+                    aria-label="Pilih tanggal report"
+                    className="bg-transparent text-xs font-bold text-[var(--foreground)] px-2 py-1 focus:outline-none cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  isIconOnly
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => handleShiftReportDate(1)}
+                  aria-label="Hari Berikutnya"
+                  className="min-w-[40px] min-h-[40px] rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] text-xs font-bold"
+                >
+                  ▶
+                </Button>
+              </div>
+
+              {/* Tombol Cepat: Hari Ini */}
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onPress={() => {
+                  const now = new Date();
+                  const y = now.getFullYear();
+                  const m = String(now.getMonth() + 1).padStart(2, '0');
+                  const d = String(now.getDate()).padStart(2, '0');
+                  setSelectedReportDate(`${y}-${m}-${d}`);
+                }}
+                className="px-3 rounded-xl text-xs font-bold min-h-[44px] border border-[var(--border)]"
+              >
+                Hari Ini
+              </Button>
+
+              {/* Tombol Text (Toggle Tampilkan / Sembunyikan Teks) */}
+              <Button
+                type="button"
+                size="sm"
+                variant={showReportText ? 'primary' : 'outline'}
+                onPress={() => setShowReportText((prev) => !prev)}
+                aria-label="Tampilkan atau sembunyikan preview teks report"
+                className="px-3.5 rounded-xl text-xs font-bold min-h-[44px]"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>{showReportText ? 'Tutup Teks' : 'Lihat Teks'}</span>
+              </Button>
+
+              {/* Tombol Copy Text */}
+              <Button
+                type="button"
+                size="sm"
+                variant="primary"
+                onPress={handleCopyReportText}
+                aria-label="Salin isi teks report ke clipboard"
+                className={`px-4 rounded-xl text-xs font-bold min-h-[44px] ${
+                  isCopiedReport ? 'bg-[var(--success)] text-[var(--success-foreground)]' : ''
+                }`}
+              >
+                {isCopiedReport ? (
+                  <>
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>Tersalin!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Salin Teks</span>
+                  </>
+                )}
+              </Button>
+
+              {/* Tombol Kirim WhatsApp */}
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(dailyReportData.fullReportText)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[var(--success)] hover:opacity-90 text-[var(--success-foreground)] transition-opacity cursor-pointer min-h-[44px]"
+                aria-label="Kirim langsung teks report ke WhatsApp"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
+              </a>
+            </div>
+          </div>
+
+          {/* 3 Metric Summary: QTY BTL, OMSET, CUAN */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            <Card className="bg-[var(--surface-secondary)] p-3.5 gap-1 rounded-2xl border border-[var(--border)] shadow-none">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                QTY BTL (Total Botol Fisik)
+              </p>
+              <p className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] mt-0.5 tabular-nums font-mono">
+                {dailyReportData.totalBtl} <span className="text-xs font-bold text-[var(--muted)]">Btl</span>
+              </p>
+            </Card>
+
+            <Card className="bg-[var(--surface-secondary)] p-3.5 gap-1 rounded-2xl border border-[var(--border)] shadow-none">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                OMSET
+              </p>
+              <p className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] mt-0.5 tabular-nums font-mono">
+                Rp {new Intl.NumberFormat('en-US').format(Math.round(dailyReportData.totalOmset))}
+              </p>
+            </Card>
+
+            <Card className="bg-[var(--success-soft)] p-3.5 gap-1 rounded-2xl border border-[var(--success)]/35 shadow-none">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-[var(--success)]">
+                CUAN (Margin Kotor)
+              </p>
+              <p className="text-lg sm:text-xl font-extrabold text-emerald-700 dark:text-[var(--success)] mt-0.5 tabular-nums font-mono">
+                Rp {new Intl.NumberFormat('en-US').format(Math.round(dailyReportData.totalMargin))}
+              </p>
+            </Card>
+          </div>
+
+          {/* Text Preview Box */}
+          {showReportText && (
+            <div className="space-y-2 animate-in fade-in duration-150">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--muted)] px-1">
+                <span className="font-semibold flex items-center gap-1.5 text-[var(--foreground)]">
+                  <span className="w-2 h-2 rounded-full bg-[var(--success)] animate-pulse" />
+                  Format teks siap kirim ({dailyReportData.formattedDateHeader}):
+                </span>
+                <span className="text-[11px] font-mono text-[var(--muted)] tabular-nums">
+                  {dailyReportData.itemCount} jenis produk • {dailyReportData.trxCount} nota
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Format teks rekap botol, omset, dan cuan siap kirim ke WhatsApp / Catatan.
-              </p>
-            </div>
-          </div>
 
-          {/* Pilihan Tanggal di Sebelah Judul Kartu & Tombol Aksi */}
-          <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
-            {/* Navigasi Cepat Tanggal: <, Picker, > */}
-            <div className="flex items-center bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl p-1 gap-1 min-h-[44px]">
-              <button
-                type="button"
-                onClick={() => handleShiftReportDate(-1)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-white hover:bg-white dark:hover:bg-[#2E2E37] transition-colors cursor-pointer text-xs font-bold"
-                title="Hari Sebelumnya"
-              >
-                ◀
-              </button>
+              <div className="relative group">
+                <pre className="w-full p-4 pr-14 bg-[var(--background)] text-[var(--foreground)] rounded-2xl text-xs sm:text-sm font-mono leading-relaxed overflow-x-auto whitespace-pre select-all border border-[var(--border)] max-h-72">
+                  {dailyReportData.fullReportText}
+                </pre>
 
-              <div className="relative flex items-center">
-                <input
-                  type="date"
-                  value={selectedReportDate}
-                  onChange={(e) => e.target.value && setSelectedReportDate(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] px-2 py-1 focus:outline-none cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
-                  title="Pilih tanggal report"
-                />
+                <Button
+                  type="button"
+                  isIconOnly
+                  size="sm"
+                  variant="outline"
+                  onPress={handleCopyReportText}
+                  aria-label="Salin Teks"
+                  className="absolute top-3 right-3 bg-[var(--surface)] text-[var(--foreground)] rounded-xl border border-[var(--border)] min-h-[44px] min-w-[44px] shadow-xs"
+                >
+                  {isCopiedReport ? <Check className="w-4 h-4 text-emerald-700 dark:text-[var(--success)]" /> : <Copy className="w-4 h-4" />}
+                </Button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => handleShiftReportDate(1)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-white hover:bg-white dark:hover:bg-[#2E2E37] transition-colors cursor-pointer text-xs font-bold"
-                title="Hari Berikutnya"
-              >
-                ▶
-              </button>
             </div>
-
-            {/* Tombol Cepat: Hari Ini */}
-            <button
-              type="button"
-              onClick={() => {
-                const now = new Date();
-                const y = now.getFullYear();
-                const m = String(now.getMonth() + 1).padStart(2, '0');
-                const d = String(now.getDate()).padStart(2, '0');
-                setSelectedReportDate(`${y}-${m}-${d}`);
-              }}
-              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-[#24242B] hover:bg-slate-200 dark:hover:bg-[#2E2E37] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer min-h-[44px] border border-slate-200 dark:border-[#343440]"
-            >
-              Hari Ini
-            </button>
-
-            {/* Tombol Text (Toggle Tampilkan / Sembunyikan Teks) */}
-            <button
-              type="button"
-              onClick={() => setShowReportText((prev) => !prev)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer min-h-[44px] ${
-                showReportText
-                  ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white border-[#0F172A] dark:border-[#A855F7]'
-                  : 'bg-slate-50 dark:bg-[#24242B] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-white border-slate-200 dark:border-[#343440] hover:bg-slate-100 dark:hover:bg-[#2E2E37]'
-              }`}
-              title="Tampilkan / Sembunyikan preview teks report"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>{showReportText ? 'Tutup Teks' : 'Lihat Teks'}</span>
-            </button>
-
-            {/* Tombol Copy Text */}
-            <button
-              type="button"
-              onClick={handleCopyReportText}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer min-h-[44px] ${
-                isCopiedReport
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] text-white'
-              }`}
-              title="Salin isi teks report ke clipboard"
-            >
-              {isCopiedReport ? (
-                <>
-                  <Check className="w-4 h-4 stroke-[3]" />
-                  <span>Tersalin!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  <span>Salin Teks</span>
-                </>
-              )}
-            </button>
-
-            {/* Tombol Kirim WhatsApp */}
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(dailyReportData.fullReportText)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer min-h-[44px]"
-              title="Kirim langsung teks report ke WhatsApp"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>WhatsApp</span>
-            </a>
-          </div>
-        </div>
-
-        {/* 3 Metric Summary: QTY BTL, OMSET, CUAN */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-          <div className="bg-slate-50 dark:bg-[#24242B] p-3.5 rounded-2xl border border-slate-200 dark:border-[#343440]">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-              QTY BTL (Total Botol Fisik)
-            </p>
-            <p className="text-lg sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 tabular-nums font-mono">
-              {dailyReportData.totalBtl} <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">Btl</span>
-            </p>
-          </div>
-
-          <div className="bg-slate-50 dark:bg-[#24242B] p-3.5 rounded-2xl border border-slate-200 dark:border-[#343440]">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-              OMSET
-            </p>
-            <p className="text-lg sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 tabular-nums font-mono">
-              Rp {new Intl.NumberFormat('en-US').format(Math.round(dailyReportData.totalOmset))}
-            </p>
-          </div>
-
-          <div className="bg-emerald-50 dark:bg-emerald-500/15 p-3.5 rounded-2xl border border-emerald-200 dark:border-emerald-500/35">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-              CUAN (Margin Kotor)
-            </p>
-            <p className="text-lg sm:text-xl font-extrabold text-emerald-700 dark:text-emerald-400 mt-0.5 tabular-nums font-mono">
-              Rp {new Intl.NumberFormat('en-US').format(Math.round(dailyReportData.totalMargin))}
-            </p>
-          </div>
-        </div>
-
-        {/* Text Preview Box */}
-        {showReportText && (
-          <div className="space-y-2 animate-in fade-in duration-150">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-zinc-300 px-1">
-              <span className="font-semibold flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Format teks siap kirim ({dailyReportData.formattedDateHeader}):
-              </span>
-              <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400 tabular-nums">
-                {dailyReportData.itemCount} jenis produk • {dailyReportData.trxCount} nota
-              </span>
-            </div>
-
-            <div className="relative group">
-              <pre className="w-full p-4 pr-14 bg-slate-50 dark:bg-[#121215] text-[#0F172A] dark:text-[#F4F4F6] rounded-2xl text-xs sm:text-sm font-mono leading-relaxed overflow-x-auto whitespace-pre select-all border border-slate-200 dark:border-[#343440] max-h-72">
-                {dailyReportData.fullReportText}
-              </pre>
-
-              <button
-                type="button"
-                onClick={handleCopyReportText}
-                className="absolute top-3 right-3 bg-white dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 p-2 rounded-xl transition-colors cursor-pointer border border-slate-200 dark:border-[#343440] min-h-[40px] min-w-[40px] flex items-center justify-center shadow-xs"
-                title="Salin Teks"
-              >
-                {isCopiedReport ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </Card>
       </section>
 
       {/* ========================================================= */}
       {/* DIV BARU KHUSUS: ARUS KAS BERSIH (4 CARD RINGKAS)         */}
       {/* OMZET − RESTOCK − PENGELUARAN = ARUS KAS BERSIH           */}
       {/* ========================================================= */}
-      <section id="sec-arus-kas-bersih" className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-[#2B2B33] space-y-4 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33]">
-          <div className="flex items-start sm:items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold border border-emerald-200 dark:border-emerald-500/35 flex-shrink-0">
-              <CircleDollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base sm:text-lg font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight">
-                  Arus Kas Bersih (Net Cash Flow)
-                </h3>
-                <span className="bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-[#343440]">
-                  OMZET − RESTOCK − PENGELUARAN = ARUS KAS BERSIH
-                </span>
+      <section id="sec-arus-kas-bersih">
+        <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[var(--border)] shadow-none gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-[var(--separator)]">
+            <div className="flex items-start sm:items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] flex items-center justify-center font-bold border border-[var(--success)]/35 flex-shrink-0">
+                <CircleDollarSign className="w-5 h-5" />
               </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Likuiditas kas masuk riil dikurangi belanja restok barang dan biaya operasional pada periode terpilih.
-              </p>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-extrabold text-[var(--foreground)] tracking-tight">
+                    Arus Kas Bersih (Net Cash Flow)
+                  </h3>
+                  <Chip size="sm" variant="soft" color="default" className="border border-[var(--border)] text-[10px] font-bold uppercase">
+                    <Chip.Label>OMZET − RESTOCK − PENGELUARAN = ARUS KAS BERSIH</Chip.Label>
+                  </Chip>
+                </div>
+                <p className="text-xs text-[var(--muted)] mt-0.5">
+                  Likuiditas kas masuk riil dikurangi belanja restok barang dan biaya operasional pada periode terpilih.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <Chip size="sm" variant="soft" color="accent" className="border border-[var(--border)] font-mono font-bold">
+                <Chip.Label>
+                  Periode: <strong>{cashFlowMetrics.periodLabel}</strong>
+                </Chip.Label>
+              </Chip>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="text-xs font-mono font-bold bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] px-3 py-1 rounded-xl border border-blue-200 dark:border-purple-500/35 whitespace-nowrap">
-              Periode: <strong>{cashFlowMetrics.periodLabel}</strong>
-            </span>
-          </div>
-        </div>
+          {/* 4 Cards Ringkas: OMZET − RESTOCK − PENGELUARAN = ARUS KAS BERSIH */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* CARD 1: OMZET */}
+            <Card className="bg-[var(--surface-secondary)] rounded-2xl p-4 gap-3 border border-[var(--border)] shadow-none justify-between">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
+                  Omzet
+                </span>
+                <Chip size="sm" variant="soft" color="accent" className="border border-[var(--border)] text-[10px] font-bold">
+                  <Chip.Label>Total Penjualan</Chip.Label>
+                </Chip>
+              </div>
+              <div>
+                <p className="text-xl sm:text-2xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
+                  {formatRupiah(cashFlowMetrics.omzet)}
+                </p>
+                <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
+                  {cashFlowMetrics.notaCount} transaksi kasir tercatat
+                </p>
+              </div>
+            </Card>
 
-        {/* 4 Cards Ringkas: OMZET − RESTOCK − PENGELUARAN = ARUS KAS BERSIH */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* CARD 1: OMZET */}
-          <div className="bg-slate-50 dark:bg-[#24242B] rounded-2xl p-4 border border-slate-200 dark:border-[#343440] flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-300 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#2563EB] dark:bg-[#A855F7]" />
-                Omzet
-              </span>
-              <span className="text-[10px] font-bold text-[#2563EB] dark:text-[#C084FC] bg-blue-50 dark:bg-purple-500/15 px-2 py-0.5 rounded-md border border-blue-200 dark:border-purple-500/35">
-                Total Penjualan
-              </span>
-            </div>
-            <div className="mt-3">
-              <p className="text-xl sm:text-2xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums font-mono">
-                {formatRupiah(cashFlowMetrics.omzet)}
-              </p>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
-                {cashFlowMetrics.notaCount} transaksi kasir tercatat
-              </p>
-            </div>
-          </div>
+            {/* CARD 2: RESTOCK */}
+            <Card className="bg-[var(--surface-secondary)] rounded-2xl p-4 gap-3 border border-[var(--border)] shadow-none justify-between">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
+                  Restock
+                </span>
+                <Chip size="sm" variant="soft" color="accent" className="border border-[var(--border)] text-[10px] font-bold">
+                  <Chip.Label>− Pembelian Stok</Chip.Label>
+                </Chip>
+              </div>
+              <div>
+                <p className="text-xl sm:text-2xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
+                  {formatRupiah(cashFlowMetrics.restock)}
+                </p>
+                <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
+                  {cashFlowMetrics.restockCount} pengadaan stok barang
+                </p>
+              </div>
+            </Card>
 
-          {/* CARD 2: RESTOCK */}
-          <div className="bg-slate-50 dark:bg-[#24242B] rounded-2xl p-4 border border-slate-200 dark:border-[#343440] flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-300 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#2563EB] dark:bg-[#A855F7]" />
-                Restock
-              </span>
-              <span className="text-[10px] font-bold text-[#2563EB] dark:text-[#C084FC] bg-blue-50 dark:bg-purple-500/15 px-2 py-0.5 rounded-md border border-blue-200 dark:border-purple-500/35">
-                − Pembelian Stok
-              </span>
-            </div>
-            <div className="mt-3">
-              <p className="text-xl sm:text-2xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums font-mono">
-                {formatRupiah(cashFlowMetrics.restock)}
-              </p>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
-                {cashFlowMetrics.restockCount} pengadaan stok barang
-              </p>
-            </div>
-          </div>
+            {/* CARD 3: PENGELUARAN */}
+            <Card className="bg-[var(--surface-secondary)] rounded-2xl p-4 gap-3 border border-[var(--border)] shadow-none justify-between">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[var(--warning)]" />
+                  Pengeluaran
+                </span>
+                <Chip size="sm" variant="soft" color="warning" className="border border-[var(--warning)]/35 text-[10px] font-bold">
+                  <Chip.Label>− Beban Operasional</Chip.Label>
+                </Chip>
+              </div>
+              <div>
+                <p className="text-xl sm:text-2xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
+                  {formatRupiah(cashFlowMetrics.operasional)}
+                </p>
+                <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
+                  {cashFlowMetrics.operasionalCount} biaya selain restock
+                </p>
+              </div>
+            </Card>
 
-          {/* CARD 3: PENGELUARAN */}
-          <div className="bg-slate-50 dark:bg-[#24242B] rounded-2xl p-4 border border-slate-200 dark:border-[#343440] flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-300 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400" />
-                Pengeluaran
-              </span>
-              <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-500/35">
-                − Beban Operasional
-              </span>
-            </div>
-            <div className="mt-3">
-              <p className="text-xl sm:text-2xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums font-mono">
-                {formatRupiah(cashFlowMetrics.operasional)}
-              </p>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
-                {cashFlowMetrics.operasionalCount} biaya selain restock
-              </p>
-            </div>
+            {/* CARD 4: ARUS KAS BERSIH */}
+            <Card className={`rounded-2xl p-4 gap-3 border shadow-none justify-between ${
+              cashFlowMetrics.netCashFlow >= 0
+                ? 'bg-[var(--success-soft)] border-[var(--success)]/35 text-emerald-700 dark:text-[var(--success)]'
+                : 'bg-[var(--danger-soft)] border-[var(--danger)]/35 text-red-700 dark:text-[var(--danger)]'
+            }`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 text-[var(--foreground)]">
+                  <span className={`w-2 h-2 rounded-full ${cashFlowMetrics.netCashFlow >= 0 ? 'bg-[var(--success)]' : 'bg-[var(--danger)]'}`} />
+                  Arus Kas Bersih
+                </span>
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color={cashFlowMetrics.netCashFlow >= 0 ? 'success' : 'danger'}
+                  className="bg-[var(--surface)] border border-[var(--border)] text-[10px] font-bold"
+                >
+                  <Chip.Label>{cashFlowMetrics.netCashFlow >= 0 ? 'Surplus (+)' : 'Defisit (−)'}</Chip.Label>
+                </Chip>
+              </div>
+              <div>
+                <p className={`text-xl sm:text-2xl font-extrabold tracking-tight tabular-nums font-mono ${
+                  cashFlowMetrics.netCashFlow >= 0 ? 'text-emerald-700 dark:text-[var(--success)]' : 'text-red-700 dark:text-[var(--danger)]'
+                }`}>
+                  {cashFlowMetrics.netCashFlow >= 0 ? '+' : ''}{formatRupiah(cashFlowMetrics.netCashFlow)}
+                </p>
+                <p className="text-[11px] text-[var(--muted)] mt-0.5 font-medium">
+                  Omzet − Restock − Pengeluaran
+                </p>
+              </div>
+            </Card>
           </div>
-
-          {/* CARD 4: ARUS KAS BERSIH */}
-          <div className={`rounded-2xl p-4 border flex flex-col justify-between ${
-            cashFlowMetrics.netCashFlow >= 0
-              ? 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-200 dark:border-emerald-500/35 text-emerald-700 dark:text-emerald-400'
-              : 'bg-red-50 dark:bg-red-500/15 border-red-200 dark:border-red-500/35 text-red-700 dark:text-red-400'
-          }`}>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 text-[#0F172A] dark:text-[#F4F4F6]">
-                <span className={`w-2 h-2 rounded-full ${cashFlowMetrics.netCashFlow >= 0 ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-red-600 dark:bg-red-400'}`} />
-                Arus Kas Bersih
-              </span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                cashFlowMetrics.netCashFlow >= 0
-                  ? 'bg-white dark:bg-[#1B1B20] border-emerald-200 dark:border-emerald-500/35 text-emerald-700 dark:text-emerald-400'
-                  : 'bg-white dark:bg-[#1B1B20] border-red-200 dark:border-red-500/35 text-red-700 dark:text-red-400'
-              }`}>
-                {cashFlowMetrics.netCashFlow >= 0 ? 'Surplus (+)' : 'Defisit (−)'}
-              </span>
-            </div>
-            <div className="mt-3">
-              <p className={`text-xl sm:text-2xl font-extrabold tracking-tight tabular-nums font-mono ${
-                cashFlowMetrics.netCashFlow >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'
-              }`}>
-                {cashFlowMetrics.netCashFlow >= 0 ? '+' : ''}{formatRupiah(cashFlowMetrics.netCashFlow)}
-              </p>
-              <p className="text-[11px] text-slate-600 dark:text-zinc-300 mt-0.5 font-medium">
-                Omzet − Restock − Pengeluaran
-              </p>
-            </div>
-          </div>
-        </div>
+        </Card>
       </section>
 
       {/* ========================================================= */}
@@ -1692,184 +1709,201 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
       <section id="sec-kinerja" className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/35 flex items-center justify-center font-bold flex-shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 flex items-center justify-center font-bold flex-shrink-0">
               <TrendingUp className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight">
+              <h3 className="text-base sm:text-lg font-extrabold text-[var(--foreground)] tracking-tight">
                 Ringkasan Kinerja Usaha
               </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <p className="text-xs text-[var(--muted)]">
                 Metrik inti &amp; perbandingan adil dengan periode setara (tgl 1 s/d {activeMonthInfo.N})
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setIsEditingTarget(true)}
-            className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#2563EB] dark:text-[#C084FC] hover:text-white dark:hover:text-white bg-blue-50 dark:bg-purple-500/15 hover:bg-[#2563EB] dark:hover:bg-[#9333EA] px-3.5 py-2 rounded-xl border border-blue-200 dark:border-purple-500/35 cursor-pointer transition-colors min-h-[44px] w-full sm:w-auto"
+          <Button
+            size="sm"
+            variant="outline"
+            onPress={() => setIsEditingTarget(true)}
+            className="text-xs font-bold text-[var(--accent)] bg-[var(--accent-soft)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] px-3.5 rounded-xl border border-[var(--accent)]/30 min-h-[44px] w-full sm:w-auto"
           >
             <Target className="w-3.5 h-3.5" />
             <span className="tabular-nums font-mono">Target: {formatRupiah(salesTarget.targetAmount || 50000000)}</span>
-          </button>
+          </Button>
         </div>
 
         {/* 5 Kartu Metrik Utama */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           {/* KPI 1: Omzet Penjualan */}
-          <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between transition-colors">
-            <div className="flex items-center justify-between gap-1 text-slate-500 dark:text-zinc-400 text-[11px] font-bold">
+          <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-2 border border-[var(--border)] shadow-none justify-between">
+            <div className="flex items-center justify-between gap-1 text-[var(--muted)] text-[11px] font-bold">
               <span className="uppercase tracking-wider">Omzet Penjualan</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-0.5 tabular-nums ${
-                kpiStats.deltaOmset >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400'
-              }`}>
+              <Chip
+                size="sm"
+                variant="soft"
+                color={kpiStats.deltaOmset >= 0 ? 'success' : 'danger'}
+                className="text-[10px] font-bold tabular-nums"
+              >
                 {kpiStats.deltaOmset >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {kpiStats.deltaOmset >= 0 ? `+${kpiStats.deltaOmset}%` : `${kpiStats.deltaOmset}%`}
-              </span>
+                <Chip.Label>{kpiStats.deltaOmset >= 0 ? `+${kpiStats.deltaOmset}%` : `${kpiStats.deltaOmset}%`}</Chip.Label>
+              </Chip>
             </div>
-            <div className="mt-2">
-              <p className="text-lg sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums font-mono">
+            <div>
+              <p className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
                 {formatRupiah(kpiStats.omset)}
               </p>
-              <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevOmset_N)}`}>
+              <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevOmset_N)}`}>
                 vs Bln Lalu (1..{kpiStats.N}): {formatRupiah(kpiStats.prevOmset_N)}
               </p>
             </div>
-          </div>
+          </Card>
 
           {/* KPI 2: Cuan (Margin Kotor) */}
-          <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between transition-colors">
-            <div className="flex items-center justify-between gap-1 text-slate-500 dark:text-zinc-400 text-[11px] font-bold">
-              <span className="uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Margin Kotor (Cuan)</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-0.5 tabular-nums ${
-                kpiStats.deltaCuan >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400'
-              }`}>
+          <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-2 border border-[var(--border)] shadow-none justify-between">
+            <div className="flex items-center justify-between gap-1 text-[var(--muted)] text-[11px] font-bold">
+              <span className="uppercase tracking-wider text-emerald-700 dark:text-[var(--success)]">Margin Kotor (Cuan)</span>
+              <Chip
+                size="sm"
+                variant="soft"
+                color={kpiStats.deltaCuan >= 0 ? 'success' : 'danger'}
+                className="text-[10px] font-bold tabular-nums"
+              >
                 {kpiStats.deltaCuan >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {kpiStats.deltaCuan >= 0 ? `+${kpiStats.deltaCuan}%` : `${kpiStats.deltaCuan}%`}
-              </span>
+                <Chip.Label>{kpiStats.deltaCuan >= 0 ? `+${kpiStats.deltaCuan}%` : `${kpiStats.deltaCuan}%`}</Chip.Label>
+              </Chip>
             </div>
-            <div className="mt-2">
-              <p className="text-lg sm:text-xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums font-mono">
+            <div>
+              <p className="text-lg sm:text-xl font-extrabold text-emerald-700 dark:text-[var(--success)] tracking-tight tabular-nums font-mono">
                 {formatRupiah(kpiStats.cuan)}
               </p>
-              <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevCuan_N)}`}>
+              <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevCuan_N)}`}>
                 vs Bln Lalu: {formatRupiah(kpiStats.prevCuan_N)}
               </p>
             </div>
-          </div>
+          </Card>
 
           {/* KPI 3: Persentase Margin Keuntungan */}
-          <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between transition-colors">
-            <div className="flex items-center justify-between gap-1 text-slate-500 dark:text-zinc-400 text-[11px] font-bold">
+          <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-2 border border-[var(--border)] shadow-none justify-between">
+            <div className="flex items-center justify-between gap-1 text-[var(--muted)] text-[11px] font-bold">
               <span className="uppercase tracking-wider">Margin Profit %</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-0.5 tabular-nums ${
-                kpiStats.deltaMargin >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400'
-              }`}>
+              <Chip
+                size="sm"
+                variant="soft"
+                color={kpiStats.deltaMargin >= 0 ? 'success' : 'danger'}
+                className="text-[10px] font-bold tabular-nums"
+              >
                 {kpiStats.deltaMargin >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {kpiStats.deltaMargin >= 0 ? `+${kpiStats.deltaMargin}%` : `${kpiStats.deltaMargin}%`}
-              </span>
+                <Chip.Label>{kpiStats.deltaMargin >= 0 ? `+${kpiStats.deltaMargin}%` : `${kpiStats.deltaMargin}%`}</Chip.Label>
+              </Chip>
             </div>
-            <div className="mt-2">
-              <p className="text-lg sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums font-mono">
+            <div>
+              <p className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
                 {kpiStats.marginPct}%
               </p>
-              <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-[10px] text-[var(--muted)] mt-0.5">
                 Rasio Laba Kotor Penjualan
               </p>
             </div>
-          </div>
+          </Card>
 
           {/* KPI 4: Total Nota Penjualan */}
-          <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between transition-colors">
-            <div className="flex items-center justify-between gap-1 text-slate-500 dark:text-zinc-400 text-[11px] font-bold">
+          <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-2 border border-[var(--border)] shadow-none justify-between">
+            <div className="flex items-center justify-between gap-1 text-[var(--muted)] text-[11px] font-bold">
               <span className="uppercase tracking-wider">Total Nota</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-0.5 tabular-nums ${
-                kpiStats.deltaNota >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400'
-              }`}>
+              <Chip
+                size="sm"
+                variant="soft"
+                color={kpiStats.deltaNota >= 0 ? 'success' : 'danger'}
+                className="text-[10px] font-bold tabular-nums"
+              >
                 {kpiStats.deltaNota >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {kpiStats.deltaNota >= 0 ? `+${kpiStats.deltaNota}%` : `${kpiStats.deltaNota}%`}
-              </span>
+                <Chip.Label>{kpiStats.deltaNota >= 0 ? `+${kpiStats.deltaNota}%` : `${kpiStats.deltaNota}%`}</Chip.Label>
+              </Chip>
             </div>
-            <div className="mt-2">
-              <p className="text-lg sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums font-mono">
-                {kpiStats.nota} <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">Nota</span>
+            <div>
+              <p className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
+                {kpiStats.nota} <span className="text-xs font-bold text-[var(--muted)]">Nota</span>
               </p>
-              <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate tabular-nums">
+              <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums">
                 vs Bln Lalu: {kpiStats.prevNota_N} Nota
               </p>
             </div>
-          </div>
+          </Card>
 
           {/* KPI 5: Botol Fisik Terjual */}
-          <div className="col-span-2 lg:col-span-1 bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between transition-colors">
-            <div className="flex items-center justify-between gap-1 text-slate-500 dark:text-zinc-400 text-[11px] font-bold">
+          <Card className="col-span-2 lg:col-span-1 bg-[var(--surface)] rounded-2xl p-4 gap-2 border border-[var(--border)] shadow-none justify-between">
+            <div className="flex items-center justify-between gap-1 text-[var(--muted)] text-[11px] font-bold">
               <span className="uppercase tracking-wider">Botol Terjual</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-0.5 tabular-nums ${
-                kpiStats.deltaBotol >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400'
-              }`}>
+              <Chip
+                size="sm"
+                variant="soft"
+                color={kpiStats.deltaBotol >= 0 ? 'success' : 'danger'}
+                className="text-[10px] font-bold tabular-nums"
+              >
                 {kpiStats.deltaBotol >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {kpiStats.deltaBotol >= 0 ? `+${kpiStats.deltaBotol}%` : `${kpiStats.deltaBotol}%`}
-              </span>
+                <Chip.Label>{kpiStats.deltaBotol >= 0 ? `+${kpiStats.deltaBotol}%` : `${kpiStats.deltaBotol}%`}</Chip.Label>
+              </Chip>
             </div>
-            <div className="mt-2">
-              <p className="text-lg sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums font-mono">
-                {kpiStats.botol} <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">Btl</span>
+            <div>
+              <p className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
+                {kpiStats.botol} <span className="text-xs font-bold text-[var(--muted)]">Btl</span>
               </p>
-              <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate">
+              <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate">
                 Exclude promo &amp; diskon
               </p>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Target Progress Card */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-3 transition-colors">
+        <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 gap-3 border border-[var(--border)] shadow-none">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <Target className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
-                <h4 className="text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6]">
+                <Target className="w-4 h-4 text-[var(--accent)]" />
+                <h4 className="text-sm font-bold text-[var(--foreground)]">
                   Perkembangan Target Omzet ({targetProgress.grainLabel})
                 </h4>
-                <span className="bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-200 dark:border-[#343440]">
-                  Hari ke-{targetProgress.effectiveDay}
-                </span>
+                <Chip size="sm" variant="soft" color="default" className="border border-[var(--border)] text-[10px] font-bold">
+                  <Chip.Label>Hari ke-{targetProgress.effectiveDay}</Chip.Label>
+                </Chip>
               </div>
-              <p className="text-xs text-slate-600 dark:text-zinc-300 mt-0.5">
+              <p className="text-xs text-[var(--muted)] mt-0.5">
                 {targetProgress.statusSentence}
               </p>
             </div>
 
             <div className="sm:text-right">
-              <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium">Tercapai / Target:</p>
-              <p className="text-sm sm:text-base font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">
-                {formatRupiah(targetProgress.achieved)} <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">/ {formatRupiah(targetProgress.target)}</span>
+              <p className="text-xs text-[var(--muted)] font-medium">Tercapai / Target:</p>
+              <p className="text-sm sm:text-base font-extrabold text-[var(--foreground)] tabular-nums font-mono">
+                {formatRupiah(targetProgress.achieved)} <span className="text-xs text-[var(--muted)] font-bold">/ {formatRupiah(targetProgress.target)}</span>
               </p>
             </div>
           </div>
 
           {/* Progress Bar with Ideal Pace Marker */}
           <div className="space-y-1.5 pt-1">
-            <div className="relative w-full h-3.5 bg-slate-100 dark:bg-[#24242B] rounded-full overflow-hidden border border-slate-200 dark:border-[#343440]">
+            <div className="relative w-full h-3.5 bg-[var(--surface-secondary)] rounded-full overflow-hidden border border-[var(--border)]">
               <div
-                className="h-full bg-[#2563EB] dark:bg-[#A855F7] transition-[width] duration-500 rounded-full"
+                className="h-full bg-[var(--accent)] transition-[width] duration-500 rounded-full"
                 style={{ width: `${Math.min(100, targetProgress.percent)}%` }}
               />
               {/* Ideal Pace Marker */}
               <div
-                className="absolute top-0 bottom-0 w-1 bg-[#0F172A]/70 dark:bg-white/80 z-10"
+                className="absolute top-0 bottom-0 w-1 bg-[var(--foreground)]/75 z-10"
                 style={{ left: `${targetProgress.idealPacePercent}%` }}
                 title={`Pace ideal hari ke-${targetProgress.effectiveDay}: ${targetProgress.idealPacePercent}%`}
               />
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-zinc-300">
-              <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums">{targetProgress.percent}% Tercapai</span>
-              <span className="text-slate-500 dark:text-zinc-400 tabular-nums">Pace Ideal: {targetProgress.idealPacePercent}%</span>
-              <span>Sisa Target: <strong className="text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">{formatRupiah(targetProgress.remaining)}</strong></span>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--muted)]">
+              <span className="font-extrabold text-[var(--foreground)] tabular-nums">{targetProgress.percent}% Tercapai</span>
+              <span className="tabular-nums">Pace Ideal: {targetProgress.idealPacePercent}%</span>
+              <span>Sisa Target: <strong className="text-[var(--foreground)] tabular-nums font-mono">{formatRupiah(targetProgress.remaining)}</strong></span>
             </div>
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* ========================================================= */}
@@ -1878,64 +1912,70 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
       <section id="sec-produk-restok" className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35 flex items-center justify-center font-bold flex-shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border border-[var(--warning)]/35 flex items-center justify-center font-bold flex-shrink-0">
               <Boxes className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight">
+              <h3 className="text-base sm:text-lg font-extrabold text-[var(--foreground)] tracking-tight">
                 Analisis Produk &amp; Rekomendasi Restock
               </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <p className="text-xs text-[var(--muted)]">
                 Peringatan stok habis/kritis dengan estimasi modal dan identifikasi produk macet
               </p>
             </div>
           </div>
 
           {/* Metric Selector for Top Products: QTY | CUAN | OMSET */}
-          <div className="flex items-center bg-white dark:bg-[#1B1B20] p-1 rounded-full border border-slate-200 dark:border-[#343440] self-start sm:self-auto overflow-x-auto max-w-full no-scrollbar">
-            <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 px-2.5 uppercase whitespace-nowrap">Urutkan:</span>
-            <button
-              onClick={() => setProductRankingMetric('QTY')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
-                productRankingMetric === 'QTY' ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white' : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white'
+          <div className="flex items-center bg-[var(--surface)] p-1 rounded-full border border-[var(--border)] self-start sm:self-auto overflow-x-auto max-w-full no-scrollbar gap-1">
+            <span className="text-[10px] font-bold text-[var(--muted)] px-2.5 uppercase whitespace-nowrap">Urutkan:</span>
+            <Button
+              size="sm"
+              variant={productRankingMetric === 'QTY' ? 'primary' : 'ghost'}
+              onPress={() => setProductRankingMetric('QTY')}
+              className={`rounded-full text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
+                productRankingMetric === 'QTY' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
               Terlaris (Botol)
-            </button>
-            <button
-              onClick={() => setProductRankingMetric('CUAN')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
-                productRankingMetric === 'CUAN' ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white' : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white'
+            </Button>
+            <Button
+              size="sm"
+              variant={productRankingMetric === 'CUAN' ? 'primary' : 'ghost'}
+              onPress={() => setProductRankingMetric('CUAN')}
+              className={`rounded-full text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
+                productRankingMetric === 'CUAN' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
               Cuan Tertinggi
-            </button>
-            <button
-              onClick={() => setProductRankingMetric('OMSET')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
-                productRankingMetric === 'OMSET' ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white' : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-white'
+            </Button>
+            <Button
+              size="sm"
+              variant={productRankingMetric === 'OMSET' ? 'primary' : 'ghost'}
+              onPress={() => setProductRankingMetric('OMSET')}
+              className={`rounded-full text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
+                productRankingMetric === 'OMSET' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
               Omzet
-            </button>
+            </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Sub-Card 1: Top 8 Produk Terlaris & Margin % */}
-          <div className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-3.5 transition-colors">
-            <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-200 dark:border-[#2B2B33]">
+          <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 gap-3.5 border border-[var(--border)] shadow-none">
+            <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-[var(--separator)]">
               <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                <h4 className="text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6]">
+                <Trophy className="w-4 h-4 text-amber-600 dark:text-[var(--warning)]" />
+                <h4 className="text-sm font-bold text-[var(--foreground)]">
                   Top Produk Berkontribusi ({productRankingMetric === 'QTY' ? 'Volume Botol' : productRankingMetric === 'CUAN' ? 'Cuan Tertinggi' : 'Omzet Tertinggi'})
                 </h4>
               </div>
-              <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 whitespace-nowrap">Exclude Promo 5rb</span>
+              <span className="text-[10px] font-bold text-[var(--muted)] whitespace-nowrap">Exclude Promo 5rb</span>
             </div>
 
             {topProducts.length === 0 ? (
-              <div className="py-8 text-center text-xs text-slate-500 dark:text-zinc-400">
+              <div className="py-8 text-center text-xs text-[var(--muted)]">
                 Belum ada data penjualan produk pada periode ini.
               </div>
             ) : (
@@ -1945,25 +1985,25 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
                     <div className="flex items-center justify-between text-xs gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold flex-shrink-0 ${
-                          p.rank === 1 ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400' : p.rank === 2 ? 'bg-blue-100 dark:bg-purple-500/20 text-[#2563EB] dark:text-[#C084FC]' : 'bg-slate-100 dark:bg-[#24242B] text-slate-600 dark:text-zinc-300'
+                          p.rank === 1 ? 'bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)]' : p.rank === 2 ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-[var(--surface-secondary)] text-[var(--muted)]'
                         }`}>
                           {p.rank}
                         </span>
-                        <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6] truncate">{p.name}</span>
-                        <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono hidden sm:inline">({p.category})</span>
+                        <span className="font-bold text-[var(--foreground)] truncate">{p.name}</span>
+                        <span className="text-[10px] text-[var(--muted)] font-mono hidden sm:inline">({p.category})</span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 text-right">
-                        <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums">{p.qty} Btl</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-extrabold text-[11px] tabular-nums font-mono">+{formatRupiah(p.margin)}</span>
-                        <span className="bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums border border-slate-200 dark:border-[#343440]">
+                        <span className="font-bold text-[var(--foreground)] tabular-nums">{p.qty} Btl</span>
+                        <span className="text-emerald-700 dark:text-[var(--success)] font-extrabold text-[11px] tabular-nums font-mono">+{formatRupiah(p.margin)}</span>
+                        <span className="bg-[var(--surface-secondary)] text-[var(--foreground)] px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums border border-[var(--border)]">
                           {p.marginPct}%
                         </span>
                       </div>
                     </div>
                     {/* Visual bar */}
-                    <div className="w-full h-1.5 bg-slate-100 dark:bg-[#24242B] rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-[var(--surface-secondary)] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#2563EB] dark:bg-[#A855F7] rounded-full transition-[width]"
+                        className="h-full bg-[var(--accent)] rounded-full transition-[width]"
                         style={{ width: `${p.percentOfTop}%` }}
                       />
                     </div>
@@ -1971,29 +2011,29 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
                 ))}
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Sub-Card 2: Rekomendasi Restock Kritis & Dead Stock */}
           <div className="space-y-4">
             {/* Urgent Restock Box */}
-            <div className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200 dark:border-[#2B2B33]">
-                <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 gap-3 border border-[var(--border)] shadow-none">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--separator)]">
+                <div className="flex items-center gap-2 text-red-700 dark:text-[var(--danger)]">
                   <AlertCircle className="w-4 h-4" />
-                  <h4 className="text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6]">
+                  <h4 className="text-sm font-bold text-[var(--foreground)]">
                     Rekomendasi Restock Kritis ({inventoryIntelligence.totalCriticalCount} Produk)
                   </h4>
                 </div>
                 {inventoryIntelligence.totalCriticalRestockCost > 0 && (
-                  <span className="text-[11px] font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/15 px-2.5 py-0.5 rounded-full border border-red-200 dark:border-red-500/35 tabular-nums font-mono">
-                    Est. Modal: {formatRupiah(inventoryIntelligence.totalCriticalRestockCost)}
-                  </span>
+                  <Chip size="sm" variant="soft" color="danger" className="border border-[var(--danger)]/35 text-[11px] font-bold tabular-nums font-mono">
+                    <Chip.Label>Est. Modal: {formatRupiah(inventoryIntelligence.totalCriticalRestockCost)}</Chip.Label>
+                  </Chip>
                 )}
               </div>
 
               {inventoryIntelligence.criticalList.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-600 dark:text-zinc-300 flex items-center justify-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="py-6 text-center text-xs text-[var(--muted)] flex items-center justify-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-[var(--success)]" />
                   <span>Stok aman, tidak ada produk dengan stok kritis saat ini.</span>
                 </div>
               ) : (
@@ -2001,72 +2041,75 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
                   {inventoryIntelligence.criticalList.map((item) => (
                     <div
                       key={item.product.id || item.product.sku}
-                      className="p-3 rounded-xl bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-between gap-2 text-xs"
+                      className="p-3 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border)] flex items-center justify-between gap-2 text-xs"
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                            item.isZeroStock ? 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35' : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35'
-                          }`}>
-                            {item.isZeroStock ? 'Habis (0)' : `Sisa ${item.currentStock}`}
-                          </span>
-                          <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6] truncate">{item.product.name}</span>
+                          <Chip
+                            size="sm"
+                            variant="soft"
+                            color={item.isZeroStock ? 'danger' : 'warning'}
+                            className="border border-[var(--border)] text-[10px] font-extrabold"
+                          >
+                            <Chip.Label>{item.isZeroStock ? 'Habis (0)' : `Sisa ${item.currentStock}`}</Chip.Label>
+                          </Chip>
+                          <span className="font-bold text-[var(--foreground)] truncate">{item.product.name}</span>
                         </div>
-                        <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1">
-                          Terjual: <strong className="text-[#0F172A] dark:text-[#F4F4F6]">{item.soldQty} btl</strong> di periode ini • Sarana Order: <strong className="text-[#0F172A] dark:text-[#F4F4F6]">{item.qtyToOrder} btl</strong>
+                        <p className="text-[10px] text-[var(--muted)] mt-1">
+                          Terjual: <strong className="text-[var(--foreground)]">{item.soldQty} btl</strong> di periode ini • Sarana Order: <strong className="text-[var(--foreground)]">{item.qtyToOrder} btl</strong>
                         </p>
                       </div>
 
                       <div className="text-right flex-shrink-0">
                         {item.unitCost > 0 ? (
                           <>
-                            <p className="text-[10px] text-slate-500 dark:text-zinc-400">Modal Butuh:</p>
-                            <p className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">{formatRupiah(item.estimatedCost)}</p>
+                            <p className="text-[10px] text-[var(--muted)]">Modal Butuh:</p>
+                            <p className="font-extrabold text-[var(--foreground)] tabular-nums font-mono">{formatRupiah(item.estimatedCost)}</p>
                           </>
                         ) : (
-                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 italic">Harga beli kosong</span>
+                          <span className="text-[10px] text-[var(--muted)] italic">Harga beli kosong</span>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
 
             {/* Slow Moving / Dead Stock Alert */}
-            <div className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200 dark:border-[#2B2B33]">
-                <div className="flex items-center gap-2 text-slate-600 dark:text-zinc-300">
-                  <Clock className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
-                  <h4 className="text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6]">
+            <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 gap-3 border border-[var(--border)] shadow-none">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--separator)]">
+                <div className="flex items-center gap-2 text-[var(--foreground)]">
+                  <Clock className="w-4 h-4 text-[var(--accent)]" />
+                  <h4 className="text-sm font-bold text-[var(--foreground)]">
                     Produk Macet / 0 Penjualan ({inventoryIntelligence.totalSlowCount} Produk)
                   </h4>
                 </div>
                 {inventoryIntelligence.totalTiedDeadCapital > 0 && (
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-zinc-300 bg-slate-100 dark:bg-[#24242B] px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-[#343440] tabular-nums font-mono">
-                    Modal Tertahan: {formatRupiah(inventoryIntelligence.totalTiedDeadCapital)}
-                  </span>
+                  <Chip size="sm" variant="soft" color="default" className="border border-[var(--border)] text-[11px] font-bold tabular-nums font-mono">
+                    <Chip.Label>Modal Tertahan: {formatRupiah(inventoryIntelligence.totalTiedDeadCapital)}</Chip.Label>
+                  </Chip>
                 )}
               </div>
 
               {inventoryIntelligence.slowMovingList.length === 0 ? (
-                <div className="py-4 text-center text-xs text-slate-500 dark:text-zinc-400">
+                <div className="py-4 text-center text-xs text-[var(--muted)]">
                   Semua stok produk bergerak aktif pada periode ini.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {inventoryIntelligence.slowMovingList.map((item) => (
-                    <div key={item.product.id || item.product.sku} className="p-3 rounded-xl bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440]">
-                      <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6] truncate">{item.product.name}</p>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
-                        <span>Stok: <strong className="text-[#0F172A] dark:text-[#F4F4F6]">{item.currentStock} btl</strong></span>
-                        <span className="font-mono font-bold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums">{formatRupiah(item.tiedCapital)}</span>
+                    <div key={item.product.id || item.product.sku} className="p-3 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border)]">
+                      <p className="font-bold text-[var(--foreground)] truncate">{item.product.name}</p>
+                      <div className="flex items-center justify-between text-[11px] text-[var(--muted)] mt-1">
+                        <span>Stok: <strong className="text-[var(--foreground)]">{item.currentStock} btl</strong></span>
+                        <span className="font-mono font-bold text-[var(--foreground)] tabular-nums">{formatRupiah(item.tiedCapital)}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         </div>
       </section>
@@ -2077,14 +2120,14 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
       <section id="sec-tren" className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/35 flex items-center justify-center font-bold flex-shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 flex items-center justify-center font-bold flex-shrink-0">
               <BarChart3 className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight">
+              <h3 className="text-base sm:text-lg font-extrabold text-[var(--foreground)] tracking-tight">
                 Tren Penjualan Harian &amp; Insight Operasional
               </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <p className="text-xs text-[var(--muted)]">
                 Visualisasi dinamika omzet harian terhadap margin kotor dan ritme toko
               </p>
             </div>
@@ -2093,19 +2136,19 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Main Chart: Bar Omzet + Line Cuan */}
-          <div className="lg:col-span-2 bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-3">
+          <Card className="lg:col-span-2 bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 gap-3 border border-[var(--border)] shadow-none">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-4 text-xs font-bold">
-                <span className="flex items-center gap-1.5 text-[#0F172A] dark:text-[#F4F4F6]">
-                  <span className="w-3 h-3 rounded-xs bg-[#2563EB] dark:bg-[#A855F7]" />
+                <span className="flex items-center gap-1.5 text-[var(--foreground)]">
+                  <span className="w-3 h-3 rounded-xs bg-[var(--accent)]" />
                   Omzet Penjualan
                 </span>
-                <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                <span className="flex items-center gap-1.5 text-emerald-700 dark:text-[var(--success)]">
                   <span className="w-3 h-3 rounded-full bg-emerald-500" />
                   Margin Cuan
                 </span>
               </div>
-              <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
+              <span className="text-[11px] font-mono text-[var(--muted)]">
                 {selectedMonth !== 'ALL' ? formatMonthLabel(selectedMonth) : '14 Hari Terakhir'}
               </span>
             </div>
@@ -2113,9 +2156,9 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartTrendData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#2B2B33' : '#E2E8F0'} />
-                  <XAxis dataKey="dateLabel" tick={{ fontSize: 10, fill: isDarkMode ? '#A1A1AA' : '#64748B' }} stroke={isDarkMode ? '#343440' : '#CBD5E1'} />
-                  <YAxis tickFormatter={formatAxisRbJt} tick={{ fontSize: 10, fill: isDarkMode ? '#A1A1AA' : '#64748B' }} stroke={isDarkMode ? '#343440' : '#CBD5E1'} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#27272e' : '#e4e4e7'} />
+                  <XAxis dataKey="dateLabel" tick={{ fontSize: 10, fill: isDarkMode ? '#a1a1aa' : '#64748b' }} stroke={isDarkMode ? '#32323c' : '#cbd5e1'} />
+                  <YAxis tickFormatter={formatAxisRbJt} tick={{ fontSize: 10, fill: isDarkMode ? '#a1a1aa' : '#64748b' }} stroke={isDarkMode ? '#32323c' : '#cbd5e1'} />
                   <Tooltip
                     formatter={(value: any, name: any) => [
                       formatRupiah(Number(value) || 0),
@@ -2123,64 +2166,64 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
                     ]}
                     labelFormatter={(label) => `Tanggal: ${label}`}
                     contentStyle={{
-                      backgroundColor: isDarkMode ? '#1B1B20' : '#FFFFFF',
+                      backgroundColor: isDarkMode ? '#1e1e24' : '#ffffff',
                       borderRadius: '12px',
-                      border: isDarkMode ? '1px solid #343440' : '1px solid #E2E8F0',
-                      color: isDarkMode ? '#F4F4F6' : '#0F172A',
+                      border: isDarkMode ? '1px solid #32323c' : '1px solid #e4e4e7',
+                      color: isDarkMode ? '#fafafa' : '#18181b',
                       fontSize: '11px',
                       boxShadow: isDarkMode ? '0 8px 24px rgba(0, 0, 0, 0.5)' : '0 4px 12px rgba(15, 23, 42, 0.08)',
                     }}
                   />
-                  <Bar dataKey="omset" fill={isDarkMode ? '#A855F7' : '#2563EB'} radius={[4, 4, 0, 0]} maxBarSize={20} />
+                  <Bar dataKey="omset" fill={isDarkMode ? '#e6499e' : '#c82d85'} radius={[4, 4, 0, 0]} maxBarSize={20} />
                   <Line type="monotone" dataKey="margin" stroke="#10B981" strokeWidth={2.5} dot={{ r: 2.5, fill: '#10B981' }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </Card>
 
           {/* Operational Insights Card: Hari Terbaik, Jam Teramai, Metode Bayar */}
-          <div className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] flex flex-col justify-between space-y-4">
+          <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 gap-4 border border-[var(--border)] shadow-none justify-between">
             <div>
-              <h4 className="text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6] pb-2.5 border-b border-slate-200 dark:border-[#2B2B33] flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-500" />
+              <h4 className="text-sm font-bold text-[var(--foreground)] pb-2.5 border-b border-[var(--separator)] flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-600 dark:text-[var(--warning)]" />
                 <span>Ritme Toko &amp; Pembayaran</span>
               </h4>
 
               <div className="space-y-3 mt-3 text-xs">
-                <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-2xl border border-slate-200 dark:border-[#343440] flex items-center justify-between gap-2">
+                <div className="bg-[var(--surface-secondary)] p-3 rounded-2xl border border-[var(--border)] flex items-center justify-between gap-2">
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-zinc-400">Hari Omzet Terbaik</p>
-                    <p className="text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5">{operationalInsights.bestDayFormatted}</p>
+                    <p className="text-[10px] uppercase font-bold text-[var(--muted)]">Hari Omzet Terbaik</p>
+                    <p className="text-sm font-extrabold text-[var(--foreground)] mt-0.5">{operationalInsights.bestDayFormatted}</p>
                   </div>
-                  <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums font-mono">{formatRupiah(operationalInsights.bestDayOmset)}</p>
+                  <p className="text-xs font-extrabold text-emerald-700 dark:text-[var(--success)] tabular-nums font-mono">{formatRupiah(operationalInsights.bestDayOmset)}</p>
                 </div>
 
-                <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-2xl border border-slate-200 dark:border-[#343440] flex items-center justify-between gap-2">
+                <div className="bg-[var(--surface-secondary)] p-3 rounded-2xl border border-[var(--border)] flex items-center justify-between gap-2">
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-zinc-400">Jam Paling Ramai</p>
-                    <p className="text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] mt-0.5">{operationalInsights.peakHourFormatted}</p>
+                    <p className="text-[10px] uppercase font-bold text-[var(--muted)]">Jam Paling Ramai</p>
+                    <p className="text-sm font-extrabold text-[var(--foreground)] mt-0.5">{operationalInsights.peakHourFormatted}</p>
                   </div>
-                  <span className="text-[10px] font-bold bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] px-2.5 py-1 rounded-full border border-blue-200 dark:border-purple-500/35 tabular-nums">
-                    {operationalInsights.peakHourCount} Transaksi
-                  </span>
+                  <Chip size="sm" variant="soft" color="accent" className="border border-[var(--border)] text-[10px] font-bold tabular-nums">
+                    <Chip.Label>{operationalInsights.peakHourCount} Transaksi</Chip.Label>
+                  </Chip>
                 </div>
               </div>
             </div>
 
             {/* Metode Bayar Breakdown */}
-            <div className="space-y-2 pt-2.5 border-t border-slate-200 dark:border-[#2B2B33]">
-              <p className="text-[10px] font-bold uppercase text-slate-500 dark:text-zinc-400 tracking-wider">Distribusi Pembayaran</p>
+            <div className="space-y-2 pt-2.5 border-t border-[var(--separator)]">
+              <p className="text-[10px] font-bold uppercase text-[var(--muted)] tracking-wider">Distribusi Pembayaran</p>
               <div className="space-y-2">
                 {operationalInsights.paymentList.map((pm) => (
                   <div key={pm.method} className="space-y-1 text-xs">
-                    <div className="flex items-center justify-between font-bold text-[#0F172A] dark:text-[#F4F4F6]">
+                    <div className="flex items-center justify-between font-bold text-[var(--foreground)]">
                       <span>{pm.method}</span>
-                      <span className="tabular-nums font-mono">{formatRupiah(pm.total)} <span className="text-slate-500 dark:text-zinc-400 font-normal">({pm.percent}%)</span></span>
+                      <span className="tabular-nums font-mono">{formatRupiah(pm.total)} <span className="text-[var(--muted)] font-normal">({pm.percent}%)</span></span>
                     </div>
-                    <div className="w-full h-1.5 bg-slate-100 dark:bg-[#121215] rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-[var(--surface-secondary)] rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
-                          pm.method === 'CASH' ? 'bg-amber-500' : pm.method === 'QRIS' ? 'bg-emerald-500' : 'bg-[#2563EB] dark:bg-[#A855F7]'
+                          pm.method === 'CASH' ? 'bg-[var(--warning)]' : pm.method === 'QRIS' ? 'bg-[var(--success)]' : 'bg-[var(--accent)]'
                         }`}
                         style={{ width: `${pm.percent}%` }}
                       />
@@ -2189,417 +2232,454 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
                 ))}
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </section>
 
       {/* ========================================================= */}
       {/* 5. RIWAYAT NOTA & EKSPOR (Ringkas & Collapsible)         */}
       {/* ========================================================= */}
-      <section id="sec-riwayat-nota" className="bg-white dark:bg-[#1B1B20] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-[#2B2B33]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center font-bold border border-blue-200 dark:border-purple-500/35 flex-shrink-0">
-              <Receipt className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base sm:text-lg font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight">
-                  Riwayat Nota &amp; Log Penjualan
-                </h3>
-                <span className="text-xs text-slate-500 dark:text-zinc-400 font-mono tabular-nums">
-                  ({filteredLogItems.length} baris)
-                </span>
+      <section id="sec-riwayat-nota">
+        <Card className="bg-[var(--surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 gap-4 border border-[var(--border)] shadow-none">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--separator)]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center font-bold border border-[var(--accent)]/30 flex-shrink-0">
+                <Receipt className="w-4 h-4" />
               </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Audit transaksi kasir, cetak ulang nota, atau ekspor ke file spreadsheet CSV.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={handleExportCSV}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer min-h-[44px] border border-slate-200 dark:border-[#343440]"
-              title="Unduh data penjualan format CSV"
-            >
-              <Download className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#C084FC]" />
-              <span>Ekspor CSV</span>
-            </button>
-
-            <button
-              onClick={() => setIsLogCollapsed((prev) => !prev)}
-              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-[#343440] bg-slate-50 dark:bg-[#24242B] text-slate-700 dark:text-zinc-200 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
-            >
-              {isLogCollapsed ? 'Tampilkan Tabel' : 'Sembunyikan Tabel'}
-            </button>
-          </div>
-        </div>
-
-        {!isLogCollapsed && (
-          <div className="space-y-3">
-            {/* Filter controls bar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 dark:text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Cari SKU, Nama Produk, Nota ID, Pelanggan..."
-                  value={logSearchQuery}
-                  onChange={(e) => setLogSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs font-medium text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:bg-white dark:focus:bg-[#1B1B20] focus:border-[#2563EB] dark:focus:border-[#A855F7] min-h-[44px]"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Metode bayar filter */}
-                <select
-                  value={logPaymentFilter}
-                  onChange={(e) => setLogPaymentFilter(e.target.value)}
-                  className="bg-slate-50 dark:bg-[#24242B] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 dark:border-[#343440] cursor-pointer min-h-[44px] focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] [color-scheme:light] dark:[color-scheme:dark]"
-                >
-                  <option value="ALL" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">Semua Pembayaran</option>
-                  <option value="CASH" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">CASH</option>
-                  <option value="QRIS" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">QRIS</option>
-                  <option value="TRANSFER" className="bg-white dark:bg-[#1B1B20] text-[#0F172A] dark:text-[#F4F4F6]">TRANSFER</option>
-                </select>
-
-                {/* View Mode toggle (Group by date vs flat) */}
-                <div className="flex items-center bg-slate-100 dark:bg-[#121215] p-1 rounded-xl border border-slate-200 dark:border-[#2B2B33]">
-                  <button
-                    onClick={() => setLogViewMode('BY_DATE')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                      logViewMode === 'BY_DATE' ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white' : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6]'
-                    }`}
-                  >
-                    Per Tanggal
-                  </button>
-                  <button
-                    onClick={() => setLogViewMode('FLAT_LOG')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                      logViewMode === 'FLAT_LOG' ? 'bg-[#0F172A] dark:bg-[#9333EA] text-white' : 'text-slate-600 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6]'
-                    }`}
-                  >
-                    Semua Baris
-                  </button>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-extrabold text-[var(--foreground)] tracking-tight">
+                    Riwayat Nota &amp; Log Penjualan
+                  </h3>
+                  <span className="text-xs text-[var(--muted)] font-mono tabular-nums">
+                    ({filteredLogItems.length} baris)
+                  </span>
                 </div>
+                <p className="text-xs text-[var(--muted)]">
+                  Audit transaksi kasir, cetak ulang nota, atau ekspor ke file spreadsheet CSV.
+                </p>
               </div>
             </div>
 
-            {/* Table Content */}
-            {filteredLogItems.length === 0 ? (
-              <div className="py-12 text-center text-xs text-slate-500 dark:text-zinc-400 border border-dashed border-slate-300 dark:border-[#343440] rounded-2xl bg-slate-50 dark:bg-[#24242B]">
-                Tidak ada data transaksi yang cocok dengan filter.
-              </div>
-            ) : logViewMode === 'BY_DATE' ? (
-              <div className="space-y-3">
-                {visibleDateGroups.map(({ group, visibleItems }) => {
-                  const isExpanded = expandedDates[group.dateKey] !== false; // Default expanded
-                  return (
-                    <div key={group.dateKey} className="border border-slate-200 dark:border-[#2B2B33] rounded-2xl overflow-hidden bg-white dark:bg-[#1B1B20]">
-                      <div
-                        onClick={() => toggleDateExpand(group.dateKey)}
-                        className="bg-slate-50 hover:bg-slate-100/80 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer transition-colors"
-                      >
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-extrabold text-xs text-[#0F172A] dark:text-[#F4F4F6]">{group.dateDisplay}</span>
-                          <span className="text-[10px] text-slate-600 dark:text-zinc-300 bg-white dark:bg-[#1B1B20] px-2 py-0.5 rounded-full font-bold border border-slate-200 dark:border-[#343440] tabular-nums">
-                            {group.items.length} item • {group.totalQty} btl
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-4 text-xs">
-                          <div>
-                            <span className="text-slate-500 dark:text-zinc-400 text-[10px] mr-1">Omzet:</span>
-                            <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">{formatRupiah(group.totalOmset)}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 dark:text-zinc-400 text-[10px] mr-1">Cuan:</span>
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums font-mono">+{formatRupiah(group.totalMargin)}</span>
-                          </div>
-                          {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-500 dark:text-zinc-400" /> : <ChevronRight className="w-4 h-4 text-slate-500 dark:text-zinc-400" />}
-                        </div>
-                      </div>
+            <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                size="sm"
+                variant="secondary"
+                onPress={handleExportCSV}
+                aria-label="Unduh data penjualan format CSV"
+                className="px-3 rounded-xl text-xs font-bold min-h-[44px] border border-[var(--border)]"
+              >
+                <Download className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <span>Ekspor CSV</span>
+              </Button>
 
-                      {isExpanded && (
-                        <>
-                          {/* Mobile Card List (<640px) */}
-                          <div className="sm:hidden divide-y divide-slate-100 dark:divide-[#2B2B33] border-t border-slate-200 dark:border-[#2B2B33]">
-                            {visibleItems.map((it) => (
-                              <div key={it.id} className="p-3 space-y-2">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-mono">
-                                      <span className="font-bold text-[#2563EB] dark:text-[#C084FC]">{it.trxId}</span>
-                                      <span className="text-slate-400 dark:text-zinc-500">•</span>
-                                      <span className="text-slate-500 dark:text-zinc-400">{it.timeStr || it.dateStr}</span>
-                                    </div>
-                                    <p className="font-bold text-xs text-[#0F172A] dark:text-[#F4F4F6] mt-0.5 break-words">
-                                      {it.name}
-                                    </p>
-                                    <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono truncate">
-                                      {it.sku}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <button
-                                      type="button"
-                                      onClick={() => onViewReceipt(it.rawReceipt)}
-                                      className="min-w-[44px] min-h-[44px] rounded-xl text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-center active:scale-[0.97] cursor-pointer transition-colors"
-                                      title="Lihat Nota"
-                                      aria-label={`Lihat nota ${it.trxId}`}
-                                    >
-                                      <Eye className="w-4 h-4" />
-                                    </button>
-                                    {(onDeleteTransaction || onVoidTransaction) && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setDeletingTrx(it.rawReceipt)}
-                                        className="min-w-[44px] min-h-[44px] rounded-xl text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/35 flex items-center justify-center active:scale-[0.97] cursor-pointer transition-colors"
-                                        title="Hapus Transaksi di Google Sheets"
-                                        aria-label={`Hapus transaksi ${it.trxId}`}
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex items-center justify-between gap-2 text-xs pt-1 border-t border-slate-100 dark:border-[#2B2B33]">
-                                  <span className="text-slate-600 dark:text-zinc-300 font-mono tabular-nums">
-                                    <strong className="text-[#0F172A] dark:text-[#F4F4F6]">{it.qty}×</strong> {formatRupiah(it.price)}
-                                  </span>
-                                  <div className="text-right font-mono tabular-nums">
-                                    <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6]">{formatRupiah(it.total)}</span>
-                                    <span className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400">+{formatRupiah(it.margin)}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onPress={() => setIsLogCollapsed((prev) => !prev)}
+                className="px-3 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] text-[var(--foreground)] text-xs font-bold min-h-[44px]"
+              >
+                {isLogCollapsed ? 'Tampilkan Tabel' : 'Sembunyikan Tabel'}
+              </Button>
+            </div>
+          </div>
 
-                          {/* Desktop Table (>=640px) */}
-                          <div className="hidden sm:block overflow-x-auto border-t border-slate-200 dark:border-[#2B2B33]">
-                            <table className="w-full text-left text-xs">
-                              <thead>
-                                <tr className="border-b border-slate-200 dark:border-[#2B2B33] text-slate-600 dark:text-zinc-400 font-bold uppercase text-[10px] bg-slate-50/70 dark:bg-[#24242B]/70">
-                                  <th className="py-2.5 px-3">Waktu / Nota ID</th>
-                                  <th className="py-2.5 px-3">Produk</th>
-                                  <th className="py-2.5 px-3 text-center">Qty</th>
-                                  <th className="py-2.5 px-3 text-right">Harga</th>
-                                  <th className="py-2.5 px-3 text-right">Total</th>
-                                  <th className="py-2.5 px-3 text-right">Cuan</th>
-                                  <th className="py-2.5 px-3 text-center">Aksi</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100 dark:divide-[#2B2B33]">
-                                {visibleItems.map((it) => (
-                                  <tr key={it.id} className="hover:bg-slate-50 dark:hover:bg-[#24242B]/60 transition-colors">
-                                    <td className="py-2.5 px-3 font-mono text-slate-500 dark:text-zinc-400 whitespace-nowrap">
-                                      {it.timeStr || it.dateStr}
-                                      <span className="block text-[10px] font-bold text-[#2563EB] dark:text-[#C084FC]">{it.trxId}</span>
-                                    </td>
-                                    <td className="py-2.5 px-3">
-                                      <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6]">{it.name}</p>
-                                      <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">{it.sku}</p>
-                                    </td>
-                                    <td className="py-2.5 px-3 text-center">
-                                      <span className="font-bold bg-slate-100 dark:bg-[#24242B] px-2 py-0.5 rounded-full text-[#0F172A] dark:text-[#F4F4F6] border border-slate-200 dark:border-[#343440] tabular-nums">
-                                        {it.qty}
-                                      </span>
-                                    </td>
-                                    <td className="py-2.5 px-3 text-right font-medium text-slate-600 dark:text-zinc-300 tabular-nums font-mono whitespace-nowrap">
-                                      {formatRupiah(it.price)}
-                                    </td>
-                                    <td className="py-2.5 px-3 text-right font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono whitespace-nowrap">
-                                      {formatRupiah(it.total)}
-                                    </td>
-                                    <td className="py-2.5 px-3 text-right font-bold text-emerald-600 dark:text-emerald-400 tabular-nums font-mono whitespace-nowrap">
-                                      +{formatRupiah(it.margin)}
-                                    </td>
-                                    <td className="py-2.5 px-3 text-center">
-                                      <div className="flex items-center justify-center gap-1">
-                                        <button
-                                          onClick={() => onViewReceipt(it.rawReceipt)}
-                                          className="p-1.5 text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] hover:bg-slate-100 dark:hover:bg-[#24242B] rounded-lg transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
-                                          title="Lihat Nota"
-                                        >
-                                          <Eye className="w-4 h-4" />
-                                        </button>
-                                        {(onDeleteTransaction || onVoidTransaction) && (
-                                          <button
-                                            onClick={() => setDeletingTrx(it.rawReceipt)}
-                                            className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/15 rounded-lg transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
-                                            title="Hapus Transaksi di Google Sheets"
-                                          >
-                                            <Trash2 className="w-4 h-4" />
-                                          </button>
-                                        )}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-                {filteredLogItems.length > displayedByDateCount && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 px-1">
-                    <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium tabular-nums">
-                      Menampilkan {displayedByDateCount} dari {filteredLogItems.length} baris
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setLogVisibleCount((prev) => prev + 50)}
-                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
+          {!isLogCollapsed && (
+            <div className="space-y-3">
+              {/* Filter controls bar */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-[var(--muted)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+                  <Input
+                    type="text"
+                    fullWidth
+                    variant="secondary"
+                    placeholder="Cari SKU, Nama Produk, Nota ID, Pelanggan..."
+                    value={logSearchQuery}
+                    onChange={(e) => setLogSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs font-medium text-[var(--foreground)] min-h-[44px]"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Metode bayar filter */}
+                  <select
+                    value={logPaymentFilter}
+                    onChange={(e) => setLogPaymentFilter(e.target.value)}
+                    aria-label="Filter metode pembayaran"
+                    className="bg-[var(--surface-secondary)] text-[var(--foreground)] text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border)] cursor-pointer min-h-[44px] focus:outline-none focus:border-[var(--accent)] [color-scheme:light] dark:[color-scheme:dark]"
+                  >
+                    <option value="ALL" className="bg-[var(--surface)] text-[var(--foreground)]">Semua Pembayaran</option>
+                    <option value="CASH" className="bg-[var(--surface)] text-[var(--foreground)]">CASH</option>
+                    <option value="QRIS" className="bg-[var(--surface)] text-[var(--foreground)]">QRIS</option>
+                    <option value="TRANSFER" className="bg-[var(--surface)] text-[var(--foreground)]">TRANSFER</option>
+                  </select>
+
+                  {/* View Mode toggle (Group by date vs flat) */}
+                  <div className="flex items-center bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)] gap-1">
+                    <Button
+                      size="sm"
+                      variant={logViewMode === 'BY_DATE' ? 'primary' : 'ghost'}
+                      onPress={() => setLogViewMode('BY_DATE')}
+                      className={`px-3 rounded-lg text-xs font-bold min-h-[38px] ${
+                        logViewMode === 'BY_DATE' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                      }`}
                     >
-                      Muat Lagi (+50)
-                    </button>
+                      Per Tanggal
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={logViewMode === 'FLAT_LOG' ? 'primary' : 'ghost'}
+                      onPress={() => setLogViewMode('FLAT_LOG')}
+                      className={`px-3 rounded-lg text-xs font-bold min-h-[38px] ${
+                        logViewMode === 'FLAT_LOG' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                      }`}
+                    >
+                      Semua Baris
+                    </Button>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Mobile Card List (<640px) */}
-                <div className="sm:hidden space-y-2.5">
-                  {visibleFlatLogItems.map((it) => (
-                    <div key={it.id} className="border border-slate-200 dark:border-[#2B2B33] rounded-2xl p-3 bg-white dark:bg-[#1B1B20] space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                            <span className="font-mono text-slate-500 dark:text-zinc-400">{it.dateTimeStr || it.dateStr}</span>
-                            <span className="bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 px-2 py-0.5 rounded-full font-bold border border-slate-200 dark:border-[#343440]">
-                              {it.category}
-                            </span>
-                          </div>
-                          <p className="font-bold text-xs text-[#0F172A] dark:text-[#F4F4F6] mt-1 break-words">{it.name}</p>
-                          <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono truncate">{it.sku} • {it.trxId}</p>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => onViewReceipt(it.rawReceipt)}
-                            className="min-w-[44px] min-h-[44px] rounded-xl text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-center active:scale-[0.97] cursor-pointer transition-colors"
-                            title="Lihat Nota"
-                            aria-label={`Lihat nota ${it.trxId}`}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          {(onDeleteTransaction || onVoidTransaction) && (
-                            <button
-                              type="button"
-                              onClick={() => setDeletingTrx(it.rawReceipt)}
-                              className="min-w-[44px] min-h-[44px] rounded-xl text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/35 flex items-center justify-center active:scale-[0.97] cursor-pointer transition-colors"
-                              title="Hapus Transaksi di Google Sheets"
-                              aria-label={`Hapus transaksi ${it.trxId}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between gap-2 text-xs pt-1.5 border-t border-slate-100 dark:border-[#2B2B33]">
-                        <span className="text-slate-600 dark:text-zinc-300 font-mono tabular-nums">
-                          <strong className="text-[#0F172A] dark:text-[#F4F4F6]">{it.qty}×</strong> {formatRupiah(it.price)}
-                        </span>
-                        <div className="text-right font-mono tabular-nums">
-                          <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6]">{formatRupiah(it.total)}</span>
-                          <span className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400">+{formatRupiah(it.margin)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
+              </div>
 
-                {/* Desktop Table (>=640px) */}
-                <div className="hidden sm:block border border-slate-200 dark:border-[#2B2B33] rounded-2xl overflow-x-auto bg-white dark:bg-[#1B1B20]">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-200 dark:border-[#2B2B33] text-slate-600 dark:text-zinc-400 font-bold uppercase text-[10px] bg-slate-50 dark:bg-[#24242B]">
-                        <th className="py-2.5 px-3">Tanggal &amp; Waktu</th>
-                        <th className="py-2.5 px-3">Produk</th>
-                        <th className="py-2.5 px-3">Kategori</th>
-                        <th className="py-2.5 px-3 text-center">Qty</th>
-                        <th className="py-2.5 px-3 text-right">Harga</th>
-                        <th className="py-2.5 px-3 text-right">Total</th>
-                        <th className="py-2.5 px-3 text-right">Cuan</th>
-                        <th className="py-2.5 px-3 text-center">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-[#2B2B33]">
-                      {visibleFlatLogItems.map((it) => (
-                        <tr key={it.id} className="hover:bg-slate-50 dark:hover:bg-[#24242B]/60 transition-colors">
-                          <td className="py-2.5 px-3 font-mono text-slate-500 dark:text-zinc-400 whitespace-nowrap">
-                            {it.dateTimeStr || it.dateStr}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <p className="font-bold text-[#0F172A] dark:text-[#F4F4F6]">{it.name}</p>
-                            <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">{it.sku}</p>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="bg-slate-100 dark:bg-[#24242B] text-slate-700 dark:text-zinc-300 px-2 py-0.5 rounded-full text-[10px] font-bold border border-slate-200 dark:border-[#343440] whitespace-nowrap">
-                              {it.category}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
-                            <span className="font-bold bg-slate-100 dark:bg-[#24242B] px-2 py-0.5 rounded-full text-[#0F172A] dark:text-[#F4F4F6] border border-slate-200 dark:border-[#343440] tabular-nums">
-                              {it.qty}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-medium text-slate-600 dark:text-zinc-300 tabular-nums font-mono whitespace-nowrap">
-                            {formatRupiah(it.price)}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono whitespace-nowrap">
-                            {formatRupiah(it.total)}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-bold text-emerald-600 dark:text-emerald-400 tabular-nums font-mono whitespace-nowrap">
-                            +{formatRupiah(it.margin)}
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                onClick={() => onViewReceipt(it.rawReceipt)}
-                                className="p-1.5 text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] hover:bg-slate-100 dark:hover:bg-[#24242B] rounded-lg transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
-                                title="Lihat Nota"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              {(onDeleteTransaction || onVoidTransaction) && (
-                                <button
-                                  onClick={() => setDeletingTrx(it.rawReceipt)}
-                                  className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/15 rounded-lg transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
-                                  title="Hapus Transaksi di Google Sheets"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
+              {/* Table Content */}
+              {filteredLogItems.length === 0 ? (
+                <div className="py-12 text-center text-xs text-[var(--muted)] border border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface-secondary)]">
+                  Tidak ada data transaksi yang cocok dengan filter.
+                </div>
+              ) : logViewMode === 'BY_DATE' ? (
+                <div className="space-y-3">
+                  {visibleDateGroups.map(({ group, visibleItems }) => {
+                    const isExpanded = expandedDates[group.dateKey] !== false; // Default expanded
+                    return (
+                      <Card key={group.dateKey} className="border border-[var(--border)] rounded-2xl overflow-hidden bg-[var(--surface)] p-0 gap-0 shadow-none">
+                        <div
+                          onClick={() => toggleDateExpand(group.dateKey)}
+                          className="bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-extrabold text-xs text-[var(--foreground)]">{group.dateDisplay}</span>
+                            <Chip size="sm" variant="soft" color="default" className="bg-[var(--surface)] border border-[var(--border)] text-[10px] font-bold tabular-nums">
+                              <Chip.Label>{group.items.length} item • {group.totalQty} btl</Chip.Label>
+                            </Chip>
+                          </div>
+                          <div className="flex items-center justify-between sm:justify-end gap-4 text-xs">
+                            <div>
+                              <span className="text-[var(--muted)] text-[10px] mr-1">Omzet:</span>
+                              <span className="font-extrabold text-[var(--foreground)] tabular-nums font-mono">{formatRupiah(group.totalOmset)}</span>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            <div>
+                              <span className="text-[var(--muted)] text-[10px] mr-1">Cuan:</span>
+                              <span className="font-bold text-emerald-700 dark:text-[var(--success)] tabular-nums font-mono">+{formatRupiah(group.totalMargin)}</span>
+                            </div>
+                            {isExpanded ? <ChevronDown className="w-4 h-4 text-[var(--muted)]" /> : <ChevronRight className="w-4 h-4 text-[var(--muted)]" />}
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <>
+                            {/* Mobile Card List (<640px) */}
+                            <div className="sm:hidden divide-y divide-[var(--separator)] border-t border-[var(--border)]">
+                              {visibleItems.map((it) => (
+                                <div key={it.id} className="p-3 space-y-2">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-mono">
+                                        <span className="font-bold text-[var(--accent)]">{it.trxId}</span>
+                                        <span className="text-[var(--muted)]">•</span>
+                                        <span className="text-[var(--muted)]">{it.timeStr || it.dateStr}</span>
+                                      </div>
+                                      <p className="font-bold text-xs text-[var(--foreground)] mt-0.5 break-words">
+                                        {it.name}
+                                      </p>
+                                      <p className="text-[10px] text-[var(--muted)] font-mono truncate">
+                                        {it.sku}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <Button
+                                        type="button"
+                                        isIconOnly
+                                        size="sm"
+                                        variant="outline"
+                                        onPress={() => onViewReceipt(it.rawReceipt)}
+                                        aria-label={`Lihat nota ${it.trxId}`}
+                                        className="min-w-[44px] min-h-[44px] rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] bg-[var(--surface-secondary)] border-[var(--border)]"
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                      </Button>
+                                      {(onDeleteTransaction || onVoidTransaction) && (
+                                        <Button
+                                          type="button"
+                                          isIconOnly
+                                          size="sm"
+                                          variant="outline"
+                                          onPress={() => setDeletingTrx(it.rawReceipt)}
+                                          aria-label={`Hapus transaksi ${it.trxId}`}
+                                          className="min-w-[44px] min-h-[44px] rounded-xl text-red-700 dark:text-[var(--danger)] bg-[var(--danger-soft)] border-[var(--danger)]/35"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2 text-xs pt-1 border-t border-[var(--separator)]">
+                                    <span className="text-[var(--muted)] font-mono tabular-nums">
+                                      <strong className="text-[var(--foreground)]">{it.qty}×</strong> {formatRupiah(it.price)}
+                                    </span>
+                                    <div className="text-right font-mono tabular-nums">
+                                      <span className="font-extrabold text-[var(--foreground)]">{formatRupiah(it.total)}</span>
+                                      <span className="block text-[10px] font-bold text-emerald-700 dark:text-[var(--success)]">+{formatRupiah(it.margin)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Desktop Table (>=640px) */}
+                            <div className="hidden sm:block overflow-x-auto border-t border-[var(--border)]">
+                              <table className="w-full text-left text-xs">
+                                <thead>
+                                  <tr className="border-b border-[var(--border)] text-[var(--muted)] font-bold uppercase text-[10px] bg-[var(--surface-secondary)]">
+                                    <th className="py-2.5 px-3">Waktu / Nota ID</th>
+                                    <th className="py-2.5 px-3">Produk</th>
+                                    <th className="py-2.5 px-3 text-center">Qty</th>
+                                    <th className="py-2.5 px-3 text-right">Harga</th>
+                                    <th className="py-2.5 px-3 text-right">Total</th>
+                                    <th className="py-2.5 px-3 text-right">Cuan</th>
+                                    <th className="py-2.5 px-3 text-center">Aksi</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[var(--separator)]">
+                                  {visibleItems.map((it) => (
+                                    <tr key={it.id} className="hover:bg-[var(--surface-secondary)] transition-colors">
+                                      <td className="py-2.5 px-3 font-mono text-[var(--muted)] whitespace-nowrap">
+                                        {it.timeStr || it.dateStr}
+                                        <span className="block text-[10px] font-bold text-[var(--accent)]">{it.trxId}</span>
+                                      </td>
+                                      <td className="py-2.5 px-3">
+                                        <p className="font-bold text-[var(--foreground)]">{it.name}</p>
+                                        <p className="text-[10px] text-[var(--muted)] font-mono">{it.sku}</p>
+                                      </td>
+                                      <td className="py-2.5 px-3 text-center">
+                                        <span className="font-bold bg-[var(--surface-secondary)] px-2 py-0.5 rounded-full text-[var(--foreground)] border border-[var(--border)] tabular-nums">
+                                          {it.qty}
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 px-3 text-right font-medium text-[var(--muted)] tabular-nums font-mono whitespace-nowrap">
+                                        {formatRupiah(it.price)}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-right font-extrabold text-[var(--foreground)] tabular-nums font-mono whitespace-nowrap">
+                                        {formatRupiah(it.total)}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-right font-bold text-emerald-700 dark:text-[var(--success)] tabular-nums font-mono whitespace-nowrap">
+                                        +{formatRupiah(it.margin)}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-center">
+                                        <div className="flex items-center justify-center gap-1">
+                                          <Button
+                                            isIconOnly
+                                            size="sm"
+                                            variant="ghost"
+                                            onPress={() => onViewReceipt(it.rawReceipt)}
+                                            aria-label={`Lihat nota ${it.trxId}`}
+                                            className="text-[var(--muted)] hover:text-[var(--foreground)] rounded-lg min-h-[40px] min-w-[40px]"
+                                          >
+                                            <Eye className="w-4 h-4" />
+                                          </Button>
+                                          {(onDeleteTransaction || onVoidTransaction) && (
+                                            <Button
+                                              isIconOnly
+                                              size="sm"
+                                              variant="ghost"
+                                              onPress={() => setDeletingTrx(it.rawReceipt)}
+                                              aria-label={`Hapus transaksi ${it.trxId}`}
+                                              className="text-red-700 dark:text-[var(--danger)] hover:bg-[var(--danger-soft)] rounded-lg min-h-[40px] min-w-[40px]"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </>
+                        )}
+                      </Card>
+                    );
+                  })}
+                  {filteredLogItems.length > displayedByDateCount && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 px-1">
+                      <span className="text-xs text-[var(--muted)] font-medium tabular-nums">
+                        Menampilkan {displayedByDateCount} dari {filteredLogItems.length} baris
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onPress={() => setLogVisibleCount((prev) => prev + 50)}
+                        className="w-full sm:w-auto px-4 rounded-xl border border-[var(--border)] text-xs font-bold min-h-[44px]"
+                      >
+                        Muat Lagi (+50)
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                {filteredLogItems.length > visibleFlatLogItems.length && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1 px-1">
-                    <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium tabular-nums">
-                      Menampilkan {visibleFlatLogItems.length} dari {filteredLogItems.length} baris
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setLogVisibleCount((prev) => prev + 50)}
-                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
-                    >
-                      Muat Lagi (+50)
-                    </button>
+              ) : (
+                <div className="space-y-3">
+                  {/* Mobile Card List (<640px) */}
+                  <div className="sm:hidden space-y-2.5">
+                    {visibleFlatLogItems.map((it) => (
+                      <Card key={it.id} className="border border-[var(--border)] rounded-2xl p-3 gap-2 bg-[var(--surface)] shadow-none">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+                              <span className="font-mono text-[var(--muted)]">{it.dateTimeStr || it.dateStr}</span>
+                              <Chip size="sm" variant="soft" color="default" className="border border-[var(--border)] text-[10px] font-bold">
+                                <Chip.Label>{it.category}</Chip.Label>
+                              </Chip>
+                            </div>
+                            <p className="font-bold text-xs text-[var(--foreground)] mt-1 break-words">{it.name}</p>
+                            <p className="text-[10px] text-[var(--muted)] font-mono truncate">{it.sku} • {it.trxId}</p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              type="button"
+                              isIconOnly
+                              size="sm"
+                              variant="outline"
+                              onPress={() => onViewReceipt(it.rawReceipt)}
+                              aria-label={`Lihat nota ${it.trxId}`}
+                              className="min-w-[44px] min-h-[44px] rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] bg-[var(--surface-secondary)] border-[var(--border)]"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {(onDeleteTransaction || onVoidTransaction) && (
+                              <Button
+                                type="button"
+                                isIconOnly
+                                size="sm"
+                                variant="outline"
+                                onPress={() => setDeletingTrx(it.rawReceipt)}
+                                aria-label={`Hapus transaksi ${it.trxId}`}
+                                className="min-w-[44px] min-h-[44px] rounded-xl text-red-700 dark:text-[var(--danger)] bg-[var(--danger-soft)] border-[var(--danger)]/35"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 text-xs pt-1.5 border-t border-[var(--separator)]">
+                          <span className="text-[var(--muted)] font-mono tabular-nums">
+                            <strong className="text-[var(--foreground)]">{it.qty}×</strong> {formatRupiah(it.price)}
+                          </span>
+                          <div className="text-right font-mono tabular-nums">
+                            <span className="font-extrabold text-[var(--foreground)]">{formatRupiah(it.total)}</span>
+                            <span className="block text-[10px] font-bold text-emerald-700 dark:text-[var(--success)]">+{formatRupiah(it.margin)}</span>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+
+                  {/* Desktop Table (>=640px) */}
+                  <div className="hidden sm:block border border-[var(--border)] rounded-2xl overflow-x-auto bg-[var(--surface)]">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-[var(--border)] text-[var(--muted)] font-bold uppercase text-[10px] bg-[var(--surface-secondary)]">
+                          <th className="py-2.5 px-3">Tanggal &amp; Waktu</th>
+                          <th className="py-2.5 px-3">Produk</th>
+                          <th className="py-2.5 px-3">Kategori</th>
+                          <th className="py-2.5 px-3 text-center">Qty</th>
+                          <th className="py-2.5 px-3 text-right">Harga</th>
+                          <th className="py-2.5 px-3 text-right">Total</th>
+                          <th className="py-2.5 px-3 text-right">Cuan</th>
+                          <th className="py-2.5 px-3 text-center">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--separator)]">
+                        {visibleFlatLogItems.map((it) => (
+                          <tr key={it.id} className="hover:bg-[var(--surface-secondary)] transition-colors">
+                            <td className="py-2.5 px-3 font-mono text-[var(--muted)] whitespace-nowrap">
+                              {it.dateTimeStr || it.dateStr}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <p className="font-bold text-[var(--foreground)]">{it.name}</p>
+                              <p className="text-[10px] text-[var(--muted)] font-mono">{it.sku}</p>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="bg-[var(--surface-secondary)] text-[var(--foreground)] px-2 py-0.5 rounded-full text-[10px] font-bold border border-[var(--border)] whitespace-nowrap">
+                                {it.category}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <span className="font-bold bg-[var(--surface-secondary)] px-2 py-0.5 rounded-full text-[var(--foreground)] border border-[var(--border)] tabular-nums">
+                                {it.qty}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-medium text-[var(--muted)] tabular-nums font-mono whitespace-nowrap">
+                              {formatRupiah(it.price)}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-extrabold text-[var(--foreground)] tabular-nums font-mono whitespace-nowrap">
+                              {formatRupiah(it.total)}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-bold text-emerald-700 dark:text-[var(--success)] tabular-nums font-mono whitespace-nowrap">
+                              +{formatRupiah(it.margin)}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="ghost"
+                                  onPress={() => onViewReceipt(it.rawReceipt)}
+                                  aria-label={`Lihat nota ${it.trxId}`}
+                                  className="text-[var(--muted)] hover:text-[var(--foreground)] rounded-lg min-h-[40px] min-w-[40px]"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                {(onDeleteTransaction || onVoidTransaction) && (
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="ghost"
+                                    onPress={() => setDeletingTrx(it.rawReceipt)}
+                                    aria-label={`Hapus transaksi ${it.trxId}`}
+                                    className="text-red-700 dark:text-[var(--danger)] hover:bg-[var(--danger-soft)] rounded-lg min-h-[40px] min-w-[40px]"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {filteredLogItems.length > visibleFlatLogItems.length && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1 px-1">
+                      <span className="text-xs text-[var(--muted)] font-medium tabular-nums">
+                        Menampilkan {visibleFlatLogItems.length} dari {filteredLogItems.length} baris
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onPress={() => setLogVisibleCount((prev) => prev + 50)}
+                        className="w-full sm:w-auto px-4 rounded-xl border border-[var(--border)] text-xs font-bold min-h-[44px]"
+                      >
+                        Muat Lagi (+50)
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
       </section>
 
       {/* ========================================================= */}
@@ -2608,14 +2688,14 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
       <section id="sec-arus-kas" className="space-y-4 pt-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35 flex items-center justify-center font-bold flex-shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] border border-[var(--success)]/35 flex items-center justify-center font-bold flex-shrink-0">
               <Wallet className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight">
+              <h3 className="text-base sm:text-lg font-extrabold text-[var(--foreground)] tracking-tight">
                 Arus Kas &amp; Buku Kas Pengeluaran
               </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <p className="text-xs text-[var(--muted)]">
                 Pencatatan kas masuk &amp; keluar non-penjualan yang tersinkronisasi dengan Google Sheets (Sheet LAIN-LAIN)
               </p>
             </div>
@@ -2634,160 +2714,151 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
       </section>
 
       {/* Modal Target Omzet Editing */}
-      {isEditingTarget && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-        >
-          <div className="fixed inset-0" onClick={() => setIsEditingTarget(false)} aria-hidden="true" />
-          <form
-            onSubmit={handleTargetSubmit}
-            className="relative z-10 bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-3xl max-w-sm w-full border-t sm:border border-slate-200 dark:border-[#2B2B33] shadow-2xl max-h-[92dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-150"
-          >
-            <div className="px-5 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-[#2563EB] dark:text-[#C084FC]">
-                  <Target className="w-5 h-5" />
-                  <h3 className="font-bold text-[#0F172A] dark:text-[#F4F4F6] text-sm">Setel Target Omzet Bulanan</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingTarget(false)}
-                  aria-label="Tutup modal target"
-                  className="min-w-[44px] min-h-[44px] -mr-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] flex items-center justify-center active:scale-[0.97] cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+      <Modal isOpen={isEditingTarget} onOpenChange={(open) => { if (!open) setIsEditingTarget(false); }}>
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
+            <Modal.Dialog className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92dvh] w-full flex flex-col">
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              <form onSubmit={handleTargetSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <Modal.Header className="px-5 pt-2.5 pb-3 border-b border-[var(--separator)] shrink-0 pr-14 flex-row items-center gap-2">
+                  <Target className="w-5 h-5 text-[var(--accent)] shrink-0" />
+                  <Modal.Heading className="font-bold text-[var(--foreground)] text-sm">
+                    Setel Target Omzet Bulanan
+                  </Modal.Heading>
+                  <Modal.CloseTrigger
+                    aria-label="Tutup modal target"
+                    className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
+                  />
+                </Modal.Header>
 
-            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">
-              <label className="block text-xs font-bold text-slate-600 dark:text-zinc-300 mb-1.5">
-                Target Omzet (Rupiah):
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 dark:text-zinc-400">Rp</span>
-                <input
-                  type="number"
-                  value={targetInput}
-                  onChange={(e) => setTargetInput(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] tabular-nums font-mono min-h-[44px]"
-                  placeholder="Contoh: 50000000"
-                  autoFocus
-                />
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1.5 tabular-nums font-mono">
-                Format: {formatRupiah(Number(targetInput) || 0)}
-              </p>
-            </div>
+                <Modal.Body className="!mt-0 flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4">
+                  <label className="block text-xs font-bold text-[var(--muted)] mb-1.5">
+                    Target Omzet (Rupiah):
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--muted)] z-10 pointer-events-none">Rp</span>
+                    <Input
+                      type="number"
+                      fullWidth
+                      variant="secondary"
+                      value={targetInput}
+                      onChange={(e) => setTargetInput(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-sm font-extrabold text-[var(--foreground)] tabular-nums font-mono min-h-[44px]"
+                      placeholder="Contoh: 50000000"
+                      autoFocus
+                    />
+                  </div>
+                  <p className="text-[11px] text-[var(--muted)] mt-1.5 tabular-nums font-mono">
+                    Format: {formatRupiah(Number(targetInput) || 0)}
+                  </p>
+                </Modal.Body>
 
-            <div className="px-5 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] pb-safe flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsEditingTarget(false)}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-[#1B1B20] dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-slate-700 dark:text-zinc-200 text-xs font-bold active:scale-[0.97] cursor-pointer min-h-[44px]"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] dark:shadow-[0_0_16px_rgba(168,85,247,0.3)] text-white text-xs font-bold active:scale-[0.97] cursor-pointer min-h-[44px]"
-              >
-                Simpan Target
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+                <Modal.Footer className="!mt-0 px-5 py-3 border-t border-[var(--separator)] bg-[var(--surface-secondary)] pb-safe flex items-center gap-2 shrink-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onPress={() => setIsEditingTarget(false)}
+                    className="flex-1 rounded-xl text-xs font-bold min-h-[44px] bg-[var(--surface)]"
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="flex-1 rounded-xl text-xs font-bold min-h-[44px]"
+                  >
+                    Simpan Target
+                  </Button>
+                </Modal.Footer>
+              </form>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
       {/* Modal Konfirmasi Hapus Transaksi & Hapus Baris di Google Sheets */}
-      {deletingTrx && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-        >
-          <div className="fixed inset-0" onClick={() => setDeletingTrx(null)} aria-hidden="true" />
-          <div className="relative z-10 bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-3xl max-w-md w-full border-t sm:border border-slate-200 dark:border-[#2B2B33] shadow-2xl max-h-[92dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-            <div className="px-5 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400 min-w-0">
-                  <div className="w-9 h-9 rounded-2xl bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/35 flex items-center justify-center shrink-0">
-                    <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] text-sm truncate">Hapus Transaksi &amp; Hapus di Sheets</h3>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-mono truncate">ID: {deletingTrx.id}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setDeletingTrx(null)}
-                  aria-label="Tutup modal hapus transaksi"
-                  className="min-w-[44px] min-h-[44px] -mr-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] flex items-center justify-center active:scale-[0.97] cursor-pointer shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+      <Modal isOpen={Boolean(deletingTrx)} onOpenChange={(open) => { if (!open) setDeletingTrx(null); }}>
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="md" className="p-0 sm:p-4">
+            <Modal.Dialog className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92dvh] w-full flex flex-col">
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              {deletingTrx && (
+                <>
+                  <Modal.Header className="px-5 pt-2.5 pb-3 border-b border-[var(--separator)] shrink-0 pr-14 flex-row items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-2xl bg-[var(--danger-soft)] border border-[var(--danger)]/35 flex items-center justify-center shrink-0">
+                      <Trash2 className="w-5 h-5 text-red-700 dark:text-[var(--danger)]" />
+                    </div>
+                    <div className="min-w-0">
+                      <Modal.Heading className="font-extrabold text-[var(--foreground)] text-sm truncate">
+                        Hapus Transaksi &amp; Hapus di Sheets
+                      </Modal.Heading>
+                      <p className="text-[11px] text-[var(--muted)] font-mono truncate">ID: {deletingTrx.id}</p>
+                    </div>
+                    <Modal.CloseTrigger
+                      aria-label="Tutup modal hapus transaksi"
+                      className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
+                    />
+                  </Modal.Header>
 
-            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3.5">
-              <div className="bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/35 p-3.5 rounded-2xl text-xs text-[#0F172A] dark:text-[#F4F4F6] space-y-1.5">
-                <p className="font-bold flex items-center gap-1.5 text-red-700 dark:text-red-400">
-                  <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-                  <span>Peringatan Penghapusan Permanen:</span>
-                </p>
-                <p className="text-[11px] text-slate-600 dark:text-zinc-300 leading-relaxed">
-                  Tindakan ini akan <strong>menghapus baris transaksi #{deletingTrx.id} dari sheet LOG_PENJUALAN</strong> di Google Spreadsheet secara permanen dan menghapusnya dari riwayat penjualan aplikasi.
-                </p>
-              </div>
+                  <Modal.Body className="!mt-0 flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-3.5">
+                    <div className="bg-[var(--danger-soft)] border border-[var(--danger)]/35 p-3.5 rounded-2xl text-xs text-[var(--foreground)] space-y-1.5">
+                      <p className="font-bold flex items-center gap-1.5 text-red-700 dark:text-[var(--danger)]">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>Peringatan Penghapusan Permanen:</span>
+                      </p>
+                      <p className="text-[11px] text-[var(--muted)] leading-relaxed">
+                        Tindakan ini akan <strong className="text-[var(--foreground)]">menghapus baris transaksi #{deletingTrx.id} dari sheet LOG_PENJUALAN</strong> di Google Spreadsheet secara permanen dan menghapusnya dari riwayat penjualan aplikasi.
+                      </p>
+                    </div>
 
-              <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-2xl text-xs space-y-1.5 border border-slate-200 dark:border-[#343440]">
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-zinc-400">Tanggal:</span>
-                  <span className="font-semibold text-[#0F172A] dark:text-[#F4F4F6]">{deletingTrx.transactionDate || deletingTrx.date}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-zinc-400">Total Belanja:</span>
-                  <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">{formatRupiah(deletingTrx.total)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-zinc-400">Pelanggan:</span>
-                  <span className="text-[#0F172A] dark:text-[#F4F4F6] font-medium">{deletingTrx.customerName || 'Umum'}</span>
-                </div>
-              </div>
-            </div>
+                    <div className="bg-[var(--surface-secondary)] p-3 rounded-2xl text-xs space-y-1.5 border border-[var(--border)]">
+                      <div className="flex justify-between">
+                        <span className="text-[var(--muted)]">Tanggal:</span>
+                        <span className="font-semibold text-[var(--foreground)]">{deletingTrx.transactionDate || deletingTrx.date}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[var(--muted)]">Total Belanja:</span>
+                        <span className="font-bold text-[var(--foreground)] tabular-nums font-mono">{formatRupiah(deletingTrx.total)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[var(--muted)]">Pelanggan:</span>
+                        <span className="text-[var(--foreground)] font-medium">{deletingTrx.customerName || 'Umum'}</span>
+                      </div>
+                    </div>
+                  </Modal.Body>
 
-            <div className="px-5 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] pb-safe flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setDeletingTrx(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-[#1B1B20] dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-slate-700 dark:text-zinc-200 text-xs font-bold active:scale-[0.97] cursor-pointer min-h-[44px]"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const targetId = deletingTrx.id;
-                  setDeletingTrx(null);
-                  if (onDeleteTransaction) {
-                    onDeleteTransaction(targetId);
-                  } else if (onVoidTransaction) {
-                    onVoidTransaction(targetId, 'Dihapus dari Riwayat Penjualan');
-                  }
-                }}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold active:scale-[0.97] cursor-pointer min-h-[44px]"
-              >
-                Ya, Hapus Permanen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                  <Modal.Footer className="!mt-0 px-5 py-3 border-t border-[var(--separator)] bg-[var(--surface-secondary)] pb-safe flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onPress={() => setDeletingTrx(null)}
+                      className="flex-1 rounded-xl text-xs font-bold min-h-[44px] bg-[var(--surface)]"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      onPress={() => {
+                        const targetId = deletingTrx.id;
+                        setDeletingTrx(null);
+                        if (onDeleteTransaction) {
+                          onDeleteTransaction(targetId);
+                        } else if (onVoidTransaction) {
+                          onVoidTransaction(targetId, 'Dihapus dari Riwayat Penjualan');
+                        }
+                      }}
+                      className="flex-1 rounded-xl text-xs font-bold min-h-[44px]"
+                    >
+                      Ya, Hapus Permanen
+                    </Button>
+                  </Modal.Footer>
+                </>
+              )}
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </div>
   );
 };

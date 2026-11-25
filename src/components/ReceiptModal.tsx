@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Button, Input, Modal, Separator } from '@heroui/react';
 import {
   Printer,
   Share2,
@@ -588,339 +589,347 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   const isVoided = receipt.status === 'VOIDED';
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Struk ${receipt.id}`}
-      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-    >
-      <div className="fixed inset-0 hidden sm:block" onClick={onClose} aria-hidden="true" />
-
-      <div
-        id="receipt-modal-card"
-        className="relative z-10 w-full h-dvh sm:h-auto sm:max-h-[90dvh] sm:max-w-sm bg-white dark:bg-[#1B1B20] sm:rounded-2xl border-0 sm:border border-slate-200 dark:border-[#2B2B33] shadow-2xl flex flex-col overflow-hidden text-[#0F172A] dark:text-[#F4F4F6] animate-in slide-in-from-bottom sm:zoom-in-95 duration-150"
+    <>
+      <Modal
+        isOpen={isOpen && !!receipt}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
       >
-        {/* ZONA 1 (ATAS TETAP): Status + Nomor Nota + Total + Menu Lainnya + Tutup */}
-        <div className="px-4 pt-safe pb-3 pt-3 border-b border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] shrink-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                  isVoided
-                    ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400'
-                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
-                }`}
-              >
-                {isVoided ? <Ban className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-xs font-extrabold text-[#0F172A] dark:text-[#F4F4F6] truncate">
-                    {isVoided ? 'Nota Dibatalkan' : 'Transaksi Berhasil'}
-                  </span>
-                  <span className="text-xs font-black font-mono text-[#2563EB] dark:text-[#C084FC] num-tabular shrink-0">
-                    · {formatRupiah(receipt.total)}
-                  </span>
-                </div>
-                <p className="text-[11px] font-mono text-slate-500 dark:text-zinc-400 truncate mt-0.5">
-                  #{receipt.id}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                id="btn-receipt-more"
-                onClick={() => setShowMoreMenu(true)}
-                aria-label="Menu opsi struk lainnya"
-                className="min-w-[44px] min-h-[44px] rounded-xl bg-white hover:bg-slate-100 border border-slate-200 dark:bg-[#1B1B20] dark:hover:bg-[#2E2E37] dark:border-[#343440] flex items-center justify-center text-slate-600 dark:text-zinc-300 transition-colors active:scale-[0.97] cursor-pointer"
-              >
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Tutup struk"
-                className="min-w-[44px] min-h-[44px] rounded-xl bg-white hover:bg-slate-100 border border-slate-200 dark:bg-[#1B1B20] dark:hover:bg-[#2E2E37] dark:border-[#343440] flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] transition-colors active:scale-[0.97] cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {localNotice && (
-            <div className="mt-2 bg-slate-900 dark:bg-[#1B1B20] border border-slate-700 dark:border-purple-500/40 text-white text-xs font-semibold px-3 py-2 rounded-xl flex items-center justify-between gap-2">
-              <span className="truncate">{localNotice}</span>
-              <button
-                type="button"
-                onClick={() => setLocalNotice(null)}
-                aria-label="Tutup pesan"
-                className="text-slate-400 hover:text-white p-1 cursor-pointer shrink-0"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ZONA 2 (TENGAH — SATU-SATUNYA AREA SCROLL): Kertas Struk Thermal (Format & Isi Tetap Utuh) */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3.5 sm:p-4 bg-slate-100 dark:bg-[#121215]">
-          <div className="w-full max-w-sm mx-auto">
-            <div
-              ref={receiptRef}
-              id="thermal-receipt-container"
-              className="w-full bg-white text-stone-900 p-5 rounded-2xl shadow-sm font-mono text-xs border border-stone-200 select-all space-y-3"
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
+            <Modal.Dialog
+              id="receipt-modal-card"
+              aria-label={`Struk ${receipt.id}`}
+              className="relative p-0 gap-0 w-full h-dvh sm:h-auto sm:max-h-[90dvh] sm:max-w-sm bg-[var(--overlay)] text-[var(--overlay-foreground)] rounded-none sm:rounded-2xl border-0 sm:border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden"
             >
-              {/* Header */}
-              <div className="text-center pb-3 border-b border-dashed border-stone-300">
-                <div className="font-black text-base tracking-wider uppercase text-stone-950">
-                  {brand.NAME}
-                </div>
-                <p className="text-[11px] font-bold text-stone-600 mt-0.5">{brand.SUBTITLE}</p>
-                <p className="text-[10px] text-stone-500 mt-0.5">{brand.DESCRIPTION_1}</p>
-                <p className="text-[10px] text-stone-800 font-bold mt-1">WA: {brand.PHONE}</p>
-              </div>
+              {/* ZONA 1 (ATAS TETAP): Status + Nomor Nota + Total + Menu Lainnya + Tutup */}
+              <Modal.Header className="px-4 pt-safe pb-3 pt-3 border-b border-[var(--border)] bg-[var(--surface-secondary)] shrink-0 gap-2">
+                <div className="flex items-center justify-between gap-2 w-full">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        isVoided
+                          ? 'bg-[var(--danger-soft)] text-[var(--danger)]'
+                          : 'bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)]'
+                      }`}
+                    >
+                      {isVoided ? <Ban className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Modal.Heading className="flex items-center gap-1.5 min-w-0 text-xs font-extrabold text-[var(--foreground)]">
+                        <span className="truncate">
+                          {isVoided ? 'Nota Dibatalkan' : 'Transaksi Berhasil'}
+                        </span>
+                        <span className="text-xs font-black font-mono text-[var(--accent)] num-tabular shrink-0">
+                          · {formatRupiah(receipt.total)}
+                        </span>
+                      </Modal.Heading>
+                      <p className="text-[11px] font-mono text-[var(--muted)] truncate mt-0.5">
+                        #{receipt.id}
+                      </p>
+                    </div>
+                  </div>
 
-              {/* Meta */}
-              <div className="py-2 border-b border-dashed border-stone-300 space-y-1 text-[11px] text-stone-600">
-                <div className="flex justify-between gap-2">
-                  <span>No. Nota</span>
-                  <span className="font-bold text-stone-900 text-right">{receipt.id}</span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      isIconOnly
+                      variant="outline"
+                      id="btn-receipt-more"
+                      onPress={() => setShowMoreMenu(true)}
+                      aria-label="Menu opsi struk lainnya"
+                      className="min-w-[44px] min-h-[44px] rounded-xl bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)]"
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      isIconOnly
+                      variant="outline"
+                      onPress={onClose}
+                      aria-label="Tutup struk"
+                      className="min-w-[44px] min-h-[44px] rounded-xl bg-[var(--surface)] border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)]"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex justify-between gap-2">
-                  <span>Waktu</span>
-                  <span className="text-right">{receipt.transactionDate}</span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span>Metode</span>
-                  <span className="font-bold px-1.5 py-0.2 rounded-md bg-stone-100 text-stone-900">
-                    {receipt.paymentMethod}
-                  </span>
-                </div>
-                {receipt.customerName && (
-                  <div className="flex justify-between gap-2">
-                    <span>Pelanggan</span>
-                    <span className="font-semibold text-stone-900 text-right">{receipt.customerName}</span>
+
+                {localNotice && (
+                  <div className="mt-1 bg-[var(--surface)] border border-[var(--accent)]/40 text-[var(--foreground)] text-xs font-semibold px-3 py-2 rounded-xl flex items-center justify-between gap-2 w-full">
+                    <span className="truncate">{localNotice}</span>
+                    <button
+                      type="button"
+                      onClick={() => setLocalNotice(null)}
+                      aria-label="Tutup pesan"
+                      className="text-[var(--muted)] hover:text-[var(--foreground)] p-1 cursor-pointer shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
-              </div>
+              </Modal.Header>
 
-              {/* Items */}
-              <div className="py-2 border-b border-dashed border-stone-300 space-y-1.5">
-                {(() => {
-                  const regularItems = receipt.items.filter(
-                    (item) => item.price >= 0 && !String(item.sku || '').toUpperCase().includes('PROMO')
-                  );
-                  const itemsToDisplay = regularItems.length > 0 ? regularItems : receipt.items;
-                  return itemsToDisplay.map((item, idx) => {
-                    const itemSubtotal = item.total ?? item.subtotal ?? item.qty * item.price;
-                    const isPromo = item.price < 0 || String(item.sku || '').toUpperCase().includes('PROMO');
-                    return (
-                      <div key={idx} className={`space-y-0.5 ${isPromo ? 'text-rose-600' : ''}`}>
-                        <div
-                          className={`font-semibold leading-tight flex items-center justify-between gap-2 ${
-                            isPromo ? 'text-rose-600' : 'text-stone-900'
-                          }`}
-                        >
-                          <span>
-                            {item.name} {isPromo ? '(PROMO)' : ''}
-                          </span>
-                          {isPromo && (
-                            <span className="text-[9px] font-mono text-rose-500 font-normal shrink-0">
-                              SKU: {item.sku}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex justify-between text-stone-500 text-[11px]">
-                          <span className={isPromo ? 'text-rose-600 font-medium' : ''}>
-                            {item.qty} x {isPromo ? `-${formatRupiah(Math.abs(item.price))}` : formatRupiah(item.price)}
-                          </span>
-                          <span
-                            className={`font-bold tabular-nums text-right ${
-                              isPromo ? 'text-rose-600 font-mono' : 'text-stone-900'
-                            }`}
-                          >
-                            {isPromo ? `-${formatRupiah(Math.abs(itemSubtotal))}` : formatRupiah(itemSubtotal)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-
-              {/* Totals */}
-              <div className="py-2 border-b border-dashed border-stone-300 space-y-1 text-[11px]">
-                <div className="flex justify-between text-stone-500">
-                  <span>Total Item</span>
-                  <span className="tabular-nums text-right">{receipt.totalQty} botol</span>
-                </div>
-                {receipt.discount > 0 && (
-                  <>
-                    <div className="flex justify-between text-stone-500">
-                      <span>Subtotal</span>
-                      <span className="tabular-nums text-right">{formatRupiah(receipt.subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-rose-600 font-semibold">
-                      <span>Diskon {receipt.promoName ? `(${receipt.promoName})` : ''}</span>
-                      <span className="tabular-nums text-right">-{formatRupiah(receipt.discount)}</span>
-                    </div>
-                  </>
-                )}
-                {receipt.shippingFee && receipt.shippingFee > 0 && (
-                  <div className="flex justify-between text-[#FF5E36] font-semibold">
-                    <span>Ongkir (Pengiriman)</span>
-                    <span className="tabular-nums text-right">+{formatRupiah(receipt.shippingFee)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm font-black pt-1.5 text-stone-950 border-t border-stone-200">
-                  <span>TOTAL AKHIR</span>
-                  <span className="tabular-nums text-right">{formatRupiah(receipt.total)}</span>
-                </div>
-
-                {receipt.paymentMethod === 'CASH' && receipt.cashReceived !== undefined && (
-                  <>
-                    <div className="flex justify-between text-stone-600 pt-1">
-                      <span>Uang Diterima</span>
-                      <span className="tabular-nums text-right">{formatRupiah(receipt.cashReceived)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-emerald-700">
-                      <span>Kembalian</span>
-                      <span className="tabular-nums text-right">{formatRupiah(receipt.cashChange || 0)}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Footer */}
-              <div className="text-center pt-2 text-[10px] text-stone-500 space-y-0.5">
-                <p className="font-bold text-stone-800">***SELAMAT BERSENANG-SENANG BESOK MINUM LAGIII!!***</p>
-                <p>JANGAN LUPA BINTANG 5 DI GOOGLE MAPS YAA.</p>
-                <p className="text-[9px] text-stone-400">••• ATLAS AMER KEDIRI ••• </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ZONA 3 (BAWAH MENEMPEL, SAFE AREA): Baris 1 (3 tombol sama besar) + Baris 2 (Transaksi Baru penuh) */}
-        <div className="px-3.5 sm:px-4 pt-3 pb-safe bg-white dark:bg-[#1B1B20] border-t border-slate-200 dark:border-[#2B2B33] shrink-0 space-y-2">
-          {pngStatus === 'error' && (
-            <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-red-50 border border-red-200 dark:bg-red-500/15 dark:border-red-500/35 text-xs">
-              <span className="font-semibold text-red-700 dark:text-red-300 truncate">
-                Gagal menyiapkan gambar struk
-              </span>
-              <button
-                type="button"
-                onClick={() => void prepareReceiptPng()}
-                className="min-h-[34px] px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1 shrink-0 active:scale-[0.97] cursor-pointer"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span>Coba lagi</span>
-              </button>
-            </div>
-          )}
-
-          {/* Baris 1: 3 tombol sejajar sama besar (>= 48px) */}
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              id="share-receipt-png-button"
-              onClick={handleShareImage}
-              disabled={isPreparingPng}
-              className="min-h-[48px] px-2 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-0.5 transition-colors active:scale-[0.97] cursor-pointer disabled:opacity-70"
-            >
-              {isPreparingPng ? (
-                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-              ) : (
-                <Share2 className="w-4 h-4 shrink-0" />
-              )}
-              <span className="truncate max-w-full leading-tight">
-                {isPreparingPng ? 'Menyiapkan...' : 'Kirim Gambar'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              id="copy-receipt-png-button"
-              onClick={handleCopyImage}
-              disabled={isPreparingPng}
-              className="min-h-[48px] px-2 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#0F172A] dark:bg-[#24242B] dark:hover:bg-[#2E2E37] dark:border-[#343440] dark:text-[#F4F4F6] font-bold text-[11px] flex flex-col items-center justify-center gap-0.5 transition-colors active:scale-[0.97] cursor-pointer disabled:opacity-70"
-            >
-              {isPreparingPng ? (
-                <Loader2 className="w-4 h-4 animate-spin text-[#2563EB] dark:text-[#C084FC] shrink-0" />
-              ) : copiedPng ? (
-                <CheckCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              ) : (
-                <Copy className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC] shrink-0" />
-              )}
-              <span className="truncate max-w-full leading-tight">
-                {isPreparingPng ? 'Menyiapkan...' : copiedPng ? 'Tersalin' : 'Salin Gambar'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="min-h-[48px] px-2 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#0F172A] dark:bg-[#24242B] dark:hover:bg-[#2E2E37] dark:border-[#343440] dark:text-[#F4F4F6] font-bold text-[11px] flex flex-col items-center justify-center gap-0.5 transition-colors active:scale-[0.97] cursor-pointer"
-            >
-              <Printer className="w-4 h-4 text-slate-600 dark:text-zinc-300 shrink-0" />
-              <span className="truncate max-w-full leading-tight">Cetak</span>
-            </button>
-          </div>
-
-          {/* Baris 2: Satu tombol lebar penuh paling menonjol */}
-          <button
-            type="button"
-            id="btn-new-transaction"
-            onClick={handlePrimaryNewTransaction}
-            className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] text-white font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 transition-colors active:scale-[0.97] cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4 shrink-0" />
-            <span>Transaksi Baru</span>
-          </button>
-        </div>
-
-        {/* MENU "LAINNYA" (BOTTOM SHEET KECIL) — TANPA EDIT TRANSAKSI */}
-        {showMoreMenu && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Opsi Struk Lainnya"
-            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-          >
-            <div className="fixed inset-0" onClick={() => setShowMoreMenu(false)} aria-hidden="true" />
-            <div className="relative z-10 w-full max-w-sm bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 dark:border-[#2B2B33] shadow-2xl max-h-[92dvh] flex flex-col overflow-hidden text-[#0F172A] dark:text-[#F4F4F6] animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-              <div className="px-4 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] shrink-0">
-                <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-extrabold">Opsi Struk Lainnya</h4>
-                  <button
-                    type="button"
-                    onClick={() => setShowMoreMenu(false)}
-                    aria-label="Tutup opsi lainnya"
-                    className="min-w-[44px] min-h-[44px] -mr-2 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:text-zinc-400 dark:hover:bg-[#2E2E37] cursor-pointer"
+              {/* ZONA 2 (TENGAH — SATU-SATUNYA AREA SCROLL): Kertas Struk Thermal (Format & Isi Tetap Utuh) */}
+              <Modal.Body className="!mt-0 flex-1 min-h-0 overflow-y-auto overscroll-contain p-3.5 sm:p-4 bg-[var(--background)]">
+                <div className="w-full max-w-sm mx-auto">
+                  <div
+                    ref={receiptRef}
+                    id="thermal-receipt-container"
+                    className="w-full bg-white text-stone-900 p-5 rounded-2xl shadow-sm font-mono text-xs border border-stone-200 select-all space-y-3"
                   >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+                    {/* Header */}
+                    <div className="text-center pb-3 border-b border-dashed border-stone-300">
+                      <div className="font-black text-base tracking-wider uppercase text-stone-950">
+                        {brand.NAME}
+                      </div>
+                      <p className="text-[11px] font-bold text-stone-600 mt-0.5">{brand.SUBTITLE}</p>
+                      <p className="text-[10px] text-stone-500 mt-0.5">{brand.DESCRIPTION_1}</p>
+                      <p className="text-[10px] text-stone-800 font-bold mt-1">WA: {brand.PHONE}</p>
+                    </div>
 
-              <div className="p-4 space-y-2.5 pb-safe overflow-y-auto overscroll-contain">
+                    {/* Meta */}
+                    <div className="py-2 border-b border-dashed border-stone-300 space-y-1 text-[11px] text-stone-600">
+                      <div className="flex justify-between gap-2">
+                        <span>No. Nota</span>
+                        <span className="font-bold text-stone-900 text-right">{receipt.id}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span>Waktu</span>
+                        <span className="text-right">{receipt.transactionDate}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span>Metode</span>
+                        <span className="font-bold px-1.5 py-0.2 rounded-md bg-stone-100 text-stone-900">
+                          {receipt.paymentMethod}
+                        </span>
+                      </div>
+                      {receipt.customerName && (
+                        <div className="flex justify-between gap-2">
+                          <span>Pelanggan</span>
+                          <span className="font-semibold text-stone-900 text-right">{receipt.customerName}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Items */}
+                    <div className="py-2 border-b border-dashed border-stone-300 space-y-1.5">
+                      {(() => {
+                        const regularItems = receipt.items.filter(
+                          (item) => item.price >= 0 && !String(item.sku || '').toUpperCase().includes('PROMO')
+                        );
+                        const itemsToDisplay = regularItems.length > 0 ? regularItems : receipt.items;
+                        return itemsToDisplay.map((item, idx) => {
+                          const itemSubtotal = item.total ?? item.subtotal ?? item.qty * item.price;
+                          const isPromo = item.price < 0 || String(item.sku || '').toUpperCase().includes('PROMO');
+                          return (
+                            <div key={idx} className={`space-y-0.5 ${isPromo ? 'text-rose-600' : ''}`}>
+                              <div
+                                className={`font-semibold leading-tight flex items-center justify-between gap-2 ${
+                                  isPromo ? 'text-rose-600' : 'text-stone-900'
+                                }`}
+                              >
+                                <span>
+                                  {item.name} {isPromo ? '(PROMO)' : ''}
+                                </span>
+                                {isPromo && (
+                                  <span className="text-[9px] font-mono text-rose-500 font-normal shrink-0">
+                                    SKU: {item.sku}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex justify-between text-stone-500 text-[11px]">
+                                <span className={isPromo ? 'text-rose-600 font-medium' : ''}>
+                                  {item.qty} x {isPromo ? `-${formatRupiah(Math.abs(item.price))}` : formatRupiah(item.price)}
+                                </span>
+                                <span
+                                  className={`font-bold tabular-nums text-right ${
+                                    isPromo ? 'text-rose-600 font-mono' : 'text-stone-900'
+                                  }`}
+                                >
+                                  {isPromo ? `-${formatRupiah(Math.abs(itemSubtotal))}` : formatRupiah(itemSubtotal)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+
+                    {/* Totals */}
+                    <div className="py-2 border-b border-dashed border-stone-300 space-y-1 text-[11px]">
+                      <div className="flex justify-between text-stone-500">
+                        <span>Total Item</span>
+                        <span className="tabular-nums text-right">{receipt.totalQty} botol</span>
+                      </div>
+                      {receipt.discount > 0 && (
+                        <>
+                          <div className="flex justify-between text-stone-500">
+                            <span>Subtotal</span>
+                            <span className="tabular-nums text-right">{formatRupiah(receipt.subtotal)}</span>
+                          </div>
+                          <div className="flex justify-between text-rose-600 font-semibold">
+                            <span>Diskon {receipt.promoName ? `(${receipt.promoName})` : ''}</span>
+                            <span className="tabular-nums text-right">-{formatRupiah(receipt.discount)}</span>
+                          </div>
+                        </>
+                      )}
+                      {receipt.shippingFee && receipt.shippingFee > 0 && (
+                        <div className="flex justify-between text-[#FF5E36] font-semibold">
+                          <span>Ongkir (Pengiriman)</span>
+                          <span className="tabular-nums text-right">+{formatRupiah(receipt.shippingFee)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm font-black pt-1.5 text-stone-950 border-t border-stone-200">
+                        <span>TOTAL AKHIR</span>
+                        <span className="tabular-nums text-right">{formatRupiah(receipt.total)}</span>
+                      </div>
+
+                      {receipt.paymentMethod === 'CASH' && receipt.cashReceived !== undefined && (
+                        <>
+                          <div className="flex justify-between text-stone-600 pt-1">
+                            <span>Uang Diterima</span>
+                            <span className="tabular-nums text-right">{formatRupiah(receipt.cashReceived)}</span>
+                          </div>
+                          <div className="flex justify-between font-bold text-emerald-700">
+                            <span>Kembalian</span>
+                            <span className="tabular-nums text-right">{formatRupiah(receipt.cashChange || 0)}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="text-center pt-2 text-[10px] text-stone-500 space-y-0.5">
+                      <p className="font-bold text-stone-800">***SELAMAT BERSENANG-SENANG BESOK MINUM LAGIII!!***</p>
+                      <p>JANGAN LUPA BINTANG 5 DI GOOGLE MAPS YAA.</p>
+                      <p className="text-[9px] text-stone-400">••• ATLAS AMER KEDIRI ••• </p>
+                    </div>
+                  </div>
+                </div>
+              </Modal.Body>
+
+              {/* ZONA 3 (BAWAH MENEMPEL, SAFE AREA): Baris 1 (3 tombol sama besar) + Baris 2 (Transaksi Baru penuh) */}
+              <Modal.Footer className="!mt-0 px-3.5 sm:px-4 pt-3 pb-safe bg-[var(--surface)] border-t border-[var(--border)] shrink-0 flex-col items-stretch gap-2">
+                {pngStatus === 'error' && (
+                  <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[var(--danger-soft)] border border-[var(--danger)]/35 text-xs">
+                    <span className="font-semibold text-[var(--danger)] truncate">
+                      Gagal menyiapkan gambar struk
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onPress={() => void prepareReceiptPng()}
+                      className="min-h-[34px] rounded-lg font-bold shrink-0"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Coba lagi</span>
+                    </Button>
+                  </div>
+                )}
+
+                {/* Baris 1: 3 tombol sejajar sama besar (>= 48px) */}
+                <div className="grid grid-cols-3 gap-2 w-full">
+                  <Button
+                    id="share-receipt-png-button"
+                    onPress={handleShareImage}
+                    isDisabled={isPreparingPng}
+                    className="min-h-[48px] h-auto px-2 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex-col gap-0.5"
+                  >
+                    {isPreparingPng ? (
+                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                    ) : (
+                      <Share2 className="w-4 h-4 shrink-0" />
+                    )}
+                    <span className="truncate max-w-full leading-tight">
+                      {isPreparingPng ? 'Menyiapkan...' : 'Kirim Gambar'}
+                    </span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    id="copy-receipt-png-button"
+                    onPress={handleCopyImage}
+                    isDisabled={isPreparingPng}
+                    className="min-h-[48px] h-auto px-2 py-2 rounded-xl bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)] font-bold text-[11px] flex-col gap-0.5"
+                  >
+                    {isPreparingPng ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-[var(--accent)] shrink-0" />
+                    ) : copiedPng ? (
+                      <CheckCheck className="w-4 h-4 text-emerald-600 dark:text-[var(--success)] shrink-0" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-[var(--accent)] shrink-0" />
+                    )}
+                    <span className="truncate max-w-full leading-tight">
+                      {isPreparingPng ? 'Menyiapkan...' : copiedPng ? 'Tersalin' : 'Salin Gambar'}
+                    </span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onPress={handlePrint}
+                    className="min-h-[48px] h-auto px-2 py-2 rounded-xl bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)] font-bold text-[11px] flex-col gap-0.5"
+                  >
+                    <Printer className="w-4 h-4 text-[var(--muted)] shrink-0" />
+                    <span className="truncate max-w-full leading-tight">Cetak</span>
+                  </Button>
+                </div>
+
+                {/* Baris 2: Satu tombol lebar penuh paling menonjol */}
+                <Button
+                  variant="primary"
+                  fullWidth
+                  id="btn-new-transaction"
+                  onPress={handlePrimaryNewTransaction}
+                  className="min-h-[48px] py-3 px-4 rounded-xl font-extrabold text-sm tracking-wide"
+                >
+                  <PlusCircle className="w-4 h-4 shrink-0" />
+                  <span>Transaksi Baru</span>
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+
+      {/* MENU "LAINNYA" (BOTTOM SHEET KECIL) — TANPA EDIT TRANSAKSI */}
+      <Modal
+        isOpen={showMoreMenu}
+        onOpenChange={(open) => {
+          if (!open) setShowMoreMenu(false);
+        }}
+      >
+        <Modal.Backdrop variant="opaque" className="z-[100010]">
+          <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Opsi Struk Lainnya"
+              className="relative p-0 gap-0 w-full bg-[var(--overlay)] text-[var(--overlay-foreground)] rounded-t-3xl sm:rounded-2xl border-t sm:border border-[var(--border)] shadow-2xl max-h-[92dvh] overflow-hidden"
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              <Modal.Header className="px-4 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] bg-[var(--surface-secondary)] flex-row items-center justify-between gap-2 shrink-0 pr-14">
+                <Modal.Heading className="text-sm font-extrabold text-[var(--foreground)]">
+                  Opsi Struk Lainnya
+                </Modal.Heading>
+                <Modal.CloseTrigger
+                  aria-label="Tutup opsi lainnya"
+                  className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
+                />
+              </Modal.Header>
+
+              <Modal.Body className="!mt-0 p-4 space-y-2.5 pb-safe">
                 <button
                   type="button"
                   onClick={() => {
                     setShowMoreMenu(false);
                     handleShareWA();
                   }}
-                  className="w-full min-h-[48px] flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-[#343440] bg-white hover:bg-slate-50 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] text-left transition-colors active:scale-[0.97] cursor-pointer"
+                  className="w-full min-h-[48px] flex items-center gap-3 p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-secondary)] text-left transition-colors active:scale-[0.98] cursor-pointer"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/35 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-[var(--success-soft)] text-emerald-600 dark:text-[var(--success)] border border-[var(--success)]/35 flex items-center justify-center shrink-0">
                     <MessageSquare className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-bold">Kirim WA Teks (wa.me)</p>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
+                    <p className="text-xs sm:text-sm font-bold text-[var(--foreground)]">Kirim WA Teks (wa.me)</p>
+                    <p className="text-[11px] text-[var(--muted)] truncate">
                       Kirim format teks rincian nota ke WhatsApp
                     </p>
                   </div>
@@ -931,14 +940,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   id="download-receipt-png-button"
                   onClick={handleManualDownloadImage}
                   disabled={isPreparingPng}
-                  className="w-full min-h-[48px] flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-[#343440] bg-white hover:bg-slate-50 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] text-left transition-colors active:scale-[0.97] cursor-pointer disabled:opacity-50"
+                  className="w-full min-h-[48px] flex items-center gap-3 p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-secondary)] text-left transition-colors active:scale-[0.98] cursor-pointer disabled:opacity-50"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#2563EB] border border-blue-200 dark:bg-purple-500/15 dark:text-[#C084FC] dark:border-purple-500/40 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/25 flex items-center justify-center shrink-0">
                     <Download className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-bold">Simpan / Unduh Gambar</p>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
+                    <p className="text-xs sm:text-sm font-bold text-[var(--foreground)]">Simpan / Unduh Gambar</p>
+                    <p className="text-[11px] text-[var(--muted)] truncate">
                       {isIosDevice()
                         ? 'Buka gambar untuk tekan lama & simpan ke Foto'
                         : 'Simpan file PNG struk ke perangkat'}
@@ -948,129 +957,140 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
                 {/* Bagian Merah Terpisah: Void & Hapus Permanen */}
                 {((!isVoided && onVoidTransaction) || (isVoided && onDeleteTransaction)) && (
-                  <div className="pt-3 mt-2 border-t border-red-200 dark:border-red-500/30 space-y-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 px-1">
+                  <div className="pt-2 space-y-2">
+                    <Separator />
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--danger)] px-1">
                       Tindakan Berbahaya
                     </p>
                     {!isVoided && onVoidTransaction && (
-                      <button
-                        type="button"
-                        onClick={() => {
+                      <Button
+                        variant="danger-soft"
+                        fullWidth
+                        onPress={() => {
                           setShowMoreMenu(false);
                           setShowVoidConfirm(true);
                         }}
-                        className="w-full min-h-[48px] flex items-center gap-3 p-3.5 rounded-2xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 dark:border-red-500/35 dark:bg-red-500/15 dark:hover:bg-red-500/25 dark:text-red-400 font-bold text-xs text-left transition-colors active:scale-[0.97] cursor-pointer"
+                        className="min-h-[48px] justify-start p-3.5 rounded-2xl border border-[var(--danger)]/25 font-bold text-xs"
                       >
                         <Ban className="w-4 h-4 shrink-0" />
                         <span>Void Nota & Hapus di Google Sheets</span>
-                      </button>
+                      </Button>
                     )}
                     {isVoided && onDeleteTransaction && (
-                      <button
-                        type="button"
-                        onClick={() => {
+                      <Button
+                        variant="danger-soft"
+                        fullWidth
+                        onPress={() => {
                           setShowMoreMenu(false);
                           setShowDeleteConfirm(true);
                         }}
-                        className="w-full min-h-[48px] flex items-center gap-3 p-3.5 rounded-2xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 dark:border-red-500/35 dark:bg-red-500/15 dark:hover:bg-red-500/25 dark:text-red-400 font-bold text-xs text-left transition-colors active:scale-[0.97] cursor-pointer"
+                        className="min-h-[48px] justify-start p-3.5 rounded-2xl border border-[var(--danger)]/25 font-bold text-xs"
                       >
                         <Trash2 className="w-4 h-4 shrink-0" />
                         <span>Hapus Permanen Nota VOID</span>
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        )}
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
-        {/* SHEET FALLBACK GAMBAR TEKAN-LAMA (UNTUK SAFARI iOS / CLIPBOARD DITOLAK) */}
-        {showLongPressSheet && preRenderedRef.current && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Salin Gambar Struk"
-            className="fixed inset-0 z-[65] flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-          >
-            <div className="fixed inset-0" onClick={() => setShowLongPressSheet(false)} aria-hidden="true" />
-            <div className="relative z-10 w-full max-w-sm bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 dark:border-[#2B2B33] shadow-2xl max-h-[92dvh] flex flex-col overflow-hidden text-[#0F172A] dark:text-[#F4F4F6] animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-              <div className="px-4 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] shrink-0">
-                <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-extrabold">Salin / Simpan Gambar Struk</h4>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-                      Tekan lama gambar, lalu pilih Salin atau Simpan ke Foto
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowLongPressSheet(false)}
-                    aria-label="Tutup pratinjau gambar"
-                    className="min-w-[44px] min-h-[44px] -mr-2 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:text-zinc-400 dark:hover:bg-[#2E2E37] cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+      {/* SHEET FALLBACK GAMBAR TEKAN-LAMA (UNTUK SAFARI iOS / CLIPBOARD DITOLAK) */}
+      <Modal
+        isOpen={showLongPressSheet && !!preRenderedRef.current}
+        onOpenChange={(open) => {
+          if (!open) setShowLongPressSheet(false);
+        }}
+      >
+        <Modal.Backdrop variant="opaque" className="z-[100020]">
+          <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Salin Gambar Struk"
+              className="relative p-0 gap-0 w-full bg-[var(--overlay)] text-[var(--overlay-foreground)] rounded-t-3xl sm:rounded-2xl border-t sm:border border-[var(--border)] shadow-2xl max-h-[92dvh] overflow-hidden"
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              <Modal.Header className="px-4 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] bg-[var(--surface-secondary)] flex-row items-center justify-between gap-2 shrink-0 pr-14">
+                <div className="min-w-0">
+                  <Modal.Heading className="text-sm font-extrabold text-[var(--foreground)]">
+                    Salin / Simpan Gambar Struk
+                  </Modal.Heading>
+                  <p className="text-[11px] text-[var(--muted)]">
+                    Tekan lama gambar, lalu pilih Salin atau Simpan ke Foto
+                  </p>
                 </div>
-              </div>
-
-              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 bg-slate-100 dark:bg-[#121215] flex flex-col items-center gap-3">
-                <img
-                  src={preRenderedRef.current.objectUrl}
-                  alt={`Struk ${receipt.id}`}
-                  className="w-full max-w-[320px] rounded-xl border border-slate-300 shadow-sm select-auto [-webkit-touch-callout:default] [-webkit-user-select:auto]"
+                <Modal.CloseTrigger
+                  aria-label="Tutup pratinjau gambar"
+                  className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
                 />
-              </div>
+              </Modal.Header>
 
-              <div className="px-4 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-white dark:bg-[#1B1B20] pb-safe flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowLongPressSheet(false)}
-                  className="flex-1 min-h-[44px] px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 dark:bg-[#24242B] dark:border-[#343440] dark:text-zinc-200 font-bold text-xs active:scale-[0.97] cursor-pointer"
+              <Modal.Body className="!mt-0 flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 bg-[var(--background)] flex flex-col items-center gap-3">
+                {preRenderedRef.current && (
+                  <img
+                    src={preRenderedRef.current.objectUrl}
+                    alt={`Struk ${receipt.id}`}
+                    className="w-full max-w-[320px] rounded-xl border border-[var(--border)] shadow-sm select-auto [-webkit-touch-callout:default] [-webkit-user-select:auto]"
+                  />
+                )}
+              </Modal.Body>
+
+              <Modal.Footer className="!mt-0 px-4 py-3 border-t border-[var(--border)] bg-[var(--surface)] pb-safe flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  fullWidth
+                  onPress={() => setShowLongPressSheet(false)}
+                  className="flex-1 min-h-[44px] rounded-xl font-bold text-xs bg-[var(--surface-secondary)]"
                 >
                   Tutup
-                </button>
+                </Button>
                 {!isIosDevice() && (
-                  <button
-                    type="button"
-                    onClick={handleManualDownloadImage}
-                    className="flex-1 min-h-[44px] px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] text-white font-bold text-xs flex items-center justify-center gap-1.5 active:scale-[0.97] cursor-pointer"
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    onPress={handleManualDownloadImage}
+                    className="flex-1 min-h-[44px] rounded-xl font-bold text-xs"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Unduh PNG</span>
-                  </button>
+                  </Button>
                 )}
-              </div>
-            </div>
-          </div>
-        )}
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
-        {/* SHEET KONFIRMASI VOID & HAPUS DI SPREADSHEET */}
-        {showVoidConfirm && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Konfirmasi Void Nota"
-            className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-          >
-            <div className="fixed inset-0" onClick={() => setShowVoidConfirm(false)} aria-hidden="true" />
-            <div className="relative z-10 w-full max-w-sm bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-2xl border-t sm:border border-red-200 dark:border-red-500/40 shadow-2xl max-h-[92dvh] flex flex-col overflow-hidden text-[#0F172A] dark:text-[#F4F4F6] animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-              <div className="px-4 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] shrink-0">
-                <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-                <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                  <AlertTriangle className="w-5 h-5 shrink-0" />
-                  <h4 className="font-extrabold text-sm text-[#0F172A] dark:text-[#F4F4F6]">
-                    Konfirmasi VOID & Hapus
-                  </h4>
-                </div>
-              </div>
+      {/* SHEET KONFIRMASI VOID & HAPUS DI SPREADSHEET */}
+      <Modal
+        isOpen={showVoidConfirm}
+        onOpenChange={(open) => {
+          if (!open) setShowVoidConfirm(false);
+        }}
+      >
+        <Modal.Backdrop variant="opaque" className="z-[100030]">
+          <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Konfirmasi Void Nota"
+              className="relative p-0 gap-0 w-full bg-[var(--overlay)] text-[var(--overlay-foreground)] rounded-t-3xl sm:rounded-2xl border-t sm:border border-[var(--danger)]/40 shadow-2xl max-h-[92dvh] overflow-hidden"
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              <Modal.Header className="px-4 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] flex-row items-center gap-2 shrink-0 pr-12">
+                <Modal.Icon className="w-8 h-8 rounded-xl bg-[var(--danger-soft)] text-[var(--danger)]">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                </Modal.Icon>
+                <Modal.Heading className="font-extrabold text-sm text-[var(--foreground)]">
+                  Konfirmasi VOID & Hapus
+                </Modal.Heading>
+              </Modal.Header>
 
-              <div className="p-4 space-y-3 overflow-y-auto overscroll-contain">
-                <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
-                  Struk <strong className="text-[#0F172A] dark:text-[#F4F4F6]">#{receipt.id}</strong> akan
+              <Modal.Body className="!mt-0 p-4 space-y-3 overflow-y-auto overscroll-contain">
+                <p className="text-xs text-[var(--muted)] leading-relaxed">
+                  Struk <strong className="text-[var(--foreground)]">#{receipt.id}</strong> akan
                   dibatalkan, stok barang dikembalikan, dan seluruh barisnya di{' '}
-                  <strong className="text-[#0F172A] dark:text-[#F4F4F6]">
+                  <strong className="text-[var(--foreground)]">
                     Google Sheets (LOG_PENJUALAN & LAIN-LAIN)
                   </strong>{' '}
                   akan dihapus permanen.
@@ -1078,89 +1098,98 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 <div>
                   <label
                     htmlFor="receipt-void-reason-input"
-                    className="text-[10px] font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block mb-1.5"
+                    className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider block mb-1.5"
                   >
                     Alasan Pembatalan:
                   </label>
-                  <input
+                  <Input
                     ref={voidReasonInputRef}
                     id="receipt-void-reason-input"
                     type="text"
+                    fullWidth
                     value={voidReason}
                     onChange={(e) => setVoidReason(e.target.value)}
                     placeholder="Contoh: Salah pesanan / Pelanggan batal"
-                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs sm:text-sm text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:bg-white dark:focus:bg-[#1B1B20] min-h-[44px]"
+                    className="px-3 py-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs sm:text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] min-h-[44px]"
                   />
                 </div>
-              </div>
+              </Modal.Body>
 
-              <div className="px-4 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] pb-safe flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowVoidConfirm(false)}
-                  className="flex-1 min-h-[48px] py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 dark:bg-[#1B1B20] dark:hover:bg-[#2E2E37] dark:border-[#343440] dark:text-zinc-200 font-bold text-xs sm:text-sm active:scale-[0.97] cursor-pointer"
+              <Modal.Footer className="!mt-0 px-4 py-3 border-t border-[var(--border)] bg-[var(--surface-secondary)] pb-safe flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  fullWidth
+                  onPress={() => setShowVoidConfirm(false)}
+                  className="flex-1 min-h-[48px] rounded-xl font-bold text-xs sm:text-sm bg-[var(--surface)]"
                 >
                   Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmVoid}
-                  className="flex-1 min-h-[48px] py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm active:scale-[0.97] cursor-pointer"
+                </Button>
+                <Button
+                  variant="danger"
+                  fullWidth
+                  onPress={handleConfirmVoid}
+                  className="flex-1 min-h-[48px] rounded-xl font-bold text-xs sm:text-sm"
                 >
                   Hapus & VOID
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
-        {/* SHEET KONFIRMASI HAPUS STRUK PERMANEN */}
-        {showDeleteConfirm && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Konfirmasi Hapus Permanen"
-            className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-          >
-            <div className="fixed inset-0" onClick={() => setShowDeleteConfirm(false)} aria-hidden="true" />
-            <div className="relative z-10 w-full max-w-sm bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-2xl border-t sm:border border-red-200 dark:border-red-500/40 shadow-2xl max-h-[92dvh] flex flex-col overflow-hidden text-[#0F172A] dark:text-[#F4F4F6] animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-              <div className="px-4 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] shrink-0">
-                <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-                <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                  <Trash2 className="w-5 h-5 shrink-0" />
-                  <h4 className="font-extrabold text-sm text-[#0F172A] dark:text-[#F4F4F6]">
-                    Hapus Struk Permanen
-                  </h4>
-                </div>
-              </div>
+      {/* SHEET KONFIRMASI HAPUS STRUK PERMANEN */}
+      <Modal
+        isOpen={showDeleteConfirm}
+        onOpenChange={(open) => {
+          if (!open) setShowDeleteConfirm(false);
+        }}
+      >
+        <Modal.Backdrop variant="opaque" className="z-[100030]">
+          <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Konfirmasi Hapus Permanen"
+              className="relative p-0 gap-0 w-full bg-[var(--overlay)] text-[var(--overlay-foreground)] rounded-t-3xl sm:rounded-2xl border-t sm:border border-[var(--danger)]/40 shadow-2xl max-h-[92dvh] overflow-hidden"
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              <Modal.Header className="px-4 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] flex-row items-center gap-2 shrink-0 pr-12">
+                <Modal.Icon className="w-8 h-8 rounded-xl bg-[var(--danger-soft)] text-[var(--danger)]">
+                  <Trash2 className="w-4 h-4 shrink-0" />
+                </Modal.Icon>
+                <Modal.Heading className="font-extrabold text-sm text-[var(--foreground)]">
+                  Hapus Struk Permanen
+                </Modal.Heading>
+              </Modal.Header>
 
-              <div className="p-4 overflow-y-auto overscroll-contain">
-                <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
-                  Hapus struk <strong className="text-[#0F172A] dark:text-[#F4F4F6]">#{receipt.id}</strong>{' '}
+              <Modal.Body className="!mt-0 p-4 overflow-y-auto overscroll-contain">
+                <p className="text-xs text-[var(--muted)] leading-relaxed">
+                  Hapus struk <strong className="text-[var(--foreground)]">#{receipt.id}</strong>{' '}
                   permanen dari database dan Google Sheets? Tindakan ini tidak dapat dibatalkan.
                 </p>
-              </div>
+              </Modal.Body>
 
-              <div className="px-4 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] pb-safe flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 min-h-[48px] py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 dark:bg-[#1B1B20] dark:hover:bg-[#2E2E37] dark:border-[#343440] dark:text-zinc-200 font-bold text-xs sm:text-sm active:scale-[0.97] cursor-pointer"
+              <Modal.Footer className="!mt-0 px-4 py-3 border-t border-[var(--border)] bg-[var(--surface-secondary)] pb-safe flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  fullWidth
+                  onPress={() => setShowDeleteConfirm(false)}
+                  className="flex-1 min-h-[48px] rounded-xl font-bold text-xs sm:text-sm bg-[var(--surface)]"
                 >
                   Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmDelete}
-                  className="flex-1 min-h-[48px] py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm active:scale-[0.97] cursor-pointer"
+                </Button>
+                <Button
+                  variant="danger"
+                  fullWidth
+                  onPress={handleConfirmDelete}
+                  className="flex-1 min-h-[48px] rounded-xl font-bold text-xs sm:text-sm"
                 >
                   Ya, Hapus
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+    </>
   );
 };

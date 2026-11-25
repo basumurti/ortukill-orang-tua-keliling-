@@ -70,6 +70,7 @@ export default function App() {
 
   useEffect(() => {
     const rootEl = document.documentElement;
+    rootEl.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
     if (isDarkMode) {
       rootEl.classList.add('dark');
       try {
@@ -1097,21 +1098,24 @@ export default function App() {
 
       {/* Floating Status Toast (Supports Undo action, positioned cleanly above overlays) */}
       {toast && (
-        <div className="fixed top-16 left-3 right-3 sm:top-auto sm:left-auto sm:bottom-8 sm:right-6 z-[80] animate-in fade-in slide-in-from-top-2 sm:slide-in-from-bottom-2 duration-150 pointer-events-none flex justify-center sm:justify-end">
+        <div
+          data-toast-overlay="true"
+          className="fixed top-16 left-3 right-3 sm:top-auto sm:left-auto sm:bottom-8 sm:right-6 z-[100050] animate-in fade-in slide-in-from-top-2 sm:slide-in-from-bottom-2 duration-150 pointer-events-none flex justify-center sm:justify-end"
+        >
           <div
             role="status"
             className={`pointer-events-auto flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-2xl border shadow-xl text-xs font-semibold w-full sm:w-auto sm:max-w-md ${
               toast.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-950 dark:bg-[#1B1B20] dark:border-emerald-500/45 dark:text-emerald-300'
+                ? 'bg-[var(--surface)] border-[var(--success)]/50 text-emerald-700 dark:text-[var(--success)]'
                 : toast.type === 'error'
-                ? 'bg-red-50 border-red-200 text-red-950 dark:bg-[#1B1B20] dark:border-red-500/45 dark:text-red-300'
-                : 'bg-white border-slate-200 text-[#0F172A] dark:bg-[#1B1B20] dark:border-purple-500/45 dark:text-[#F4F4F6]'
+                ? 'bg-[var(--surface)] border-[var(--danger)]/50 text-[var(--danger)]'
+                : 'bg-[var(--surface)] border-[var(--accent)]/35 text-[var(--foreground)]'
             }`}
           >
             <div className="flex items-center gap-2 min-w-0">
-              {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />}
-              {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />}
-              {toast.type === 'info' && <Info className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC] shrink-0" />}
+              {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-[var(--success)] shrink-0" />}
+              {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-[var(--danger)] shrink-0" />}
+              {toast.type === 'info' && <Info className="w-4 h-4 text-[var(--accent)] shrink-0" />}
               <span className="break-words">{toast.message}</span>
             </div>
             {toast.action && (
@@ -1122,7 +1126,7 @@ export default function App() {
                   setToast(null);
                   act?.onAction();
                 }}
-                className="min-h-[36px] px-3 py-1 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] dark:bg-[#9333EA] dark:hover:bg-[#A855F7] text-white font-bold text-xs shrink-0 active:scale-[0.97] transition-colors cursor-pointer"
+                className="min-h-[36px] px-3 py-1 rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 font-bold text-xs shrink-0 active:scale-[0.97] transition-all cursor-pointer"
               >
                 {toast.action.label}
               </button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Button, Chip, Input, Modal } from '@heroui/react';
 import {
   Sparkles,
-  X,
   Send,
   Mic,
   MicOff,
@@ -10,13 +10,10 @@ import {
   Package,
   Receipt,
   TrendingUp,
-  DollarSign,
   RotateCcw,
   Bot,
   User,
   ExternalLink,
-  CheckCircle2,
-  AlertTriangle,
   Loader2,
   ArrowRight
 } from 'lucide-react';
@@ -292,373 +289,401 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
     { label: '💸 Catat Pengeluaran', text: 'Catat pengeluaran beli es batu kristal Rp 15.000 bayar CASH' },
   ];
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="AI Copilot Kasir"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-    >
-      <div className="fixed inset-0 hidden sm:block" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 bg-white dark:bg-[#1B1B20] w-full sm:max-w-xl h-dvh sm:h-[650px] sm:max-h-[90dvh] sm:rounded-2xl shadow-2xl flex flex-col border-0 sm:border border-slate-200 dark:border-[#2B2B33] overflow-hidden text-[#0F172A] dark:text-[#F4F4F6] animate-in slide-in-from-bottom sm:zoom-in-95 duration-150">
-        {/* Header */}
-        <div className="px-4 sm:px-5 pt-safe py-3 bg-slate-50 dark:bg-[#16161A] text-[#0F172A] dark:text-[#F4F4F6] flex items-center justify-between border-b border-slate-200 dark:border-[#2B2B33] shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] flex items-center justify-center text-white shrink-0">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-extrabold tracking-tight uppercase text-[#0F172A] dark:text-[#F4F4F6]">AI Copilot Kasir</h3>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 mt-0.5 truncate">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                <span className="truncate">Asisten kasir & stok via suara/teks</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                if (speechEnabled) window.speechSynthesis?.cancel();
-                setSpeechEnabled(!speechEnabled);
-              }}
-              aria-label={speechEnabled ? 'Senyapkan suara' : 'Aktifkan suara'}
-              className={`min-w-[44px] min-h-[44px] rounded-full border flex items-center justify-center transition-colors active:scale-[0.97] cursor-pointer ${
-                speechEnabled
-                  ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/35'
-                  : 'text-slate-500 dark:text-zinc-400 bg-white dark:bg-[#24242B] border-slate-200 dark:border-[#343440]'
-              }`}
+    <>
+      <Modal
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="lg" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="AI Copilot Kasir"
+              className="relative p-0 gap-0 bg-[var(--overlay)] text-[var(--overlay-foreground)] w-full sm:max-w-xl h-dvh sm:h-[650px] sm:max-h-[90dvh] rounded-none sm:rounded-2xl shadow-2xl flex flex-col border-0 sm:border border-[var(--border)] overflow-hidden"
             >
-              {speechEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            </button>
+              <Modal.CloseTrigger
+                aria-label="Tutup AI Copilot"
+                className="top-2.5 end-3 min-w-[44px] min-h-[44px] rounded-full bg-[var(--surface-secondary)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)]"
+              />
 
-            <button
-              type="button"
-              onClick={() => setShowClearConfirm(true)}
-              aria-label="Mulai percakapan baru"
-              className="min-w-[44px] min-h-[44px] rounded-full bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] transition-colors active:scale-[0.97] cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Tutup AI Copilot"
-              className="min-w-[44px] min-h-[44px] rounded-full bg-white dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] transition-colors active:scale-[0.97] cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Messages Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-4 bg-[#F6F7F9] dark:bg-[#121215]">
-          {messages.map((msg) => {
-            const isUser = msg.role === 'user';
-            return (
-              <div
-                key={msg.id}
-                className={`flex gap-2.5 sm:gap-3 max-w-[92%] sm:max-w-[85%] ${isUser ? 'ml-auto flex-row-reverse' : ''}`}
-              >
-                {/* Avatar */}
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
-                    isUser
-                      ? 'bg-[#0F172A] dark:bg-[#24242B] dark:border dark:border-[#343440] text-white'
-                      : 'bg-[#2563EB] dark:bg-[#9333EA] text-white'
-                  }`}
-                >
-                  {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+              {/* Header */}
+              <Modal.Header className="px-4 sm:px-5 pt-safe py-3 pr-16 bg-[var(--surface-secondary)] text-[var(--foreground)] flex flex-row items-center justify-between gap-2 border-b border-[var(--border)] shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-[var(--accent)] flex items-center justify-center text-[var(--accent-foreground)] shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <Modal.Heading className="text-sm font-extrabold tracking-tight uppercase text-[var(--foreground)]">
+                      AI Copilot Kasir
+                    </Modal.Heading>
+                    <p className="text-[11px] text-[var(--muted)] flex items-center gap-1.5 mt-0.5 truncate">
+                      <span className="w-2 h-2 rounded-full bg-[var(--success)] shrink-0" />
+                      <span className="truncate">Asisten kasir & stok via suara/teks</span>
+                    </p>
+                  </div>
                 </div>
 
-                {/* Message Bubble */}
-                <div className="space-y-2 min-w-0">
-                  <div
-                    className={`p-3.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed ${
-                      isUser
-                        ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white rounded-tr-xs'
-                        : 'bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#2B2B33] text-[#0F172A] dark:text-[#F4F4F6] rounded-tl-xs'
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    type="button"
+                    isIconOnly
+                    variant="outline"
+                    onPress={() => {
+                      if (speechEnabled) window.speechSynthesis?.cancel();
+                      setSpeechEnabled(!speechEnabled);
+                    }}
+                    aria-label={speechEnabled ? 'Senyapkan suara' : 'Aktifkan suara'}
+                    className={`min-w-[44px] min-h-[44px] rounded-full border ${
+                      speechEnabled
+                        ? 'text-amber-700 dark:text-[var(--warning)] bg-[var(--warning-soft)] border-[var(--warning)]/35'
+                        : 'text-[var(--muted)] bg-[var(--surface)] border-[var(--border)]'
                     }`}
                   >
-                    <div className="whitespace-pre-line font-normal break-words">{msg.text}</div>
+                    {speechEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  </Button>
 
-                    <div
-                      className={`text-[10px] mt-1.5 flex items-center justify-between gap-2 font-mono ${
-                        isUser ? 'text-blue-100 dark:text-purple-200' : 'text-slate-400 dark:text-zinc-500'
-                      }`}
-                    >
-                      <span>{msg.timestamp}</span>
-                      {!isUser && (
-                        <button
-                          type="button"
-                          onClick={() => speakText(msg.text)}
-                          title="Putar suara"
-                          className="text-slate-500 dark:text-zinc-400 hover:text-[#2563EB] dark:hover:text-[#C084FC] transition-colors cursor-pointer flex items-center gap-1"
-                        >
-                          <Volume2 className="w-3 h-3" />
-                          <span>Dengar</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Render Action Cards */}
-                  {msg.actions && msg.actions.length > 0 && (
-                    <div className="space-y-2">
-                      {msg.actions.map((act, idx) => {
-                        // Struk Dibuat Card
-                        if (act.type === 'CREATE_SALE_RECEIPT' && act.payload?.receipt) {
-                          const r = act.payload.receipt;
-                          return (
-                            <div
-                              key={idx}
-                              className="bg-white dark:bg-[#1B1B20] border border-emerald-200 dark:border-emerald-500/35 rounded-2xl p-3.5 space-y-2.5"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/35 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                    <Receipt className="w-4 h-4" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
-                                      Struk Berhasil Dibuat
-                                    </span>
-                                    <p className="text-xs font-extrabold font-mono text-[#0F172A] dark:text-[#F4F4F6] truncate">#{r.id}</p>
-                                  </div>
-                                </div>
-                                <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 font-mono tabular-nums shrink-0">
-                                  {formatRupiah(r.total)}
-                                </span>
-                              </div>
-
-                              <div className="text-[11px] text-slate-600 dark:text-zinc-300 bg-slate-50 dark:bg-[#24242B] p-2.5 rounded-xl space-y-1 border border-slate-200 dark:border-[#343440]">
-                                <div className="flex justify-between gap-2">
-                                  <span>Pelanggan:</span>
-                                  <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6]">{r.customerName || 'Umum'}</span>
-                                </div>
-                                <div className="flex justify-between gap-2">
-                                  <span>Metode Bayar:</span>
-                                  <span className="font-bold text-[#0F172A] dark:text-[#F4F4F6]">{r.paymentMethod}</span>
-                                </div>
-                                <div className="flex justify-between gap-2">
-                                  <span className="shrink-0">Item ({r.items.length}):</span>
-                                  <span className="font-semibold text-[#0F172A] dark:text-[#F4F4F6] text-right">
-                                    {r.items.map((i: any) => `${i.qty}x ${i.name}`).join(', ')}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => onViewReceipt(r)}
-                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer min-h-[40px]"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                <span>Buka Struk Kasir</span>
-                              </button>
-                            </div>
-                          );
-                        }
-
-                        // Stok Ditambah Card
-                        if (act.type === 'ADD_STOCK') {
-                          const p = act.payload;
-                          return (
-                            <div
-                              key={idx}
-                              className="bg-white dark:bg-[#1B1B20] border border-amber-200 dark:border-amber-500/35 rounded-2xl p-3 space-y-2"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                                    <Package className="w-4 h-4" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">
-                                      Stok Diperbarui
-                                    </span>
-                                    <p className="text-xs font-extrabold text-[#0F172A] dark:text-[#F4F4F6] truncate">{p.name}</p>
-                                  </div>
-                                </div>
-                                <span className="text-xs font-extrabold bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/35 px-2.5 py-0.5 rounded-full font-mono shrink-0">
-                                  +{p.addedQty} botol
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-zinc-300 pt-1.5 border-t border-slate-200 dark:border-[#2B2B33] font-mono">
-                                <span>Stok Sebelumnya: {p.oldStock}</span>
-                                <ArrowRight className="w-3 h-3 text-slate-400 dark:text-zinc-500" />
-                                <span className="font-bold text-emerald-700 dark:text-emerald-400">Stok Baru: {p.newStock} botol</span>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        // Pengeluaran Dicatat Card
-                        if (act.type === 'RECORD_EXPENSE') {
-                          const rec = act.payload.record;
-                          return (
-                            <div
-                              key={idx}
-                              className="bg-white dark:bg-[#1B1B20] border border-red-200 dark:border-red-500/35 rounded-2xl p-3 space-y-1"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-[10px] font-bold text-red-700 dark:text-red-400 uppercase">
-                                  Pengeluaran Tercatat (Sheet LAIN-LAIN)
-                                </span>
-                                <span className="text-xs font-extrabold text-red-600 dark:text-red-400 font-mono tabular-nums shrink-0">
-                                  -{formatRupiah(rec.amount)}
-                                </span>
-                              </div>
-                              <p className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6]">{rec.description}</p>
-                              <p className="text-[10px] text-slate-500 dark:text-zinc-400">
-                                Dibayar via: {rec.paymentMethod} • Oleh: {rec.cashier}
-                              </p>
-                            </div>
-                          );
-                        }
-
-                        // Sales Summary Card
-                        if (act.type === 'SALES_SUMMARY') {
-                          const s = act.payload;
-                          return (
-                            <div
-                              key={idx}
-                              className="bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#2B2B33] rounded-2xl p-3 space-y-2"
-                            >
-                              <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#0F172A] dark:text-[#F4F4F6] border-b pb-1.5 border-slate-200 dark:border-[#2B2B33]">
-                                <TrendingUp className="w-4 h-4 text-[#2563EB] dark:text-[#C084FC]" />
-                                <span>Ringkasan Penjualan Hari Ini</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div className="bg-slate-50 dark:bg-[#24242B] p-2 rounded-xl border border-slate-200 dark:border-[#343440]">
-                                  <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-medium">Omset</span>
-                                  <span className="font-extrabold text-[#0F172A] dark:text-[#F4F4F6] font-mono tabular-nums">{formatRupiah(s.totalOmset || 0)}</span>
-                                </div>
-                                <div className="bg-slate-50 dark:bg-[#24242B] p-2 rounded-xl border border-slate-200 dark:border-[#343440]">
-                                  <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-medium">Margin Laba</span>
-                                  <span className="font-extrabold text-emerald-700 dark:text-emerald-400 font-mono tabular-nums">{formatRupiah(s.totalMargin || 0)}</span>
-                                </div>
-                              </div>
-                              <div className="text-[10px] text-slate-600 dark:text-zinc-300 flex flex-col gap-1 px-0.5 pt-1 border-t border-slate-200 dark:border-[#2B2B33]">
-                                <div className="flex justify-between">
-                                  <span>Transaksi: {s.totalTransactions} struk</span>
-                                  <span>Total: {s.totalBottles} botol</span>
-                                </div>
-                                {typeof s.filteredBottles === 'number' && (
-                                  <div className="flex justify-between items-center font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 px-2 py-1 rounded-lg text-[10px]">
-                                    <span>Botol Keluar (Excl. Bir/Promo/&lt;30k):</span>
-                                    <span className="font-mono text-amber-700 dark:text-amber-400 font-extrabold">{s.filteredBottles} btl</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        return null;
-                      })}
-                    </div>
-                  )}
+                  <Button
+                    type="button"
+                    isIconOnly
+                    variant="outline"
+                    onPress={() => setShowClearConfirm(true)}
+                    aria-label="Mulai percakapan baru"
+                    className="min-w-[44px] min-h-[44px] rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)]"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
                 </div>
+              </Modal.Header>
+
+              {/* Messages Body */}
+              <Modal.Body className="!mt-0 flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-4 bg-[var(--background)]">
+                {messages.map((msg) => {
+                  const isUser = msg.role === 'user';
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex gap-2.5 sm:gap-3 max-w-[92%] sm:max-w-[85%] ${isUser ? 'ml-auto flex-row-reverse' : ''}`}
+                    >
+                      {/* Avatar */}
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+                          isUser
+                            ? 'bg-[var(--surface-tertiary)] border border-[var(--border)] text-[var(--foreground)]'
+                            : 'bg-[var(--accent)] text-[var(--accent-foreground)]'
+                        }`}
+                      >
+                        {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                      </div>
+
+                      {/* Message Bubble */}
+                      <div className="space-y-2 min-w-0">
+                        <div
+                          className={`p-3.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed ${
+                            isUser
+                              ? 'bg-[var(--accent)] text-[var(--accent-foreground)] rounded-tr-xs'
+                              : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] rounded-tl-xs'
+                          }`}
+                        >
+                          <div className="whitespace-pre-line font-normal break-words">{msg.text}</div>
+
+                          <div
+                            className={`text-[10px] mt-1.5 flex items-center justify-between gap-2 font-mono ${
+                              isUser ? 'text-[var(--accent-foreground)]/80' : 'text-[var(--muted)]'
+                            }`}
+                          >
+                            <span>{msg.timestamp}</span>
+                            {!isUser && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onPress={() => speakText(msg.text)}
+                                aria-label="Putar suara"
+                                className="h-auto min-h-[28px] px-1.5 py-0.5 text-[10px] text-[var(--muted)] hover:text-[var(--accent)] rounded-md"
+                              >
+                                <Volume2 className="w-3 h-3" />
+                                <span>Dengar</span>
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Render Action Cards */}
+                        {msg.actions && msg.actions.length > 0 && (
+                          <div className="space-y-2">
+                            {msg.actions.map((act, idx) => {
+                              // Struk Dibuat Card
+                              if (act.type === 'CREATE_SALE_RECEIPT' && act.payload?.receipt) {
+                                const r = act.payload.receipt;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="bg-[var(--surface)] border border-[var(--success)]/35 rounded-2xl p-3.5 space-y-2.5"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <div className="w-7 h-7 rounded-lg bg-[var(--success-soft)] border border-[var(--success)]/35 text-emerald-700 dark:text-[var(--success)] flex items-center justify-center shrink-0">
+                                          <Receipt className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0">
+                                          <span className="text-[10px] font-bold text-emerald-700 dark:text-[var(--success)] uppercase tracking-wider block">
+                                            Struk Berhasil Dibuat
+                                          </span>
+                                          <p className="text-xs font-extrabold font-mono text-[var(--foreground)] truncate">#{r.id}</p>
+                                        </div>
+                                      </div>
+                                      <span className="text-xs font-extrabold text-emerald-700 dark:text-[var(--success)] font-mono tabular-nums shrink-0">
+                                        {formatRupiah(r.total)}
+                                      </span>
+                                    </div>
+
+                                    <div className="text-[11px] text-[var(--muted)] bg-[var(--surface-secondary)] p-2.5 rounded-xl space-y-1 border border-[var(--border)]">
+                                      <div className="flex justify-between gap-2">
+                                        <span>Pelanggan:</span>
+                                        <span className="font-bold text-[var(--foreground)]">{r.customerName || 'Umum'}</span>
+                                      </div>
+                                      <div className="flex justify-between gap-2">
+                                        <span>Metode Bayar:</span>
+                                        <span className="font-bold text-[var(--foreground)]">{r.paymentMethod}</span>
+                                      </div>
+                                      <div className="flex justify-between gap-2">
+                                        <span className="shrink-0">Item ({r.items.length}):</span>
+                                        <span className="font-semibold text-[var(--foreground)] text-right">
+                                          {r.items.map((i: any) => `${i.qty}x ${i.name}`).join(', ')}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <Button
+                                      type="button"
+                                      fullWidth
+                                      variant="primary"
+                                      onPress={() => onViewReceipt(r)}
+                                      className="bg-[var(--success)] text-[var(--success-foreground)] hover:opacity-90 rounded-xl text-xs font-bold min-h-[44px]"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      <span>Buka Struk Kasir</span>
+                                    </Button>
+                                  </div>
+                                );
+                              }
+
+                              // Stok Ditambah Card
+                              if (act.type === 'ADD_STOCK') {
+                                const p = act.payload;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="bg-[var(--surface)] border border-[var(--warning)]/35 rounded-2xl p-3 space-y-2"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <div className="w-7 h-7 rounded-lg bg-[var(--warning-soft)] border border-[var(--warning)]/35 text-amber-700 dark:text-[var(--warning)] flex items-center justify-center shrink-0">
+                                          <Package className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0">
+                                          <span className="text-[10px] font-bold text-amber-700 dark:text-[var(--warning)] uppercase tracking-wider block">
+                                            Stok Diperbarui
+                                          </span>
+                                          <p className="text-xs font-extrabold text-[var(--foreground)] truncate">{p.name}</p>
+                                        </div>
+                                      </div>
+                                      <Chip
+                                        size="sm"
+                                        variant="soft"
+                                        color="warning"
+                                        className="bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] border border-[var(--warning)]/35 shrink-0"
+                                      >
+                                        <Chip.Label className="text-xs font-extrabold font-mono">+{p.addedQty} botol</Chip.Label>
+                                      </Chip>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px] text-[var(--muted)] pt-1.5 border-t border-[var(--border)] font-mono">
+                                      <span>Stok Sebelumnya: {p.oldStock}</span>
+                                      <ArrowRight className="w-3 h-3 text-[var(--muted)]" />
+                                      <span className="font-bold text-emerald-700 dark:text-[var(--success)]">Stok Baru: {p.newStock} botol</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              // Pengeluaran Dicatat Card
+                              if (act.type === 'RECORD_EXPENSE') {
+                                const rec = act.payload.record;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="bg-[var(--surface)] border border-[var(--danger)]/35 rounded-2xl p-3 space-y-1"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-[10px] font-bold text-red-700 dark:text-[var(--danger)] uppercase">
+                                        Pengeluaran Tercatat (Sheet LAIN-LAIN)
+                                      </span>
+                                      <span className="text-xs font-extrabold text-red-700 dark:text-[var(--danger)] font-mono tabular-nums shrink-0">
+                                        -{formatRupiah(rec.amount)}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs font-bold text-[var(--foreground)]">{rec.description}</p>
+                                    <p className="text-[10px] text-[var(--muted)]">
+                                      Dibayar via: {rec.paymentMethod} • Oleh: {rec.cashier}
+                                    </p>
+                                  </div>
+                                );
+                              }
+
+                              // Sales Summary Card
+                              if (act.type === 'SALES_SUMMARY') {
+                                const s = act.payload;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-3 space-y-2"
+                                  >
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-[var(--foreground)] border-b pb-1.5 border-[var(--border)]">
+                                      <TrendingUp className="w-4 h-4 text-[var(--accent)]" />
+                                      <span>Ringkasan Penjualan Hari Ini</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                      <div className="bg-[var(--surface-secondary)] p-2 rounded-xl border border-[var(--border)]">
+                                        <span className="text-[10px] text-[var(--muted)] block font-medium">Omset</span>
+                                        <span className="font-extrabold text-[var(--foreground)] font-mono tabular-nums">
+                                          {formatRupiah(s.totalOmset || 0)}
+                                        </span>
+                                      </div>
+                                      <div className="bg-[var(--surface-secondary)] p-2 rounded-xl border border-[var(--border)]">
+                                        <span className="text-[10px] text-[var(--muted)] block font-medium">Margin Laba</span>
+                                        <span className="font-extrabold text-emerald-700 dark:text-[var(--success)] font-mono tabular-nums">
+                                          {formatRupiah(s.totalMargin || 0)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="text-[10px] text-[var(--muted)] flex flex-col gap-1 px-0.5 pt-1 border-t border-[var(--border)]">
+                                      <div className="flex justify-between">
+                                        <span>Transaksi: {s.totalTransactions} struk</span>
+                                        <span>Total: {s.totalBottles} botol</span>
+                                      </div>
+                                      {typeof s.filteredBottles === 'number' && (
+                                        <div className="flex justify-between items-center font-bold text-amber-800 dark:text-[var(--warning)] bg-[var(--warning-soft)] border border-[var(--warning)]/35 px-2 py-1 rounded-lg text-[10px]">
+                                          <span>Botol Keluar (Excl. Bir/Promo/&lt;30k):</span>
+                                          <span className="font-mono text-amber-700 dark:text-[var(--warning)] font-extrabold">
+                                            {s.filteredBottles} btl
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              return null;
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Loading indicator */}
+                {isLoading && (
+                  <div className="flex items-center gap-2.5 text-[var(--muted)] text-xs py-2.5 px-3.5 bg-[var(--surface)] rounded-2xl w-fit border border-[var(--border)]">
+                    <Loader2 className="w-4 h-4 animate-spin text-[var(--accent)]" />
+                    <span className="font-semibold text-[var(--foreground)]">AI Copilot sedang menjalankan instruksi...</span>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </Modal.Body>
+
+              {/* Quick Suggestions Chips */}
+              <div className="px-3 sm:px-4 py-2 bg-[var(--surface)] border-t border-[var(--border)] flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
+                {quickPrompts.map((q, idx) => (
+                  <Button
+                    key={idx}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onPress={() => handleSendMessage(q.text)}
+                    className="text-[11px] font-semibold text-[var(--foreground)] bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] border border-[var(--border)] px-3 rounded-full whitespace-nowrap flex-shrink-0 min-h-[38px]"
+                  >
+                    {q.label}
+                  </Button>
+                ))}
               </div>
-            );
-          })}
 
-          {/* Loading indicator */}
-          {isLoading && (
-            <div className="flex items-center gap-2.5 text-slate-600 dark:text-zinc-300 text-xs py-2.5 px-3.5 bg-white dark:bg-[#1B1B20] rounded-2xl w-fit border border-slate-200 dark:border-[#2B2B33]">
-              <Loader2 className="w-4 h-4 animate-spin text-[#2563EB] dark:text-[#C084FC]" />
-              <span className="font-semibold text-[#0F172A] dark:text-[#F4F4F6]">AI Copilot sedang menjalankan instruksi...</span>
-            </div>
-          )}
+              {/* Voice Recognition Active Banner */}
+              {isListening && (
+                <div className="px-4 py-2 bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold flex items-center justify-between animate-pulse shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-foreground)] animate-ping" />
+                    <span>Mendengarkan suara kasir... Silakan bicara</span>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onPress={toggleListening}
+                    className="bg-white/20 hover:bg-white/30 text-[var(--accent-foreground)] px-3 rounded-full text-[11px] min-h-[36px]"
+                  >
+                    Berhenti
+                  </Button>
+                </div>
+              )}
 
-          <div ref={messagesEndRef} />
-        </div>
+              {/* Input Bar */}
+              <div className="p-3 sm:p-4 bg-[var(--surface)] border-t border-[var(--border)] flex items-center gap-2 flex-shrink-0 pb-safe">
+                {/* Microphone button */}
+                <Button
+                  type="button"
+                  isIconOnly
+                  variant={isListening ? 'danger' : 'outline'}
+                  onPress={toggleListening}
+                  aria-label={isListening ? 'Berhenti mendengarkan' : 'Bicara dengan suara (Voice)'}
+                  className={`min-w-[44px] min-h-[44px] rounded-xl flex-shrink-0 ${
+                    isListening
+                      ? 'bg-[var(--danger)] text-[var(--danger-foreground)] ring-4 ring-[var(--danger)]/25 animate-bounce'
+                      : 'bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] border border-[var(--border)] text-[var(--accent)]'
+                  }`}
+                >
+                  {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </Button>
 
-        {/* Quick Suggestions Chips */}
-        <div className="px-3 sm:px-4 py-2 bg-white dark:bg-[#1B1B20] border-t border-slate-200 dark:border-[#2B2B33] flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
-          {quickPrompts.map((q, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleSendMessage(q.text)}
-              className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] px-3 py-1.5 rounded-full whitespace-nowrap transition-colors cursor-pointer flex-shrink-0"
-            >
-              {q.label}
-            </button>
-          ))}
-        </div>
+                {/* Text Input */}
+                <Input
+                  type="text"
+                  fullWidth
+                  variant="secondary"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder={isListening ? 'Sedang mendengarkan ucapan...' : 'Ketik perintah atau bicara...'}
+                  disabled={isLoading}
+                  className="flex-1 min-w-0 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl px-3.5 text-xs sm:text-sm text-[var(--foreground)] min-h-[44px]"
+                />
 
-        {/* Voice Recognition Active Banner */}
-        {isListening && (
-          <div className="px-4 py-2 bg-[#2563EB] dark:bg-[#9333EA] text-white text-xs font-bold flex items-center justify-between animate-pulse">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-              <span>Mendengarkan suara kasir... Silakan bicara</span>
-            </div>
-            <button
-              type="button"
-              onClick={toggleListening}
-              className="bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full text-[10px] cursor-pointer"
-            >
-              Berhenti
-            </button>
-          </div>
-        )}
-
-        {/* Input Bar */}
-        <div className="p-3 sm:p-4 bg-white dark:bg-[#1B1B20] border-t border-slate-200 dark:border-[#2B2B33] flex items-center gap-2 flex-shrink-0 pb-safe">
-          {/* Microphone button */}
-          <button
-            type="button"
-            onClick={toggleListening}
-            title={isListening ? 'Berhenti mendengarkan' : 'Bicara dengan suara (Voice)'}
-            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer flex-shrink-0 ${
-              isListening
-                ? 'bg-red-600 text-white ring-4 ring-red-200 dark:ring-red-500/30 animate-bounce'
-                : 'bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6]'
-            }`}
-          >
-            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5 text-[#2563EB] dark:text-[#C084FC]" />}
-          </button>
-
-          {/* Text Input */}
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-            placeholder={isListening ? 'Sedang mendengarkan ucapan...' : 'Ketik perintah atau bicara...'}
-            disabled={isLoading}
-            className="flex-1 min-w-0 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] focus:bg-white dark:focus:bg-[#1B1B20] transition-colors min-h-[44px]"
-          />
-
-          {/* Send Button */}
-          <button
-            type="button"
-            onClick={() => handleSendMessage()}
-            disabled={!input.trim() || isLoading}
-            className={`w-11 h-11 rounded-xl flex items-center justify-center text-white transition-colors cursor-pointer flex-shrink-0 ${
-              !input.trim() || isLoading
-                ? 'bg-slate-200 dark:bg-[#24242B] text-slate-400 dark:text-zinc-600 cursor-not-allowed'
-                : 'bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7]'
-            }`}
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+                {/* Send Button */}
+                <Button
+                  type="button"
+                  isIconOnly
+                  variant="primary"
+                  onPress={() => handleSendMessage()}
+                  isDisabled={!input.trim() || isLoading}
+                  aria-label="Kirim pesan"
+                  className="min-w-[44px] min-h-[44px] rounded-xl flex-shrink-0 bg-[var(--accent)] text-[var(--accent-foreground)]"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
       <AppConfirmDialog
         isOpen={showClearConfirm}
@@ -680,6 +705,6 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
           ]);
         }}
       />
-    </div>
+    </>
   );
 };

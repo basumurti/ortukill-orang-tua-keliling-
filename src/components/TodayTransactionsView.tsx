@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Button, Card, Chip, Input, Modal, TextArea } from '@heroui/react';
 import { 
   DollarSign, 
   TrendingUp, 
   Receipt, 
   Package, 
   Search, 
-  Filter, 
   Download, 
   Ban, 
   Eye, 
@@ -15,7 +15,6 @@ import {
   CreditCard,
   Banknote,
   QrCode,
-  X,
   AlertTriangle,
   Trash2,
   ChevronLeft,
@@ -357,104 +356,105 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
   const isYesterday = selectedDateYmd === yesterdayYmd;
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-24 text-[#0F172A] dark:text-[#F4F4F6]">
+    <div className="space-y-4 max-w-7xl mx-auto pb-24 text-[var(--foreground)]">
       {/* Top Header Card dengan Filter Hari */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-[#2B2B33] flex flex-col gap-3.5">
+      <Card className="bg-[var(--surface)] rounded-2xl p-4 sm:p-5 gap-3.5 border border-[var(--border)] shadow-none">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border border-blue-200 dark:border-purple-500/40 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/25 flex items-center justify-center flex-shrink-0">
               <Calendar className="w-5 h-5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base sm:text-lg font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight">
-                  Riwayat Nota & Log Penjualan
+                <h2 className="text-base sm:text-lg font-extrabold text-[var(--foreground)] tracking-tight">
+                  Riwayat Nota &amp; Log Penjualan
                 </h2>
-                <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-[10px] px-2.5 py-0.5 rounded-full font-bold border border-emerald-200 dark:border-emerald-500/35">
-                  {formatYmdToSlash(selectedDateYmd)}
-                </span>
+                <Chip size="sm" variant="soft" color="success" className="font-bold border border-[var(--success)]/30">
+                  <Chip.Label className="text-emerald-700 dark:text-[var(--success)]">{formatYmdToSlash(selectedDateYmd)}</Chip.Label>
+                </Chip>
                 {isToday && (
-                  <span className="bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] text-[10px] px-2 py-0.5 rounded-full font-bold border border-blue-200 dark:border-purple-500/40">
-                    Hari Ini
-                  </span>
+                  <Chip size="sm" variant="soft" color="accent" className="font-bold border border-[var(--accent)]/25">
+                    <Chip.Label>Hari Ini</Chip.Label>
+                  </Chip>
                 )}
                 {isYesterday && (
-                  <span className="bg-slate-100 dark:bg-[#24242B] text-slate-600 dark:text-zinc-300 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200 dark:border-[#343440]">
-                    Kemarin
-                  </span>
+                  <Chip size="sm" variant="soft" color="default" className="font-bold border border-[var(--border)]">
+                    <Chip.Label>Kemarin</Chip.Label>
+                  </Chip>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Audit nota kasir, cetak ulang struk & log penjualan • Total {dayTransactions.length} transaksi pada {formatYmdToIndo(selectedDateYmd)}
+              <p className="text-xs text-[var(--muted)] mt-0.5">
+                Audit nota kasir, cetak ulang struk &amp; log penjualan • Total {dayTransactions.length} transaksi pada {formatYmdToIndo(selectedDateYmd)}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={onSyncSpreadsheet ? onSyncSpreadsheet : onRefresh}
-              disabled={isSyncing}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-semibold transition-colors cursor-pointer min-h-[44px] border border-slate-200 dark:border-[#343440]"
+            <Button
+              variant="outline"
+              onPress={onSyncSpreadsheet ? onSyncSpreadsheet : onRefresh}
+              isDisabled={isSyncing}
+              className="flex-1 sm:flex-none rounded-xl bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)] text-xs font-semibold min-h-[44px] px-3.5"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-[#2563EB] dark:text-[#C084FC] ${isSyncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-[var(--accent)] ${isSyncing ? 'animate-spin' : ''}`} />
               <span>{isSyncing ? 'Sinkron...' : 'Segarkan'}</span>
-            </button>
-            <button
-              onClick={handleExportCSV}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#2563EB] dark:bg-[#9333EA] hover:bg-[#1D4ED8] dark:hover:bg-[#A855F7] text-white text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
+            </Button>
+            <Button
+              variant="primary"
+              onPress={handleExportCSV}
+              className="flex-1 sm:flex-none rounded-xl text-xs font-bold min-h-[44px] px-3.5"
             >
               <Download className="w-3.5 h-3.5 stroke-[2.25]" />
               <span>Ekspor CSV</span>
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Filter Hari (Memfilter semua kartu & daftar transaksi di bawahnya) */}
-        <div className="pt-3 border-t border-slate-200 dark:border-[#2B2B33] flex flex-wrap items-center justify-between gap-2.5">
+        <div className="pt-3 border-t border-[var(--border)] flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mr-1">
+            <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider mr-1">
               Filter Hari:
             </span>
 
             {/* Tombol Hari Sebelumnya */}
-            <button
-              type="button"
-              onClick={handlePrevDay}
-              title="Lihat Hari Sebelumnya"
-              className="w-9 h-9 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] flex items-center justify-center text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
+            <Button
+              variant="outline"
+              isIconOnly
+              onPress={handlePrevDay}
+              aria-label="Lihat Hari Sebelumnya"
+              className="w-10 h-10 rounded-xl bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)]"
             >
               <ChevronLeft className="w-4 h-4" />
-            </button>
+            </Button>
 
             {/* Quick Pill: Hari Ini */}
-            <button
-              type="button"
-              onClick={() => setSelectedDateYmd(todayYmd)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer min-h-[36px] ${
-                isToday
-                  ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white'
-                  : 'bg-slate-50 dark:bg-[#24242B] text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440]'
+            <Button
+              variant={isToday ? 'primary' : 'outline'}
+              size="sm"
+              onPress={() => setSelectedDateYmd(todayYmd)}
+              className={`rounded-full text-xs font-bold min-h-[38px] px-3.5 ${
+                isToday ? '' : 'bg-[var(--surface-secondary)] text-[var(--muted)] border-[var(--border)]'
               }`}
             >
               Hari Ini
-            </button>
+            </Button>
 
             {/* Quick Pill: Kemarin */}
-            <button
-              type="button"
-              onClick={() => setSelectedDateYmd(yesterdayYmd)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer min-h-[36px] ${
-                isYesterday
-                  ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white'
-                  : 'bg-slate-50 dark:bg-[#24242B] text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440]'
+            <Button
+              variant={isYesterday ? 'primary' : 'outline'}
+              size="sm"
+              onPress={() => setSelectedDateYmd(yesterdayYmd)}
+              className={`rounded-full text-xs font-bold min-h-[38px] px-3.5 ${
+                isYesterday ? '' : 'bg-[var(--surface-secondary)] text-[var(--muted)] border-[var(--border)]'
               }`}
             >
               Kemarin
-            </button>
+            </Button>
 
             {/* Date Picker Input */}
-            <div className="flex items-center bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] rounded-full px-3 py-1.5 border border-slate-200 dark:border-[#343440] transition-colors min-h-[36px]">
-              <Calendar className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400 mr-1.5 pointer-events-none" />
+            <div className="flex items-center bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)] rounded-full px-3 py-1.5 border border-[var(--border)] transition-colors min-h-[38px]">
+              <Calendar className="w-3.5 h-3.5 text-[var(--muted)] mr-1.5 pointer-events-none" />
               <input
                 type="date"
                 value={selectedDateYmd}
@@ -462,225 +462,232 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                 onChange={(e) => {
                   if (e.target.value) setSelectedDateYmd(e.target.value);
                 }}
-                className="bg-transparent text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] focus:outline-none cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
+                className="bg-transparent text-xs font-bold text-[var(--foreground)] focus:outline-none cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
                 title="Pilih tanggal hari yang ingin dilihat"
               />
             </div>
 
             {/* Tombol Hari Berikutnya */}
-            <button
-              type="button"
-              onClick={handleNextDay}
-              title="Lihat Hari Berikutnya"
-              disabled={selectedDateYmd >= todayYmd}
-              className="w-9 h-9 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] disabled:opacity-30 flex items-center justify-center text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
+            <Button
+              variant="outline"
+              isIconOnly
+              onPress={handleNextDay}
+              isDisabled={selectedDateYmd >= todayYmd}
+              aria-label="Lihat Hari Berikutnya"
+              className="w-10 h-10 rounded-xl bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)]"
             >
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
 
-          <div className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
-            Menampilkan: <strong className="text-[#0F172A] dark:text-[#F4F4F6]">{formatYmdToIndo(selectedDateYmd)}</strong> ({dayTransactions.length} nota)
+          <div className="text-[11px] font-semibold text-[var(--muted)]">
+            Menampilkan: <strong className="text-[var(--foreground)]">{formatYmdToIndo(selectedDateYmd)}</strong> ({dayTransactions.length} nota)
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* 4 Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: Omset */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-3.5 sm:p-4 border border-slate-200 dark:border-[#2B2B33]">
+        <Card className="bg-[var(--surface)] rounded-2xl p-3.5 sm:p-4 gap-2 border border-[var(--border)] shadow-none">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
               Total Omset
             </span>
-            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center shrink-0">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2">
-            <h3 className="text-base sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums font-mono">
+          <div>
+            <h3 className="text-base sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
               {formatRupiah(daySummary.totalOmset)}
             </h3>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
+            <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
               {daySummary.totalTransactions} transaksi
             </p>
           </div>
-        </div>
+        </Card>
 
         {/* Card 2: Margin */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-3.5 sm:p-4 border border-slate-200 dark:border-[#2B2B33]">
+        <Card className="bg-[var(--surface)] rounded-2xl p-3.5 sm:p-4 gap-2 border border-[var(--border)] shadow-none">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
               Estimasi Laba
             </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-[var(--success-soft)] text-emerald-700 dark:text-[var(--success)] flex items-center justify-center shrink-0">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2">
-            <h3 className="text-base sm:text-xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums font-mono">
+          <div>
+            <h3 className="text-base sm:text-xl font-extrabold text-emerald-700 dark:text-[var(--success)] tracking-tight tabular-nums font-mono">
               {formatRupiah(daySummary.totalMargin)}
             </h3>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
+            <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
               Margin {marginPercentage}%
             </p>
           </div>
-        </div>
+        </Card>
 
         {/* Card 3: Nota */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-3.5 sm:p-4 border border-slate-200 dark:border-[#2B2B33]">
+        <Card className="bg-[var(--surface)] rounded-2xl p-3.5 sm:p-4 gap-2 border border-[var(--border)] shadow-none">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
               Jumlah Nota
             </span>
-            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center shrink-0">
               <Receipt className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2">
-            <h3 className="text-base sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums font-mono">
+          <div>
+            <h3 className="text-base sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
               {daySummary.totalTransactions}
             </h3>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate tabular-nums">
+            <p className="text-[11px] text-[var(--muted)] mt-0.5 truncate tabular-nums">
               Rata2: {formatRupiah(daySummary.avgBasketSize)}
             </p>
           </div>
-        </div>
+        </Card>
 
         {/* Card 4: Volume Terjual (Excl. Promo) */}
-        <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-3.5 sm:p-4 border border-slate-200 dark:border-[#2B2B33]">
+        <Card className="bg-[var(--surface)] rounded-2xl p-3.5 sm:p-4 gap-2 border border-[var(--border)] shadow-none">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 leading-tight">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] leading-tight">
               Volume (Excl. Promo)
             </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-[var(--warning-soft)] text-amber-700 dark:text-[var(--warning)] flex items-center justify-center shrink-0">
               <Package className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2">
+          <div>
             <div className="flex items-baseline justify-between gap-1 flex-wrap">
-              <h3 className="text-base sm:text-xl font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tracking-tight tabular-nums font-mono">
+              <h3 className="text-base sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
                 {daySummary.totalQty} Botol
               </h3>
-              <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 px-1.5 py-0.5 rounded-md tabular-nums" title="Total botol kecuali bir, promo, dan harga minuman di bawah 30rb">
+              <span
+                className="text-[10px] font-bold text-amber-700 dark:text-[var(--warning)] bg-[var(--warning-soft)] border border-[var(--warning)]/35 px-1.5 py-0.5 rounded-md tabular-nums"
+                title="Total botol kecuali bir, promo, dan harga minuman di bawah 30rb"
+              >
                 {daySummary.filteredBottleQty ?? 0} Non-Bir/≥30k
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 tabular-nums">
-              Excl. bir, promo & &lt;30rb: <strong className="text-amber-700 dark:text-amber-400">{daySummary.filteredBottleQty ?? 0} btl</strong>
+            <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
+              Excl. bir, promo &amp; &lt;30rb: <strong className="text-amber-700 dark:text-[var(--warning)]">{daySummary.filteredBottleQty ?? 0} btl</strong>
             </p>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Payment Method Breakdown */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border border-slate-200 dark:border-[#2B2B33]">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2.5">
+      <Card className="bg-[var(--surface)] rounded-2xl p-4 gap-2.5 border border-[var(--border)] shadow-none">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
           Rincian Metode Pembayaran
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border border-slate-200 dark:border-[#343440] flex items-center justify-between">
+          <div className="bg-[var(--surface-secondary)] p-3 rounded-xl border border-[var(--border)] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[var(--warning-soft)] border border-[var(--warning)]/35 text-amber-700 dark:text-[var(--warning)] flex items-center justify-center">
                 <Banknote className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6]">TUNAI</p>
-                <p className="text-[10px] text-slate-500 dark:text-zinc-400 tabular-nums">{daySummary.paymentBreakdown.CASH.count} nota</p>
+                <p className="text-xs font-bold text-[var(--foreground)]">TUNAI</p>
+                <p className="text-[10px] text-[var(--muted)] tabular-nums">{daySummary.paymentBreakdown.CASH.count} nota</p>
               </div>
             </div>
-            <p className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">{formatRupiah(daySummary.paymentBreakdown.CASH.total)}</p>
+            <p className="text-xs font-bold text-[var(--foreground)] tabular-nums font-mono">{formatRupiah(daySummary.paymentBreakdown.CASH.total)}</p>
           </div>
 
-          <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border border-slate-200 dark:border-[#343440] flex items-center justify-between">
+          <div className="bg-[var(--surface-secondary)] p-3 rounded-xl border border-[var(--border)] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/35 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[var(--success-soft)] border border-[var(--success)]/35 text-emerald-700 dark:text-[var(--success)] flex items-center justify-center">
                 <QrCode className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6]">QRIS</p>
-                <p className="text-[10px] text-slate-500 dark:text-zinc-400 tabular-nums">{daySummary.paymentBreakdown.QRIS.count} nota</p>
+                <p className="text-xs font-bold text-[var(--foreground)]">QRIS</p>
+                <p className="text-[10px] text-[var(--muted)] tabular-nums">{daySummary.paymentBreakdown.QRIS.count} nota</p>
               </div>
             </div>
-            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 tabular-nums font-mono">{formatRupiah(daySummary.paymentBreakdown.QRIS.total)}</p>
+            <p className="text-xs font-bold text-emerald-700 dark:text-[var(--success)] tabular-nums font-mono">{formatRupiah(daySummary.paymentBreakdown.QRIS.total)}</p>
           </div>
 
-          <div className="bg-slate-50 dark:bg-[#24242B] p-3 rounded-xl border border-slate-200 dark:border-[#343440] flex items-center justify-between">
+          <div className="bg-[var(--surface-secondary)] p-3 rounded-xl border border-[var(--border)] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-purple-500/15 border border-blue-200 dark:border-purple-500/40 text-[#2563EB] dark:text-[#C084FC] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent)] flex items-center justify-center">
                 <CreditCard className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6]">TRANSFER</p>
-                <p className="text-[10px] text-slate-500 dark:text-zinc-400 tabular-nums">{daySummary.paymentBreakdown.TRANSFER.count} nota</p>
+                <p className="text-xs font-bold text-[var(--foreground)]">TRANSFER</p>
+                <p className="text-[10px] text-[var(--muted)] tabular-nums">{daySummary.paymentBreakdown.TRANSFER.count} nota</p>
               </div>
             </div>
-            <p className="text-xs font-bold text-[#2563EB] dark:text-[#C084FC] tabular-nums font-mono">{formatRupiah(daySummary.paymentBreakdown.TRANSFER.total)}</p>
+            <p className="text-xs font-bold text-[var(--accent)] tabular-nums font-mono">{formatRupiah(daySummary.paymentBreakdown.TRANSFER.total)}</p>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Filter & Search */}
-      <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-3.5 border border-slate-200 dark:border-[#2B2B33] space-y-2.5">
+      <Card className="bg-[var(--surface)] rounded-2xl p-3.5 gap-2.5 border border-[var(--border)] shadow-none">
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 pointer-events-none" />
-          <input
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none z-10" />
+          <Input
             type="text"
             id="input-search-today"
+            fullWidth
+            variant="secondary"
             placeholder="Cari no. struk, pelanggan, atau nama produk..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs sm:text-sm text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] focus:bg-white dark:focus:bg-[#1B1B20] min-h-[44px]"
+            className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs sm:text-sm text-[var(--foreground)] min-h-[44px]"
           />
         </div>
 
         {/* Filter Chips (single horizontal scroll row on mobile) */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5 text-xs">
           {(['ALL', 'CASH', 'QRIS', 'TRANSFER'] as const).map((method) => (
-            <button
+            <Button
               key={method}
-              type="button"
-              onClick={() => setSelectedPayment(method)}
-              className={`px-3 py-1.5 rounded-full font-bold transition-colors active:scale-[0.97] cursor-pointer min-h-[38px] whitespace-nowrap shrink-0 ${
+              size="sm"
+              variant={selectedPayment === method ? 'primary' : 'outline'}
+              onPress={() => setSelectedPayment(method)}
+              className={`rounded-full font-bold min-h-[38px] px-3.5 whitespace-nowrap shrink-0 ${
                 selectedPayment === method
-                  ? 'bg-[#2563EB] dark:bg-[#9333EA] text-white'
-                  : 'bg-slate-50 dark:bg-[#24242B] text-slate-600 dark:text-zinc-300 hover:text-[#0F172A] dark:hover:text-[#F4F4F6] hover:bg-slate-100 dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440]'
+                  ? ''
+                  : 'bg-[var(--surface-secondary)] text-[var(--muted)] border-[var(--border)]'
               }`}
             >
               {method === 'ALL' ? 'Semua Metode' : method}
-            </button>
+            </Button>
           ))}
 
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
             aria-label="Filter status nota"
-            className="bg-slate-50 dark:bg-[#24242B] text-[#0F172A] dark:text-[#F4F4F6] border border-slate-200 dark:border-[#343440] px-3 py-1.5 rounded-full font-medium text-xs focus:outline-none focus:border-[#2563EB] dark:focus:border-[#A855F7] cursor-pointer min-h-[38px] shrink-0"
+            className="bg-[var(--surface-secondary)] text-[var(--foreground)] border border-[var(--border)] px-3 py-1.5 rounded-full font-medium text-xs focus:outline-none focus:border-[var(--accent)] cursor-pointer min-h-[38px] shrink-0"
           >
             <option value="ALL">Semua Status</option>
             <option value="COMPLETED">Selesai</option>
             <option value="VOIDED">Dibatalkan</option>
           </select>
         </div>
-      </div>
+      </Card>
 
       {/* Transactions List */}
       <div>
         <div className="flex items-center justify-between mb-2 px-1">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
             Daftar Nota Penjualan ({filtered.length})
           </h3>
-          <span className="text-[11px] text-slate-400 dark:text-zinc-500">Terbaru di atas</span>
+          <span className="text-[11px] text-[var(--muted)]">Terbaru di atas</span>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="bg-white dark:bg-[#1B1B20] rounded-2xl p-10 text-center border border-slate-200 dark:border-[#2B2B33] space-y-2">
-            <Receipt className="w-10 h-10 mx-auto text-slate-300 dark:text-zinc-600" />
-            <p className="text-sm font-bold text-[#0F172A] dark:text-[#F4F4F6]">Tidak ada transaksi ditemukan</p>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-xs mx-auto">
+          <Card className="bg-[var(--surface)] rounded-2xl p-10 text-center border border-[var(--border)] shadow-none items-center gap-2">
+            <Receipt className="w-10 h-10 mx-auto text-[var(--muted)] opacity-50" />
+            <p className="text-sm font-bold text-[var(--foreground)]">Tidak ada transaksi ditemukan</p>
+            <p className="text-xs text-[var(--muted)] max-w-xs mx-auto">
               Transaksi yang baru diselesaikan di kasir akan langsung muncul di sini.
             </p>
-          </div>
+          </Card>
         ) : (
           <>
             {/* MOBILE VIEW (<640px): Card List Touch-Friendly */}
@@ -688,53 +695,60 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
               {visibleTransactions.map((t) => {
                 const isVoided = t.status === 'VOIDED';
                 return (
-                  <div
+                  <Card
                     key={t.id}
-                    className={`bg-white dark:bg-[#1B1B20] rounded-2xl p-4 border space-y-3 ${
-                      isVoided ? 'border-red-200 dark:border-red-500/35 bg-red-50/40 dark:bg-red-500/10 opacity-80' : 'border-slate-200 dark:border-[#2B2B33]'
+                    className={`rounded-2xl p-4 gap-3 border shadow-none ${
+                      isVoided
+                        ? 'border-[var(--danger)]/35 bg-[var(--danger-soft)] opacity-85'
+                        : 'bg-[var(--surface)] border-[var(--border)]'
                     }`}
                   >
                     {/* Top row: ID, Time, Status */}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-mono text-xs font-bold text-[#2563EB] dark:text-[#C084FC] truncate">
+                        <span className="font-mono text-xs font-bold text-[var(--accent)] truncate">
                           #{t.id}
                         </span>
-                        <span className="text-slate-300 dark:text-zinc-600">•</span>
-                        <div className="flex items-center gap-1 text-[11px] text-slate-600 dark:text-zinc-300 font-mono font-bold">
-                          <Clock className="w-3 h-3 text-[#2563EB] dark:text-[#C084FC]" />
+                        <span className="text-[var(--muted)]">•</span>
+                        <div className="flex items-center gap-1 text-[11px] text-[var(--foreground)] font-mono font-bold">
+                          <Clock className="w-3 h-3 text-[var(--accent)]" />
                           <span>{getPureWebsiteTime(t)}</span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                          t.paymentMethod === 'CASH'
-                            ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/35'
-                            : t.paymentMethod === 'QRIS'
-                            ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/35'
-                            : 'bg-blue-50 dark:bg-purple-500/15 text-[#2563EB] dark:text-[#C084FC] border-blue-200 dark:border-purple-500/40'
-                        }`}>
-                          {t.paymentMethod}
-                        </span>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color={
+                            t.paymentMethod === 'CASH'
+                              ? 'warning'
+                              : t.paymentMethod === 'QRIS'
+                              ? 'success'
+                              : 'accent'
+                          }
+                          className="font-bold border border-[var(--border)]"
+                        >
+                          <Chip.Label>{t.paymentMethod}</Chip.Label>
+                        </Chip>
                         {isVoided && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35">
-                            VOID
-                          </span>
+                          <Chip size="sm" variant="soft" color="danger" className="font-bold border border-[var(--danger)]/35">
+                            <Chip.Label>VOID</Chip.Label>
+                          </Chip>
                         )}
                       </div>
                     </div>
 
                     {/* Customer & Items */}
                     <div>
-                      <p className="text-xs font-bold text-[#0F172A] dark:text-[#F4F4F6]">
+                      <p className="text-xs font-bold text-[var(--foreground)]">
                         {t.customerName ? `Pelanggan: ${t.customerName}` : 'Pelanggan Umum'}
                       </p>
-                      <div className="text-xs text-slate-600 dark:text-zinc-300 mt-1.5 space-y-1">
+                      <div className="text-xs text-[var(--muted)] mt-1.5 space-y-1">
                         {t.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between gap-2 text-slate-600 dark:text-zinc-300">
+                          <div key={idx} className="flex justify-between gap-2 text-[var(--muted)]">
                             <span className="truncate">• {item.name}</span>
-                            <span className="font-mono font-semibold flex-shrink-0 text-[#0F172A] dark:text-[#F4F4F6] tabular-nums">
+                            <span className="font-mono font-semibold flex-shrink-0 text-[var(--foreground)] tabular-nums">
                               {item.qty}x @{formatRupiah(item.price)}
                             </span>
                           </div>
@@ -743,57 +757,65 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                     </div>
 
                     {/* Financial summary */}
-                    <div className="pt-2.5 border-t border-slate-200 dark:border-[#2B2B33] flex items-center justify-between gap-2">
+                    <div className="pt-2.5 border-t border-[var(--border)] flex items-center justify-between gap-2">
                       <div>
-                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold tabular-nums font-mono">Laba: +{formatRupiah(t.margin)}</p>
-                        <p className="text-sm font-extrabold text-[#0F172A] dark:text-[#F4F4F6] tabular-nums font-mono">
+                        <p className="text-[10px] text-emerald-700 dark:text-[var(--success)] font-bold tabular-nums font-mono">
+                          Laba: +{formatRupiah(t.margin)}
+                        </p>
+                        <p className="text-sm font-extrabold text-[var(--foreground)] tabular-nums font-mono">
                           Total: {formatRupiah(t.total)}
                         </p>
                       </div>
 
                       {/* Action buttons (min 44px touch) */}
                       <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => onViewReceipt(t)}
-                          className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-[#0F172A] dark:text-[#F4F4F6] border border-slate-200 dark:border-[#343440] text-xs font-bold flex items-center gap-1 min-h-[44px] cursor-pointer"
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onPress={() => onViewReceipt(t)}
+                          className="px-3 rounded-xl bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)] text-xs font-bold min-h-[44px]"
                         >
-                          <Eye className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#C084FC]" />
+                          <Eye className="w-3.5 h-3.5 text-[var(--accent)]" />
                           <span>Struk</span>
-                        </button>
+                        </Button>
                         {!isVoided && (
-                          <button
-                            onClick={() => setVoidingTrx(t)}
-                            className="px-2.5 py-2 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/15 border border-transparent hover:border-amber-200 dark:hover:border-amber-500/35 text-xs font-semibold flex items-center gap-1 min-h-[44px] cursor-pointer"
-                            title="Batalkan Transaksi (VOID) & Hapus di Sheet"
+                          <Button
+                            variant="ghost"
+                            isIconOnly
+                            onPress={() => setVoidingTrx(t)}
+                            aria-label="Batalkan Transaksi (VOID) & Hapus di Sheet"
+                            className="rounded-xl text-amber-700 dark:text-[var(--warning)] hover:bg-[var(--warning-soft)] min-h-[44px] min-w-[44px]"
                           >
                             <Ban className="w-4 h-4" />
-                          </button>
+                          </Button>
                         )}
                         {onDeleteTransaction && (
-                          <button
-                            onClick={() => setDeletingTrx(t)}
-                            className="px-2.5 py-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/15 border border-transparent hover:border-red-200 dark:hover:border-red-500/35 text-xs font-semibold flex items-center gap-1 min-h-[44px] cursor-pointer"
-                            title="Hapus Transaksi & Hapus Baris di Google Sheets"
+                          <Button
+                            variant="ghost"
+                            isIconOnly
+                            onPress={() => setDeletingTrx(t)}
+                            aria-label="Hapus Transaksi & Hapus Baris di Google Sheets"
+                            className="rounded-xl text-[var(--danger)] hover:bg-[var(--danger-soft)] min-h-[44px] min-w-[44px]"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 );
               })}
             </div>
 
             {/* TABLET/DESKTOP VIEW (>=640px): Full Table */}
-            <div className="hidden sm:block bg-white dark:bg-[#1B1B20] rounded-2xl border border-slate-200 dark:border-[#2B2B33] overflow-hidden">
+            <Card className="hidden sm:block bg-[var(--surface)] rounded-2xl p-0 gap-0 border border-[var(--border)] shadow-none overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-[#24242B] text-slate-600 dark:text-zinc-400 uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-[#343440] font-semibold">
+                  <thead className="bg-[var(--surface-secondary)] text-[var(--muted)] uppercase text-[10px] tracking-wider border-b border-[var(--border)] font-semibold">
                     <tr>
-                      <th className="py-3.5 px-4 font-semibold text-[#0F172A] dark:text-[#F4F4F6]">
+                      <th className="py-3.5 px-4 font-semibold text-[var(--foreground)]">
                         <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#C084FC]" />
+                          <Clock className="w-3.5 h-3.5 text-[var(--accent)]" />
                           <span>Jam Input</span>
                         </div>
                       </th>
@@ -807,82 +829,90 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                       <th className="py-3.5 px-4 text-center">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-[#2B2B33]">
+                  <tbody className="divide-y divide-[var(--separator)]">
                     {visibleTransactions.map((t) => {
                       const isVoided = t.status === 'VOIDED';
                       return (
                         <tr
                           key={t.id}
-                          className={`hover:bg-slate-50/80 dark:hover:bg-[#24242B]/70 transition-colors ${
-                            isVoided ? 'opacity-60 bg-red-50/30 dark:bg-red-500/10' : ''
+                          className={`hover:bg-[var(--surface-secondary)]/80 transition-colors ${
+                            isVoided ? 'opacity-65 bg-[var(--danger-soft)]' : ''
                           }`}
                         >
                           <td className="py-3.5 px-4 font-mono whitespace-nowrap">
-                            <span className="text-xs bg-slate-100 dark:bg-[#24242B] px-2.5 py-1 rounded-lg text-[#0F172A] dark:text-[#F4F4F6] border border-slate-200 dark:border-[#343440] font-bold tracking-tight tabular-nums">
+                            <span className="text-xs bg-[var(--surface-secondary)] px-2.5 py-1 rounded-lg text-[var(--foreground)] border border-[var(--border)] font-bold tracking-tight tabular-nums">
                               {getPureWebsiteTime(t)}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 font-mono font-bold text-[#2563EB] dark:text-[#C084FC] whitespace-nowrap">
+                          <td className="py-3.5 px-4 font-mono font-bold text-[var(--accent)] whitespace-nowrap">
                             {t.id}
                           </td>
-                          <td className="py-3.5 px-4 text-[#0F172A] dark:text-[#F4F4F6] font-medium">
-                            {t.customerName || <span className="text-slate-400 dark:text-zinc-500 italic">Umum</span>}
+                          <td className="py-3.5 px-4 text-[var(--foreground)] font-medium">
+                            {t.customerName || <span className="text-[var(--muted)] italic">Umum</span>}
                           </td>
-                          <td className="py-3.5 px-4 max-w-xs truncate text-slate-600 dark:text-zinc-300" title={t.items.map(i => `${i.name} (${i.qty}x)`).join(', ')}>
+                          <td className="py-3.5 px-4 max-w-xs truncate text-[var(--muted)]" title={t.items.map(i => `${i.name} (${i.qty}x)`).join(', ')}>
                             {t.items.map((i, idx) => (
                               <span key={idx} className="mr-1">
-                                {i.name} <strong className="text-[#0F172A] dark:text-[#F4F4F6]">({i.qty}x)</strong>
+                                {i.name} <strong className="text-[var(--foreground)]">({i.qty}x)</strong>
                                 {idx < t.items.length - 1 ? ',' : ''}
                               </span>
                             ))}
                           </td>
                           <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-[#24242B] text-[#0F172A] dark:text-[#F4F4F6] border border-slate-200 dark:border-[#343440]">
-                              {t.paymentMethod}
-                            </span>
+                            <Chip size="sm" variant="soft" color="default" className="font-bold border border-[var(--border)]">
+                              <Chip.Label>{t.paymentMethod}</Chip.Label>
+                            </Chip>
                           </td>
-                          <td className="py-3.5 px-4 text-right font-mono font-bold text-[#0F172A] dark:text-[#F4F4F6] whitespace-nowrap tabular-nums">
+                          <td className="py-3.5 px-4 text-right font-mono font-bold text-[var(--foreground)] whitespace-nowrap tabular-nums">
                             {formatRupiah(t.total)}
                           </td>
-                          <td className="py-3.5 px-4 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap tabular-nums">
+                          <td className="py-3.5 px-4 text-right font-mono font-semibold text-emerald-700 dark:text-[var(--success)] whitespace-nowrap tabular-nums">
                             +{formatRupiah(t.margin)}
                           </td>
                           <td className="py-3.5 px-4 text-center whitespace-nowrap">
                             {isVoided ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/35">
-                                DIBATALKAN
-                              </span>
+                              <Chip size="sm" variant="soft" color="danger" className="font-bold border border-[var(--danger)]/35">
+                                <Chip.Label>DIBATALKAN</Chip.Label>
+                              </Chip>
                             ) : (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/35">
-                                SELESAI
-                              </span>
+                              <Chip size="sm" variant="soft" color="success" className="font-bold border border-[var(--success)]/35">
+                                <Chip.Label className="text-emerald-700 dark:text-[var(--success)]">SELESAI</Chip.Label>
+                              </Chip>
                             )}
                           </td>
                           <td className="py-3.5 px-4 text-center whitespace-nowrap">
                             <div className="flex items-center justify-center gap-1">
-                              <button
-                                onClick={() => onViewReceipt(t)}
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-[#24242B] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-[#0F172A] dark:text-[#F4F4F6] font-semibold text-xs transition-colors border border-slate-200 dark:border-[#343440] cursor-pointer"
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onPress={() => onViewReceipt(t)}
+                                className="px-2.5 rounded-lg bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)] font-semibold text-xs min-h-[34px]"
                               >
                                 Struk
-                              </button>
+                              </Button>
                               {!isVoided && (
-                                <button
-                                  onClick={() => setVoidingTrx(t)}
-                                  className="p-1.5 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/15 transition-colors cursor-pointer"
-                                  title="Void & Hapus di Sheet"
+                                <Button
+                                  variant="ghost"
+                                  isIconOnly
+                                  size="sm"
+                                  onPress={() => setVoidingTrx(t)}
+                                  aria-label="Void & Hapus di Sheet"
+                                  className="rounded-lg text-amber-700 dark:text-[var(--warning)] hover:bg-[var(--warning-soft)]"
                                 >
                                   <Ban className="w-3.5 h-3.5" />
-                                </button>
+                                </Button>
                               )}
                               {onDeleteTransaction && (
-                                <button
-                                  onClick={() => setDeletingTrx(t)}
-                                  className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/15 transition-colors cursor-pointer"
-                                  title="Hapus Transaksi & Hapus Baris di Google Sheets"
+                                <Button
+                                  variant="ghost"
+                                  isIconOnly
+                                  size="sm"
+                                  onPress={() => setDeletingTrx(t)}
+                                  aria-label="Hapus Transaksi & Hapus Baris di Google Sheets"
+                                  className="rounded-lg text-[var(--danger)] hover:bg-[var(--danger-soft)]"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                </Button>
                               )}
                             </div>
                           </td>
@@ -892,20 +922,20 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
                   </tbody>
                 </table>
               </div>
-            </div>
+            </Card>
 
             {sortedTransactions.length > visibleTransactions.length && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 px-1">
-                <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium tabular-nums">
+                <span className="text-xs text-[var(--muted)] font-medium tabular-nums">
                   Menampilkan {visibleTransactions.length} dari {sortedTransactions.length} nota
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setVisibleCount((prev) => prev + 50)}
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-[#24242B] dark:hover:bg-[#2E2E37] border border-slate-200 dark:border-[#343440] text-[#0F172A] dark:text-[#F4F4F6] text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
+                <Button
+                  variant="outline"
+                  onPress={() => setVisibleCount((prev) => prev + 50)}
+                  className="w-full sm:w-auto px-4 rounded-xl bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] text-xs font-bold min-h-[44px]"
                 >
                   Muat Lagi (+50)
-                </button>
+                </Button>
               </div>
             )}
           </>
@@ -913,144 +943,152 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
       </div>
 
       {/* Void Modal */}
-      {voidingTrx && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Konfirmasi Void Nota"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-        >
-          <div className="fixed inset-0" onClick={() => setVoidingTrx(null)} aria-hidden="true" />
-          <div className="relative z-10 bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-2xl w-full max-w-md border-t sm:border border-slate-200 dark:border-[#2B2B33] shadow-2xl max-h-[92dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-150 text-[#0F172A] dark:text-[#F4F4F6]">
-            <div className="px-4 sm:px-5 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 min-w-0">
+      <Modal
+        isOpen={Boolean(voidingTrx)}
+        onOpenChange={(open) => {
+          if (!open) setVoidingTrx(null);
+        }}
+      >
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="md" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Konfirmasi Void Nota"
+              className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] w-full flex flex-col"
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              <Modal.Header className="px-4 sm:px-5 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] bg-[var(--surface-secondary)] flex-row items-center justify-between gap-2 shrink-0 pr-14">
+                <div className="flex items-center gap-2 text-[var(--danger)] min-w-0">
                   <AlertTriangle className="w-5 h-5 shrink-0" />
-                  <h3 className="font-bold text-sm sm:text-base text-[#0F172A] dark:text-[#F4F4F6] truncate">
-                    Batalkan Transaksi & Hapus di Sheet
-                  </h3>
+                  <Modal.Heading className="font-bold text-sm sm:text-base text-[var(--foreground)] truncate">
+                    Batalkan Transaksi &amp; Hapus di Sheet
+                  </Modal.Heading>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setVoidingTrx(null)}
+                <Modal.CloseTrigger
                   aria-label="Tutup dialog void"
-                  className="min-w-[44px] min-h-[44px] -mr-2 rounded-full flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:bg-white dark:hover:bg-[#2E2E37] cursor-pointer shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-5 space-y-3.5">
-              <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
-                Anda akan membatalkan transaksi <strong className="text-[#0F172A] dark:text-[#F4F4F6]">#{voidingTrx.id}</strong> sejumlah{' '}
-                <strong className="text-[#0F172A] dark:text-[#F4F4F6]">{formatRupiah(voidingTrx.total)}</strong>. Stok barang akan dikembalikan otomatis.
-              </p>
-
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/35 text-[11px] text-[#0F172A] dark:text-[#F4F4F6] space-y-1">
-                <p className="font-bold flex items-center gap-1.5 text-red-700 dark:text-red-400">
-                  <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0" />
-                  <span>Hapus Otomatis di Google Sheets:</span>
-                </p>
-                <p className="text-red-700/80 dark:text-red-300/90 leading-relaxed">
-                  Seluruh baris transaksi ini di <strong className="text-red-900 dark:text-red-200">LOG_PENJUALAN</strong> dan baris ongkir di <strong className="text-red-900 dark:text-red-200">LAIN-LAIN</strong> akan langsung dihapus permanen.
-                </p>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wider block mb-1.5">
-                  Alasan Pembatalan:
-                </label>
-                <textarea
-                  ref={voidReasonRef}
-                  value={voidReason}
-                  onChange={(e) => setVoidReason(e.target.value)}
-                  placeholder="Contoh: Salah input pesanan / Pelanggan ganti metode bayar"
-                  rows={3}
-                  className="w-full p-3 bg-slate-50 dark:bg-[#24242B] border border-slate-200 dark:border-[#343440] rounded-xl text-xs sm:text-sm text-[#0F172A] dark:text-[#F4F4F6] placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:bg-white dark:focus:bg-[#1B1B20]"
+                  className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
                 />
-              </div>
-            </div>
+              </Modal.Header>
 
-            <div className="px-4 sm:px-5 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] pb-safe flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setVoidingTrx(null)}
-                className="flex-1 min-h-[48px] py-2.5 rounded-xl bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 font-bold text-xs active:scale-[0.97] cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmVoid}
-                className="flex-1 min-h-[48px] py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs active:scale-[0.97] cursor-pointer"
-              >
-                Hapus & VOID
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              {voidingTrx && (
+                <>
+                  <Modal.Body className="!mt-0 flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-5 space-y-3.5">
+                    <p className="text-xs text-[var(--muted)] leading-relaxed">
+                      Anda akan membatalkan transaksi <strong className="text-[var(--foreground)]">#{voidingTrx.id}</strong> sejumlah{' '}
+                      <strong className="text-[var(--foreground)]">{formatRupiah(voidingTrx.total)}</strong>. Stok barang akan dikembalikan otomatis.
+                    </p>
+
+                    <div className="p-3 rounded-xl bg-[var(--danger-soft)] border border-[var(--danger)]/35 text-[11px] text-[var(--foreground)] space-y-1">
+                      <p className="font-bold flex items-center gap-1.5 text-[var(--danger)]">
+                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>Hapus Otomatis di Google Sheets:</span>
+                      </p>
+                      <p className="text-[var(--danger)]/90 leading-relaxed">
+                        Seluruh baris transaksi ini di <strong>LOG_PENJUALAN</strong> dan baris ongkir di <strong>LAIN-LAIN</strong> akan langsung dihapus permanen.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider block mb-1.5">
+                        Alasan Pembatalan:
+                      </label>
+                      <TextArea
+                        ref={voidReasonRef}
+                        fullWidth
+                        variant="secondary"
+                        value={voidReason}
+                        onChange={(e) => setVoidReason(e.target.value)}
+                        placeholder="Contoh: Salah input pesanan / Pelanggan ganti metode bayar"
+                        rows={3}
+                        className="w-full p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-xs sm:text-sm text-[var(--foreground)]"
+                      />
+                    </div>
+                  </Modal.Body>
+
+                  <Modal.Footer className="!mt-0 px-4 sm:px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-secondary)] pb-safe flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      onPress={() => setVoidingTrx(null)}
+                      className="flex-1 min-h-[48px] rounded-xl bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] font-bold text-xs"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onPress={handleConfirmVoid}
+                      className="flex-1 min-h-[48px] rounded-xl font-bold text-xs"
+                    >
+                      Hapus &amp; VOID
+                    </Button>
+                  </Modal.Footer>
+                </>
+              )}
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
       {/* Delete Struk Permanen Modal */}
-      {deletingTrx && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Hapus Struk Permanen"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/75 dark:bg-black/80 animate-in fade-in duration-150"
-        >
-          <div className="fixed inset-0" onClick={() => setDeletingTrx(null)} aria-hidden="true" />
-          <div className="relative z-10 bg-white dark:bg-[#1B1B20] rounded-t-3xl sm:rounded-2xl w-full max-w-md border-t sm:border border-slate-200 dark:border-[#2B2B33] shadow-2xl max-h-[92dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-150 text-[#0F172A] dark:text-[#F4F4F6]">
-            <div className="px-4 sm:px-5 pt-2.5 pb-3 border-b border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 mx-auto mb-2.5 sm:hidden" />
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+      <Modal
+        isOpen={Boolean(deletingTrx)}
+        onOpenChange={(open) => {
+          if (!open) setDeletingTrx(null);
+        }}
+      >
+        <Modal.Backdrop variant="opaque">
+          <Modal.Container placement="auto" size="md" className="p-0 sm:p-4">
+            <Modal.Dialog
+              aria-label="Hapus Struk Permanen"
+              className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] w-full flex flex-col"
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
+              <Modal.Header className="px-4 sm:px-5 pt-2.5 sm:pt-4 pb-3 border-b border-[var(--border)] bg-[var(--surface-secondary)] flex-row items-center justify-between gap-2 shrink-0 pr-14">
+                <div className="flex items-center gap-2 text-[var(--danger)] min-w-0">
                   <Trash2 className="w-5 h-5 shrink-0" />
-                  <h3 className="font-bold text-sm sm:text-base text-[#0F172A] dark:text-[#F4F4F6]">Hapus Struk Permanen</h3>
+                  <Modal.Heading className="font-bold text-sm sm:text-base text-[var(--foreground)] truncate">
+                    Hapus Struk Permanen
+                  </Modal.Heading>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setDeletingTrx(null)}
+                <Modal.CloseTrigger
                   aria-label="Tutup dialog hapus"
-                  className="min-w-[44px] min-h-[44px] -mr-2 rounded-full flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:bg-white dark:hover:bg-[#2E2E37] cursor-pointer shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+                  className="min-w-[44px] min-h-[44px] top-2 end-2 rounded-full"
+                />
+              </Modal.Header>
 
-            <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain">
-              <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
-                Yakin ingin menghapus struk transaksi <strong className="text-[#0F172A] dark:text-[#F4F4F6]">#{deletingTrx.id}</strong> ({formatRupiah(deletingTrx.total)}) secara permanen dari database lokal dan Google Sheets?
-              </p>
-            </div>
+              {deletingTrx && (
+                <>
+                  <Modal.Body className="!mt-0 p-4 sm:p-5 overflow-y-auto overscroll-contain">
+                    <p className="text-xs text-[var(--muted)] leading-relaxed">
+                      Yakin ingin menghapus struk transaksi <strong className="text-[var(--foreground)]">#{deletingTrx.id}</strong> ({formatRupiah(deletingTrx.total)}) secara permanen dari database lokal dan Google Sheets?
+                    </p>
+                  </Modal.Body>
 
-            <div className="px-4 sm:px-5 py-3 border-t border-slate-200 dark:border-[#2B2B33] bg-slate-50 dark:bg-[#24242B] pb-safe flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setDeletingTrx(null)}
-                className="flex-1 min-h-[48px] py-2.5 rounded-xl bg-white dark:bg-[#1B1B20] border border-slate-200 dark:border-[#343440] hover:bg-slate-100 dark:hover:bg-[#2E2E37] text-slate-700 dark:text-zinc-200 font-bold text-xs active:scale-[0.97] cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (onDeleteTransaction && deletingTrx) {
-                    onDeleteTransaction(deletingTrx.id);
-                    setDeletingTrx(null);
-                  }
-                }}
-                className="flex-1 min-h-[48px] py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs active:scale-[0.97] cursor-pointer"
-              >
-                Ya, Hapus Permanen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                  <Modal.Footer className="!mt-0 px-4 sm:px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-secondary)] pb-safe flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      onPress={() => setDeletingTrx(null)}
+                      className="flex-1 min-h-[48px] rounded-xl bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] font-bold text-xs"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onPress={() => {
+                        if (onDeleteTransaction && deletingTrx) {
+                          onDeleteTransaction(deletingTrx.id);
+                          setDeletingTrx(null);
+                        }
+                      }}
+                      className="flex-1 min-h-[48px] rounded-xl font-bold text-xs"
+                    >
+                      Ya, Hapus Permanen
+                    </Button>
+                  </Modal.Footer>
+                </>
+              )}
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </div>
   );
 };

@@ -14,18 +14,7 @@ interface ChunkErrorBoundaryState {
   errorMessage: string;
 }
 
-interface TypedReactComponent<P, S> {
-  props: P;
-  state: S;
-  setState(next: Partial<S> | ((prev: S) => Partial<S>)): void;
-  render(): React.ReactNode;
-}
-
-const BaseComponent = React.Component as unknown as new <P, S>(
-  props: P
-) => TypedReactComponent<P, S>;
-
-export class ChunkErrorBoundary extends BaseComponent<
+export class ChunkErrorBoundary extends React.Component<
   ChunkErrorBoundaryProps,
   ChunkErrorBoundaryState
 > {
