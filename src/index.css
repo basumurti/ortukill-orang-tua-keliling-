@@ -59,6 +59,12 @@
   --radius: 0.75rem;
   --field-radius: 1rem;
 
+  /* Liquid Glass Floating Chrome Tokens (Light Mode) */
+  --glass-bg: oklch(99.5% 0.005 338.18 / 0.82);
+  --glass-bg-solid: oklch(100% 0.01 338.18 / 0.96);
+  --glass-border: oklch(86% 0.02 338.18 / 0.75);
+  --glass-highlight: oklch(100% 0 0 / 0.75);
+
   /* Font Family */
   /* Make sure to load Instrument Sans font in your app */
   --font-sans: var(--font-instrument-sans);
@@ -99,6 +105,12 @@
   --surface-tertiary-foreground: oklch(99.11% 0.0200 338.18);
   --warning: oklch(82.03% 0.1444 86.46);
   --warning-foreground: oklch(21.03% 0.0059 86.46);
+
+  /* Liquid Glass Floating Chrome Tokens (Dark Mode) */
+  --glass-bg: oklch(21.03% 0.035 338.18 / 0.80);
+  --glass-bg-solid: oklch(21.03% 0.04 338.18 / 0.96);
+  --glass-border: oklch(34% 0.025 338.18 / 0.75);
+  --glass-highlight: oklch(100% 0 0 / 0.12);
 }
 
 html,
@@ -142,28 +154,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: var(--border);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
-}
-
-.dark ::-webkit-scrollbar-track {
-  background: #1B1B20;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #343440;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #A855F7;
+  background: var(--accent);
 }
 
 /* Hide scrollbar for horizontal chip strips */
@@ -210,6 +210,33 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Selective Liquid Glass fallback for compact floating controls */
+.liquid-glass-surface {
+  background-color: var(--glass-bg-solid);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-highlight),
+    0 10px 28px -10px oklch(0% 0 0 / 0.16);
+}
+
+@supports (backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px)) {
+  @media (hover: hover) and (pointer: fine) {
+    .liquid-glass-surface {
+      background-color: var(--glass-bg);
+      -webkit-backdrop-filter: blur(10px) saturate(1.15);
+      backdrop-filter: blur(10px) saturate(1.15);
+    }
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .liquid-glass-surface {
+    background-color: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 

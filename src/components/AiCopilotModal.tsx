@@ -291,13 +291,13 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
 
   return (
     <>
-      <Modal
+      <Modal.Backdrop
         isOpen={isOpen}
         onOpenChange={(open) => {
           if (!open) onClose();
         }}
+        variant="opaque"
       >
-        <Modal.Backdrop variant="opaque">
           <Modal.Container placement="auto" size="lg" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="AI Copilot Kasir"
@@ -683,7 +683,6 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       <AppConfirmDialog
         isOpen={showClearConfirm}

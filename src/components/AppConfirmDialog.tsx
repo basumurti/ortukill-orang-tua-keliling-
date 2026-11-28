@@ -38,13 +38,15 @@ export const AppConfirmDialog: React.FC<AppConfirmDialogProps> = ({
       : 'bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]/25';
 
   return (
-    <Modal
+    <Modal.Backdrop
       isOpen={isOpen}
       onOpenChange={(open) => {
         if (!open && !isProcessing) onCancel();
       }}
+      variant="opaque"
+      isDismissable={!isProcessing}
+      className="z-[100010]"
     >
-      <Modal.Backdrop variant="opaque" isDismissable={!isProcessing} className="z-[100010]">
         <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
           <Modal.Dialog className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] w-full">
             {/* Drag Handle Indicator on Mobile */}
@@ -103,6 +105,5 @@ export const AppConfirmDialog: React.FC<AppConfirmDialogProps> = ({
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
-    </Modal>
   );
 };

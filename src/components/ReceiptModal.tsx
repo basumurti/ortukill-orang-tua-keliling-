@@ -590,13 +590,13 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   return (
     <>
-      <Modal
+      <Modal.Backdrop
         isOpen={isOpen && !!receipt}
         onOpenChange={(open) => {
           if (!open) onClose();
         }}
+        variant="opaque"
       >
-        <Modal.Backdrop variant="opaque">
           <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
             <Modal.Dialog
               id="receipt-modal-card"
@@ -889,16 +889,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       {/* MENU "LAINNYA" (BOTTOM SHEET KECIL) — TANPA EDIT TRANSAKSI */}
-      <Modal
+      <Modal.Backdrop
         isOpen={showMoreMenu}
         onOpenChange={(open) => {
           if (!open) setShowMoreMenu(false);
         }}
+        variant="opaque"
+        className="z-[100010]"
       >
-        <Modal.Backdrop variant="opaque" className="z-[100010]">
           <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Opsi Struk Lainnya"
@@ -996,16 +996,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       {/* SHEET FALLBACK GAMBAR TEKAN-LAMA (UNTUK SAFARI iOS / CLIPBOARD DITOLAK) */}
-      <Modal
+      <Modal.Backdrop
         isOpen={showLongPressSheet && !!preRenderedRef.current}
         onOpenChange={(open) => {
           if (!open) setShowLongPressSheet(false);
         }}
+        variant="opaque"
+        className="z-[100020]"
       >
-        <Modal.Backdrop variant="opaque" className="z-[100020]">
           <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Salin Gambar Struk"
@@ -1061,16 +1061,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       {/* SHEET KONFIRMASI VOID & HAPUS DI SPREADSHEET */}
-      <Modal
+      <Modal.Backdrop
         isOpen={showVoidConfirm}
         onOpenChange={(open) => {
           if (!open) setShowVoidConfirm(false);
         }}
+        variant="opaque"
+        className="z-[100030]"
       >
-        <Modal.Backdrop variant="opaque" className="z-[100030]">
           <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Konfirmasi Void Nota"
@@ -1136,16 +1136,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       {/* SHEET KONFIRMASI HAPUS STRUK PERMANEN */}
-      <Modal
+      <Modal.Backdrop
         isOpen={showDeleteConfirm}
         onOpenChange={(open) => {
           if (!open) setShowDeleteConfirm(false);
         }}
+        variant="opaque"
+        className="z-[100030]"
       >
-        <Modal.Backdrop variant="opaque" className="z-[100030]">
           <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Konfirmasi Hapus Permanen"
@@ -1189,7 +1189,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
     </>
   );
 };

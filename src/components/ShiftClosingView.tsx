@@ -11,6 +11,7 @@ import {
 import { ShiftRecord, BrandConfig } from '../types';
 import { formatRupiah } from '../services/storageService';
 import { AppConfirmDialog } from './AppConfirmDialog';
+import { FadeContent } from './ui/animated/ReactBitsPrimitives';
 
 interface ShiftClosingViewProps {
   currentShift: ShiftRecord;
@@ -315,59 +316,61 @@ export const ShiftClosingView: React.FC<ShiftClosingViewProps> = ({
         </div>
       ) : (
         /* Open New Shift Card */
-        <Card className="bg-[var(--surface)] rounded-2xl p-5 sm:p-6 gap-4 max-w-md mx-auto text-center border border-[var(--border)] shadow-none">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/25 flex items-center justify-center mx-auto">
-            <FileCheck className="w-6 h-6" />
-          </div>
-
-          <div>
-            <h3 className="text-base font-extrabold text-[var(--foreground)]">Shift Kasir Telah Ditutup</h3>
-            <p className="text-xs text-[var(--muted)] mt-1">
-              Buka shift kasir baru untuk memulai transaksi berikutnya
-            </p>
-          </div>
-
-          <div className="text-left space-y-3 text-xs">
-            <div>
-              <label className="block text-[11px] font-bold uppercase text-[var(--muted)] mb-1">
-                Nama Kasir Bertugas:
-              </label>
-              <Input
-                type="text"
-                fullWidth
-                variant="secondary"
-                value={newCashier}
-                onChange={(e) => setNewCashier(e.target.value)}
-                className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-[var(--foreground)] min-h-[44px]"
-              />
+        <FadeContent>
+          <Card className="bg-[var(--surface)] rounded-2xl p-5 sm:p-6 gap-4 max-w-md mx-auto text-center border border-[var(--border)] shadow-none">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/25 flex items-center justify-center mx-auto">
+              <FileCheck className="w-6 h-6" />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase text-[var(--muted)] mb-1">
-                Modal Awal di Laci:
-              </label>
-              <Input
-                type="number"
-                min={0}
-                step={1}
-                fullWidth
-                variant="secondary"
-                value={String(newStartingCash)}
-                onChange={(e) => setNewStartingCash(Number(e.target.value) || 0)}
-                className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl font-bold text-[var(--foreground)] tabular-nums font-mono min-h-[44px]"
-              />
+              <h3 className="text-base font-extrabold text-[var(--foreground)]">Shift Kasir Telah Ditutup</h3>
+              <p className="text-xs text-[var(--muted)] mt-1">
+                Buka shift kasir baru untuk memulai transaksi berikutnya
+              </p>
             </div>
 
-            <Button
-              variant="primary"
-              fullWidth
-              onPress={() => onStartNewShift(newStartingCash, newCashier)}
-              className="w-full py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider mt-2 min-h-[48px]"
-            >
-              Buka Shift Baru ({formatRupiah(newStartingCash)})
-            </Button>
-          </div>
-        </Card>
+            <div className="text-left space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-[var(--muted)] mb-1">
+                  Nama Kasir Bertugas:
+                </label>
+                <Input
+                  type="text"
+                  fullWidth
+                  variant="secondary"
+                  value={newCashier}
+                  onChange={(e) => setNewCashier(e.target.value)}
+                  className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-[var(--foreground)] min-h-[44px]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-[var(--muted)] mb-1">
+                  Modal Awal di Laci:
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  fullWidth
+                  variant="secondary"
+                  value={String(newStartingCash)}
+                  onChange={(e) => setNewStartingCash(Number(e.target.value) || 0)}
+                  className="w-full p-2.5 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl font-bold text-[var(--foreground)] tabular-nums font-mono min-h-[44px]"
+                />
+              </div>
+
+              <Button
+                variant="primary"
+                fullWidth
+                onPress={() => onStartNewShift(newStartingCash, newCashier)}
+                className="w-full py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider mt-2 min-h-[48px]"
+              >
+                Buka Shift Baru ({formatRupiah(newStartingCash)})
+              </Button>
+            </div>
+          </Card>
+        </FadeContent>
       )}
 
       {/* Historic Closed Shifts */}

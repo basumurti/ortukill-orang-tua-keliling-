@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useOverlayHistory } from '../utils/useOverlayHistory';
 import { AppConfirmDialog } from './AppConfirmDialog';
+import { AnimatedTabPill } from './ui/motion/MotionPrimitives';
+import { LiquidSurface } from './ui/glass/LiquidSurface';
 
 interface BottomNavigationProps {
   activeTab: 'pos' | 'today' | 'history' | 'stock' | 'shift' | 'gas' | 'finance';
@@ -79,13 +81,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   return (
     <>
       {/* More Options Bottom Sheet Drawer */}
-      <Drawer
+      <Drawer.Backdrop
         isOpen={isMoreMenuOpen}
         onOpenChange={(open) => {
           if (!open) setIsMoreMenuOpen(false);
         }}
+        variant="opaque"
       >
-        <Drawer.Backdrop variant="opaque">
           <Drawer.Content placement="bottom">
             <Drawer.Dialog
               aria-label="Menu Lainnya"
@@ -313,7 +315,6 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             </Drawer.Dialog>
           </Drawer.Content>
         </Drawer.Backdrop>
-      </Drawer>
 
       <AppConfirmDialog
         isOpen={showResetConfirm}
@@ -332,74 +333,96 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       {/* Docked Mobile Bottom Navigation Bar (5 items, >=56px, safe-area) */}
       <nav
         aria-label="Navigasi Mobile"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 no-print bg-[var(--surface)] border-t border-[var(--border)] pb-safe transition-colors duration-150"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 no-print"
       >
-        <div className="max-w-lg mx-auto px-1.5 pt-1 flex items-center justify-around gap-1 min-h-[56px]">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                id={`bottom-nav-${item.id}`}
-                onClick={() => setActiveTab(item.id)}
-                title={item.title || item.label}
-                className="flex-1 min-w-0 min-h-[52px] flex flex-col items-center justify-center py-1 relative transition-colors active:scale-[0.97] cursor-pointer group select-none"
-              >
-                <div
-                  className={`relative px-3.5 py-1 rounded-xl transition-colors ${
-                    isActive
-                      ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
-                      : 'text-[var(--muted)] group-hover:text-[var(--foreground)]'
-                  }`}
+        <LiquidSurface
+          enableRefraction={false}
+          borderRadius={0}
+          className="border-x-0 border-b-0 rounded-none pb-safe transition-colors duration-150"
+        >
+          <div className="max-w-lg mx-auto px-1.5 pt-1 flex items-center justify-around gap-1 min-h-[56px]">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  id={`bottom-nav-${item.id}`}
+                  onClick={() => setActiveTab(item.id)}
+                  title={item.title || item.label}
+                  className="flex-1 min-w-0 min-h-[52px] flex flex-col items-center justify-center py-1 relative transition-transform active:scale-[0.96] cursor-pointer group select-none"
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.25]' : 'stroke-[1.8]'}`} />
-                  {item.badge && (
-                    <span className="absolute -top-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 leading-none rounded-full min-w-[18px] text-center bg-[var(--danger)] text-[var(--danger-foreground)] ring-2 ring-[var(--surface)] num-tabular">
-                      {item.badge}
+                  <div
+                    className={`relative px-3.5 py-1 rounded-xl transition-colors ${
+                      isActive
+                        ? 'text-[var(--accent-foreground)]'
+                        : 'text-[var(--muted)] group-hover:text-[var(--foreground)]'
+                    }`}
+                  >
+                    {isActive && (
+                      <AnimatedTabPill
+                        layoutId="mobile-bottom-nav-pill"
+                        className="absolute inset-0 rounded-xl bg-[var(--accent)] shadow-xs pointer-events-none"
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center justify-center">
+                      <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.25]' : 'stroke-[1.8]'}`} />
                     </span>
-                  )}
-                </div>
-                <span
-                  className={`text-[11px] mt-0.5 tracking-tight truncate max-w-full transition-colors ${
-                    isActive ? 'text-[var(--accent)] font-extrabold' : 'text-[var(--muted)] font-medium'
-                  }`}
-                >
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
+                    {item.badge && (
+                      <span className="absolute z-10 -top-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 leading-none rounded-full min-w-[18px] text-center bg-[var(--danger)] text-[var(--danger-foreground)] ring-2 ring-[var(--surface)] num-tabular">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`text-[11px] mt-0.5 tracking-tight truncate max-w-full transition-colors ${
+                      isActive ? 'text-[var(--accent)] font-extrabold' : 'text-[var(--muted)] font-medium'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
 
-          {/* 5th Tab: Lainnya */}
-          <button
-            type="button"
-            id="bottom-nav-more"
-            onClick={() => setIsMoreMenuOpen(true)}
-            className="flex-1 min-w-0 min-h-[52px] flex flex-col items-center justify-center py-1 relative transition-colors active:scale-[0.97] cursor-pointer group select-none"
-          >
-            <div
-              className={`relative px-3.5 py-1 rounded-xl transition-colors ${
-                isMoreActive
-                  ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
-                  : 'text-[var(--muted)] group-hover:text-[var(--foreground)]'
-              }`}
+            {/* 5th Tab: Lainnya */}
+            <button
+              type="button"
+              id="bottom-nav-more"
+              onClick={() => setIsMoreMenuOpen(true)}
+              className="flex-1 min-w-0 min-h-[52px] flex flex-col items-center justify-center py-1 relative transition-transform active:scale-[0.96] cursor-pointer group select-none"
             >
-              <MoreHorizontal className={`w-5 h-5 ${isMoreActive ? 'stroke-[2.25]' : 'stroke-[1.8]'}`} />
-              {!isConnectedGas && (
-                <span className="absolute top-0.5 right-1.5 w-2 h-2 rounded-full bg-[var(--warning)] ring-2 ring-[var(--surface)]" />
-              )}
-            </div>
-            <span
-              className={`text-[11px] mt-0.5 tracking-tight truncate max-w-full transition-colors ${
-                isMoreActive ? 'text-[var(--accent)] font-extrabold' : 'text-[var(--muted)] font-medium'
-              }`}
-            >
-              Lainnya
-            </span>
-          </button>
-        </div>
+              <div
+                className={`relative px-3.5 py-1 rounded-xl transition-colors ${
+                  isMoreActive
+                    ? 'text-[var(--accent-foreground)]'
+                    : 'text-[var(--muted)] group-hover:text-[var(--foreground)]'
+                }`}
+              >
+                {isMoreActive && (
+                  <AnimatedTabPill
+                    layoutId="mobile-bottom-nav-pill"
+                    className="absolute inset-0 rounded-xl bg-[var(--accent)] shadow-xs pointer-events-none"
+                  />
+                )}
+                <span className="relative z-10 flex items-center justify-center">
+                  <MoreHorizontal className={`w-5 h-5 ${isMoreActive ? 'stroke-[2.25]' : 'stroke-[1.8]'}`} />
+                </span>
+                {!isConnectedGas && (
+                  <span className="absolute top-0.5 right-1.5 z-10 w-2 h-2 rounded-full bg-[var(--warning)] ring-2 ring-[var(--surface)]" />
+                )}
+              </div>
+              <span
+                className={`text-[11px] mt-0.5 tracking-tight truncate max-w-full transition-colors ${
+                  isMoreActive ? 'text-[var(--accent)] font-extrabold' : 'text-[var(--muted)] font-medium'
+                }`}
+              >
+                Lainnya
+              </span>
+            </button>
+          </div>
+        </LiquidSurface>
       </nav>
     </>
   );

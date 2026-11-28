@@ -21,6 +21,7 @@ import {
 import { BrandConfig, LastUpdateInfo } from '../types';
 import { useOverlayHistory } from '../utils/useOverlayHistory';
 import { AppConfirmDialog } from './AppConfirmDialog';
+import { AnimatedTabPill } from './ui/motion/MotionPrimitives';
 
 type TabType = 'pos' | 'today' | 'history' | 'stock' | 'shift' | 'gas' | 'finance';
 
@@ -162,27 +163,35 @@ export const Header: React.FC<HeaderProps> = ({
                 <Button
                   key={item.id}
                   size="sm"
-                  variant={isActive ? 'outline' : 'ghost'}
+                  variant="ghost"
                   onPress={() => setActiveTab(item.id)}
-                  className={`px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 min-h-[36px] h-9 ${
+                  className={`relative px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 min-h-[36px] h-9 ${
                     isActive
-                      ? 'bg-[var(--surface)] text-[var(--accent)] shadow-xs border-[var(--accent)]/35'
+                      ? 'text-[var(--accent)]'
                       : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span>{item.label}</span>
-                  {item.badge !== undefined && (
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full num-tabular leading-none ${
-                        isActive
-                          ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
-                          : 'bg-[var(--default)] text-[var(--default-foreground)]'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
+                  {isActive && (
+                    <AnimatedTabPill
+                      layoutId="header-desktop-nav-pill"
+                      className="absolute inset-0 rounded-lg bg-[var(--surface)] border border-[var(--accent)]/35 shadow-xs pointer-events-none"
+                    />
                   )}
+                  <span className="relative z-10 inline-flex items-center gap-1.5">
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span>{item.label}</span>
+                    {item.badge !== undefined && (
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full num-tabular leading-none ${
+                          isActive
+                            ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                            : 'bg-[var(--default)] text-[var(--default-foreground)]'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </span>
                 </Button>
               );
             })}
@@ -249,13 +258,13 @@ export const Header: React.FC<HeaderProps> = ({
       </header>
 
       {/* Menu ⋮ Sheet / Modal */}
-      <Modal
+      <Modal.Backdrop
         isOpen={isHeaderMenuOpen}
         onOpenChange={(open) => {
           if (!open) setIsHeaderMenuOpen(false);
         }}
+        variant="opaque"
       >
-        <Modal.Backdrop variant="opaque">
           <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Menu Pengaturan Header"
@@ -437,7 +446,6 @@ export const Header: React.FC<HeaderProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       {/* App Confirm Dialog untuk Reset Data Demo */}
       <AppConfirmDialog

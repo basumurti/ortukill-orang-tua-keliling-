@@ -44,6 +44,9 @@ import {
 import { PromoSelectorModal } from './PromoSelectorModal';
 import { AppConfirmDialog } from './AppConfirmDialog';
 import { useOverlayHistory } from '../utils/useOverlayHistory';
+import { AnimatedTabPill } from './ui/motion/MotionPrimitives';
+import { SmartCountUp, FadeContent } from './ui/animated/ReactBitsPrimitives';
+import { LiquidSurface } from './ui/glass/LiquidSurface';
 
 export interface CustomDateOption {
   dateStr: string;
@@ -650,7 +653,7 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
   todayFilteredBottleQty,
   isConnectedGas = false,
   onNavigateTab,
-  isRedPriceMode = false,
+  isRedPriceMode = true,
   onToggleRedPriceMode,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -1104,7 +1107,7 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
               </span>
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold font-display text-[var(--foreground)] tracking-tight mt-0.5 num-tabular">
-              {todayCount > 0 ? formatRupiah(todayOmset) : 'Rp 0'}
+              <SmartCountUp value={todayCount > 0 ? todayOmset : 0} formatter={formatRupiah} />
             </p>
             {!isConnectedGas && todayCount === 0 && (
               <p className="text-[11px] text-[var(--muted)] mt-0.5">
@@ -1119,21 +1122,21 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
           <div className="bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl p-2.5 sm:p-3">
             <p className="text-[11px] font-medium text-[var(--muted)]">Estimasi Laba</p>
             <p className="text-sm sm:text-base font-extrabold text-emerald-700 dark:text-[var(--success)] mt-0.5 num-tabular">
-              {todayCount > 0 ? formatRupiah(todayMargin) : 'Rp 0'}
+              <SmartCountUp value={todayCount > 0 ? todayMargin : 0} formatter={formatRupiah} />
             </p>
           </div>
 
           <div className="bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl p-2.5 sm:p-3">
             <p className="text-[11px] font-medium text-[var(--muted)]">Total Transaksi</p>
             <p className="text-sm sm:text-base font-extrabold text-[var(--foreground)] mt-0.5 num-tabular">
-              {todayCount > 0 ? `${todayCount} Nota` : '0 Nota'}
+              <SmartCountUp value={todayCount} formatter={(v) => `${Math.round(v)} Nota`} />
             </p>
           </div>
 
           <div className="bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl p-2.5 sm:p-3">
             <p className="text-[11px] font-medium text-[var(--muted)] truncate">Botol Keluar (≥30rb)</p>
             <p className="text-sm sm:text-base font-extrabold text-amber-700 dark:text-[var(--warning)] mt-0.5 num-tabular">
-              {todayCount > 0 ? `${computedFilteredBottleQty} Botol` : '0 Botol'}
+              <SmartCountUp value={todayCount > 0 ? computedFilteredBottleQty : 0} formatter={(v) => `${Math.round(v)} Botol`} />
             </p>
           </div>
 
@@ -1263,13 +1266,19 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
               variant="ghost"
               onPress={() => onToggleRedPriceMode?.(false)}
               aria-pressed={!isRedPriceMode}
-              className={`min-h-[36px] px-2.5 sm:px-3 rounded-lg text-xs font-bold ${
+              className={`relative min-h-[36px] px-2.5 sm:px-3 rounded-lg text-xs font-bold ${
                 !isRedPriceMode
-                  ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
+                  ? 'text-[var(--accent-foreground)]'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
-              Umum
+              {!isRedPriceMode && (
+                <AnimatedTabPill
+                  layoutId="pos-search-price-mode-pill"
+                  className="absolute inset-0 rounded-lg bg-[var(--accent)] pointer-events-none"
+                />
+              )}
+              <span className="relative z-10">Umum</span>
             </Button>
             <Button
               size="sm"
@@ -1277,16 +1286,24 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
               id="quick-toggle-red-price"
               onPress={() => onToggleRedPriceMode?.(true)}
               aria-pressed={isRedPriceMode}
-              className={`min-h-[36px] px-2.5 sm:px-3 rounded-lg text-xs font-bold flex items-center gap-1 ${
+              className={`relative min-h-[36px] px-2.5 sm:px-3 rounded-lg text-xs font-bold flex items-center gap-1 ${
                 isRedPriceMode
-                  ? 'bg-[var(--warning)] text-[var(--warning-foreground)] shadow-xs'
+                  ? 'text-[var(--warning-foreground)]'
                   : 'text-[var(--muted)] hover:text-amber-700 dark:hover:text-[var(--warning)]'
               }`}
             >
               {isRedPriceMode && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--warning-foreground)] shrink-0" aria-hidden="true" />
+                <AnimatedTabPill
+                  layoutId="pos-search-price-mode-pill"
+                  className="absolute inset-0 rounded-lg bg-[var(--warning)] shadow-xs pointer-events-none"
+                />
               )}
-              <span>Reseller</span>
+              <span className="relative z-10 inline-flex items-center gap-1">
+                {isRedPriceMode && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--warning-foreground)] shrink-0" aria-hidden="true" />
+                )}
+                <span>Reseller</span>
+              </span>
             </Button>
           </div>
         </div>
@@ -1472,18 +1489,20 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
             })}
           </div>
         ) : filteredProducts.length === 0 ? (
-          <Card
-            variant="default"
-            className="rounded-2xl p-10 text-center border border-[var(--border)] space-y-2 gap-2 items-center shadow-none"
-          >
-            <div className="w-12 h-12 rounded-xl bg-[var(--surface-secondary)] text-[var(--muted)] flex items-center justify-center mx-auto">
-              <Search className="w-6 h-6" />
-            </div>
-            <p className="text-sm font-bold text-[var(--foreground)]">Tidak ada produk ditemukan</p>
-            <p className="text-xs text-[var(--muted)] max-w-xs mx-auto">
-              Coba kata kunci lain atau beralih ke kategori Semua Minuman.
-            </p>
-          </Card>
+          <FadeContent>
+            <Card
+              variant="default"
+              className="rounded-2xl p-10 text-center border border-[var(--border)] space-y-2 gap-2 items-center shadow-none"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[var(--surface-secondary)] text-[var(--muted)] flex items-center justify-center mx-auto">
+                <Search className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-bold text-[var(--foreground)]">Tidak ada produk ditemukan</p>
+              <p className="text-xs text-[var(--muted)] max-w-xs mx-auto">
+                Coba kata kunci lain atau beralih ke kategori Semua Minuman.
+              </p>
+            </Card>
+          </FadeContent>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3.5">
             {filteredProducts.map((product) => (
@@ -1652,7 +1671,11 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
           aria-label="Keranjang Belanja"
           className="fixed bottom-[calc(64px+env(safe-area-inset-bottom,0px)+8px)] md:bottom-6 left-3 right-3 max-w-lg mx-auto z-30 no-print"
         >
-          <div className="bg-[var(--foreground)] text-[var(--background)] dark:bg-[var(--surface)] dark:text-[var(--foreground)] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-2.5 shadow-xl border border-[var(--border)]">
+          <LiquidSurface
+            borderRadius={16}
+            material="regular"
+            className="text-[var(--foreground)] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-2.5 shadow-xl"
+          >
             <button
               type="button"
               onClick={() => setIsCartSheetOpen(true)}
@@ -1662,14 +1685,14 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
                 <ShoppingBag className="w-4 h-4" />
                 <span
                   key={totalQty}
-                  className="animate-cart-pop absolute -top-1.5 -right-1.5 bg-[var(--danger)] text-[var(--danger-foreground)] text-[10px] font-bold min-w-[20px] h-[20px] px-1 rounded-full flex items-center justify-center ring-2 ring-[var(--foreground)] dark:ring-[var(--surface)] num-tabular"
+                  className="animate-cart-pop absolute -top-1.5 -right-1.5 bg-[var(--danger)] text-[var(--danger-foreground)] text-[10px] font-bold min-w-[20px] h-[20px] px-1 rounded-full flex items-center justify-center ring-2 ring-[var(--surface)] num-tabular"
                 >
                   {totalQty}
                 </span>
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <p className="text-[11px] opacity-80 font-medium truncate">
+                  <p className="text-[11px] text-[var(--muted)] font-semibold truncate">
                     {totalQty} Item · Total
                   </p>
                   {isRedPriceMode && (
@@ -1698,21 +1721,19 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
               <span>Lihat · Bayar</span>
               <ChevronUp className="w-4 h-4" />
             </Button>
-          </div>
+          </LiquidSurface>
         </aside>
       )}
 
       {/* 6. SHEET KERANJANG: 92dvh TETAP, TIGA ZONA (ATAS TETAP, TENGAH SCROLL, BAWAH MENEMPEL) */}
-      <Drawer
+      <Drawer.Backdrop
         isOpen={isCartSheetOpen}
         onOpenChange={(open) => {
           if (!open) setIsCartSheetOpen(false);
         }}
+        variant="opaque"
+        shouldCloseOnInteractOutside={(el) => !el.closest('[data-toast-overlay="true"]')}
       >
-        <Drawer.Backdrop
-          variant="opaque"
-          shouldCloseOnInteractOutside={(el) => !el.closest('[data-toast-overlay="true"]')}
-        >
           <Drawer.Content placement="bottom">
             <Drawer.Dialog
               aria-label="Keranjang Kasir"
@@ -1769,38 +1790,54 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
                   className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
                 >
                   <Button
+                    fullWidth
                     size="sm"
                     variant="ghost"
                     onPress={() => onToggleRedPriceMode?.(false)}
                     aria-pressed={!isRedPriceMode}
-                    className={`min-h-[40px] px-3 rounded-lg text-xs font-bold ${
+                    className={`relative min-h-[40px] px-3 rounded-lg text-xs font-bold ${
                       !isRedPriceMode
-                        ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
+                        ? 'text-[var(--accent-foreground)]'
                         : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                     }`}
                   >
-                    Umum (Harga Biasa)
+                    {!isRedPriceMode && (
+                      <AnimatedTabPill
+                        layoutId="pos-cart-price-mode-pill"
+                        className="absolute inset-0 rounded-lg bg-[var(--accent)] pointer-events-none"
+                      />
+                    )}
+                    <span className="relative z-10">Umum (Harga Biasa)</span>
                   </Button>
                   <Button
+                    fullWidth
                     size="sm"
                     variant="ghost"
                     onPress={() => onToggleRedPriceMode?.(true)}
                     aria-pressed={isRedPriceMode}
-                    className={`min-h-[40px] px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 ${
+                    className={`relative min-h-[40px] px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 ${
                       isRedPriceMode
-                        ? 'bg-[var(--warning)] text-[var(--warning-foreground)]'
+                        ? 'text-[var(--warning-foreground)]'
                         : 'text-[var(--muted)] hover:bg-[var(--warning-soft)] hover:text-amber-700 dark:hover:text-[var(--warning)]'
                     }`}
                   >
-                    <span>Reseller</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                        isRedPriceMode
-                          ? 'bg-black/15 text-[var(--warning-foreground)]'
-                          : 'bg-[var(--warning-soft)] text-amber-800 dark:text-[var(--warning)]'
-                      }`}
-                    >
-                      Merah
+                    {isRedPriceMode && (
+                      <AnimatedTabPill
+                        layoutId="pos-cart-price-mode-pill"
+                        className="absolute inset-0 rounded-lg bg-[var(--warning)] pointer-events-none"
+                      />
+                    )}
+                    <span className="relative z-10 inline-flex items-center gap-1.5">
+                      <span>Reseller</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                          isRedPriceMode
+                            ? 'bg-black/15 text-[var(--warning-foreground)]'
+                            : 'bg-[var(--warning-soft)] text-amber-800 dark:text-[var(--warning)]'
+                        }`}
+                      >
+                        Merah
+                      </span>
                     </span>
                   </Button>
                 </div>
@@ -2107,6 +2144,7 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
                         </p>
                         <div className="grid grid-cols-3 gap-2">
                           <Button
+                            fullWidth
                             size="sm"
                             variant="outline"
                             onPress={handlePrintCart}
@@ -2117,6 +2155,7 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
                             <span>Print</span>
                           </Button>
                           <Button
+                            fullWidth
                             size="sm"
                             variant="outline"
                             onPress={handleShareCartWA}
@@ -2127,6 +2166,7 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
                             <span>WA Teks</span>
                           </Button>
                           <Button
+                            fullWidth
                             size="sm"
                             variant="outline"
                             onPress={handleDownloadCartOrder}
@@ -2178,11 +2218,12 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
                 <div className="grid grid-cols-3 gap-2">
                   <Button
                     id="btn-pay-cash"
+                    fullWidth
                     variant={paymentMethod === 'CASH' ? 'primary' : 'outline'}
                     onPress={() => setPaymentMethod('CASH')}
-                    className={`min-h-[48px] px-2 py-2 rounded-xl text-xs font-bold ${
+                    className={`min-h-[48px] px-2 py-2 rounded-xl text-xs font-bold border ${
                       paymentMethod === 'CASH'
-                        ? ''
+                        ? 'border-transparent'
                         : 'border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]'
                     }`}
                   >
@@ -2192,11 +2233,12 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
 
                   <Button
                     id="btn-pay-transfer"
+                    fullWidth
                     variant={paymentMethod === 'TRANSFER' ? 'primary' : 'outline'}
                     onPress={() => setPaymentMethod('TRANSFER')}
-                    className={`min-h-[48px] px-2 py-2 rounded-xl text-xs font-bold ${
+                    className={`min-h-[48px] px-2 py-2 rounded-xl text-xs font-bold border ${
                       paymentMethod === 'TRANSFER'
-                        ? ''
+                        ? 'border-transparent'
                         : 'border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]'
                     }`}
                   >
@@ -2206,11 +2248,12 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
 
                   <Button
                     id="btn-pay-qris"
+                    fullWidth
                     variant={paymentMethod === 'QRIS' ? 'primary' : 'outline'}
                     onPress={() => setPaymentMethod('QRIS')}
-                    className={`min-h-[48px] px-2 py-2 rounded-xl text-xs font-bold ${
+                    className={`min-h-[48px] px-2 py-2 rounded-xl text-xs font-bold border ${
                       paymentMethod === 'QRIS'
-                        ? ''
+                        ? 'border-transparent'
                         : 'border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]'
                     }`}
                   >
@@ -2327,7 +2370,6 @@ export const PosRegisterView: React.FC<PosRegisterViewProps> = ({
             </Drawer.Dialog>
           </Drawer.Content>
         </Drawer.Backdrop>
-      </Drawer>
 
       {/* Dialog Konfirmasi Kosongkan Keranjang */}
       <AppConfirmDialog

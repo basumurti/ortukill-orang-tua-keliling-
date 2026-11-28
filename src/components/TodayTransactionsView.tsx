@@ -23,6 +23,8 @@ import {
 import { TransactionReceipt, DailySummary, PaymentMethod } from '../types';
 import { formatRupiah, isPromoItem, isEligibleBottleItem, normalizeDateToYmd } from '../services/storageService';
 import { useOverlayHistory } from '../utils/useOverlayHistory';
+import { AnimatedTabPill } from './ui/motion/MotionPrimitives';
+import { SmartCountUp, FadeContent } from './ui/animated/ReactBitsPrimitives';
 
 interface TodayTransactionsViewProps {
   summary: DailySummary;
@@ -500,7 +502,7 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
           </div>
           <div>
             <h3 className="text-base sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
-              {formatRupiah(daySummary.totalOmset)}
+              <SmartCountUp value={daySummary.totalOmset} formatter={formatRupiah} />
             </h3>
             <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
               {daySummary.totalTransactions} transaksi
@@ -520,7 +522,7 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
           </div>
           <div>
             <h3 className="text-base sm:text-xl font-extrabold text-emerald-700 dark:text-[var(--success)] tracking-tight tabular-nums font-mono">
-              {formatRupiah(daySummary.totalMargin)}
+              <SmartCountUp value={daySummary.totalMargin} formatter={formatRupiah} />
             </h3>
             <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
               Margin {marginPercentage}%
@@ -540,7 +542,7 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
           </div>
           <div>
             <h3 className="text-base sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
-              {daySummary.totalTransactions}
+              <SmartCountUp value={daySummary.totalTransactions} formatter={(v) => String(Math.round(v))} />
             </h3>
             <p className="text-[11px] text-[var(--muted)] mt-0.5 truncate tabular-nums">
               Rata2: {formatRupiah(daySummary.avgBasketSize)}
@@ -561,7 +563,7 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
           <div>
             <div className="flex items-baseline justify-between gap-1 flex-wrap">
               <h3 className="text-base sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
-                {daySummary.totalQty} Botol
+                <SmartCountUp value={daySummary.totalQty} formatter={(v) => `${Math.round(v)} Botol`} />
               </h3>
               <span
                 className="text-[10px] font-bold text-amber-700 dark:text-[var(--warning)] bg-[var(--warning-soft)] border border-[var(--warning)]/35 px-1.5 py-0.5 rounded-md tabular-nums"
@@ -642,21 +644,30 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
 
         {/* Filter Chips (single horizontal scroll row on mobile) */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5 text-xs">
-          {(['ALL', 'CASH', 'QRIS', 'TRANSFER'] as const).map((method) => (
-            <Button
-              key={method}
-              size="sm"
-              variant={selectedPayment === method ? 'primary' : 'outline'}
-              onPress={() => setSelectedPayment(method)}
-              className={`rounded-full font-bold min-h-[38px] px-3.5 whitespace-nowrap shrink-0 ${
-                selectedPayment === method
-                  ? ''
-                  : 'bg-[var(--surface-secondary)] text-[var(--muted)] border-[var(--border)]'
-              }`}
-            >
-              {method === 'ALL' ? 'Semua Metode' : method}
-            </Button>
-          ))}
+          {(['ALL', 'CASH', 'QRIS', 'TRANSFER'] as const).map((method) => {
+            const isSelected = selectedPayment === method;
+            return (
+              <Button
+                key={method}
+                size="sm"
+                variant="outline"
+                onPress={() => setSelectedPayment(method)}
+                className={`relative rounded-full font-bold min-h-[38px] px-3.5 whitespace-nowrap shrink-0 overflow-hidden ${
+                  isSelected
+                    ? 'border-[var(--accent)] text-[var(--accent-foreground)]'
+                    : 'bg-[var(--surface-secondary)] text-[var(--muted)] border-[var(--border)] hover:text-[var(--foreground)]'
+                }`}
+              >
+                {isSelected && (
+                  <AnimatedTabPill
+                    layoutId="today-payment-filter-pill"
+                    className="absolute inset-0 rounded-full bg-[var(--accent)] pointer-events-none"
+                  />
+                )}
+                <span className="relative z-10">{method === 'ALL' ? 'Semua Metode' : method}</span>
+              </Button>
+            );
+          })}
 
           <select
             value={selectedStatus}
@@ -681,13 +692,15 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
         </div>
 
         {filtered.length === 0 ? (
-          <Card className="bg-[var(--surface)] rounded-2xl p-10 text-center border border-[var(--border)] shadow-none items-center gap-2">
-            <Receipt className="w-10 h-10 mx-auto text-[var(--muted)] opacity-50" />
-            <p className="text-sm font-bold text-[var(--foreground)]">Tidak ada transaksi ditemukan</p>
-            <p className="text-xs text-[var(--muted)] max-w-xs mx-auto">
-              Transaksi yang baru diselesaikan di kasir akan langsung muncul di sini.
-            </p>
-          </Card>
+          <FadeContent>
+            <Card className="bg-[var(--surface)] rounded-2xl p-10 text-center border border-[var(--border)] shadow-none items-center gap-2">
+              <Receipt className="w-10 h-10 mx-auto text-[var(--muted)] opacity-50" />
+              <p className="text-sm font-bold text-[var(--foreground)]">Tidak ada transaksi ditemukan</p>
+              <p className="text-xs text-[var(--muted)] max-w-xs mx-auto">
+                Transaksi yang baru diselesaikan di kasir akan langsung muncul di sini.
+              </p>
+            </Card>
+          </FadeContent>
         ) : (
           <>
             {/* MOBILE VIEW (<640px): Card List Touch-Friendly */}
@@ -943,13 +956,13 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
       </div>
 
       {/* Void Modal */}
-      <Modal
+      <Modal.Backdrop
         isOpen={Boolean(voidingTrx)}
         onOpenChange={(open) => {
           if (!open) setVoidingTrx(null);
         }}
+        variant="opaque"
       >
-        <Modal.Backdrop variant="opaque">
           <Modal.Container placement="auto" size="md" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Konfirmasi Void Nota"
@@ -1025,16 +1038,15 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       {/* Delete Struk Permanen Modal */}
-      <Modal
+      <Modal.Backdrop
         isOpen={Boolean(deletingTrx)}
         onOpenChange={(open) => {
           if (!open) setDeletingTrx(null);
         }}
+        variant="opaque"
       >
-        <Modal.Backdrop variant="opaque">
           <Modal.Container placement="auto" size="md" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Hapus Struk Permanen"
@@ -1088,7 +1100,6 @@ export const TodayTransactionsView: React.FC<TodayTransactionsViewProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
     </div>
   );
 };

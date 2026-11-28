@@ -18,6 +18,7 @@ import { PromoRule } from '../types';
 import { StorageService, formatRupiah } from '../services/storageService';
 import { useOverlayHistory } from '../utils/useOverlayHistory';
 import { AppConfirmDialog } from './AppConfirmDialog';
+import { FadeContent } from './ui/animated/ReactBitsPrimitives';
 
 interface PromoSelectorModalProps {
   isOpen: boolean;
@@ -155,13 +156,13 @@ export const PromoSelectorModal: React.FC<PromoSelectorModalProps> = ({
 
   return (
     <>
-      <Modal
+      <Modal.Backdrop
         isOpen={isOpen}
         onOpenChange={(open) => {
           if (!open) onClose();
         }}
+        variant="opaque"
       >
-        <Modal.Backdrop variant="opaque">
           <Modal.Container placement="auto" size="lg" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Promo dan Voucher Kasir"
@@ -272,18 +273,20 @@ export const PromoSelectorModal: React.FC<PromoSelectorModalProps> = ({
                   {/* Promo Cards List */}
                   <div className="space-y-2.5">
                     {filteredPromos.length === 0 ? (
-                      <div className="text-center py-8 text-[var(--muted)]">
-                        <Gift className="w-10 h-10 mx-auto stroke-1 opacity-50 mb-2" />
-                        <p className="text-xs font-medium">Tidak ada promo yang sesuai</p>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onPress={() => setActiveTab('CREATE')}
-                          className="mt-3 rounded-xl text-xs font-semibold min-h-[40px]"
-                        >
-                          + Buat Promo Sekarang
-                        </Button>
-                      </div>
+                      <FadeContent>
+                        <div className="text-center py-8 text-[var(--muted)]">
+                          <Gift className="w-10 h-10 mx-auto stroke-1 opacity-50 mb-2" />
+                          <p className="text-xs font-medium">Tidak ada promo yang sesuai</p>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onPress={() => setActiveTab('CREATE')}
+                            className="mt-3 rounded-xl text-xs font-semibold min-h-[40px]"
+                          >
+                            + Buat Promo Sekarang
+                          </Button>
+                        </div>
+                      </FadeContent>
                     ) : (
                       filteredPromos.map((p) => {
                         const minOrder = p.minOrder || 0;
@@ -295,11 +298,11 @@ export const PromoSelectorModal: React.FC<PromoSelectorModalProps> = ({
                           <div
                             key={p.id}
                             onClick={() => isEligible && handleSelectPromo(p)}
-                            className={`group relative p-3.5 rounded-xl border transition-colors ${
+                            className={`group relative p-3.5 rounded-xl border transition-[colors,transform] ${
                               isCurrentlySelected
                                 ? 'bg-[var(--accent-soft)]/50 border-[var(--accent)] ring-1 ring-[var(--accent)]'
                                 : isEligible
-                                ? 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--accent)]/60 hover:bg-[var(--surface-secondary)] cursor-pointer'
+                                ? 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--accent)]/60 hover:bg-[var(--surface-secondary)] active:scale-[0.99] cursor-pointer'
                                 : 'bg-[var(--surface-secondary)] border-[var(--border)] opacity-60 cursor-not-allowed'
                             }`}
                           >
@@ -550,7 +553,6 @@ export const PromoSelectorModal: React.FC<PromoSelectorModalProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       <AppConfirmDialog
         isOpen={pendingDeletePromoId !== null}

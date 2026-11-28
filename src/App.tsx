@@ -3,6 +3,12 @@ import { Header, SyncHealthStatus } from './components/Header';
 import { PosRegisterView } from './components/PosRegisterView';
 import { BottomNavigation } from './components/BottomNavigation';
 import { ChunkErrorBoundary, ViewLoadingFallback, ModalLoadingFallback } from './components/ChunkErrorBoundary';
+import {
+  AppMotionProvider,
+  AnimatedToastContainer,
+  ViewFadeTransition,
+} from './components/ui/motion/MotionPrimitives';
+import { LiquidSurface } from './components/ui/glass/LiquidSurface';
 import { 
   Product, 
   CartItem, 
@@ -110,7 +116,7 @@ export default function App() {
   const [shippingFee, setShippingFee] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [cashReceived, setCashReceived] = useState<number>(0);
-  const [isRedPriceMode, setIsRedPriceMode] = useState<boolean>(false);
+  const [isRedPriceMode, setIsRedPriceMode] = useState<boolean>(true);
 
   // Transactions & Summaries
   const [transactions, setTransactions] = useState<TransactionReceipt[]>([]);
@@ -1029,8 +1035,9 @@ export default function App() {
     : 'error';
 
   return (
-    <div className="min-h-dvh bg-[#F6F7F9] dark:bg-[#121215] text-[#0F172A] dark:text-[#F4F4F6] flex flex-col font-sans selection:bg-[#2563EB] dark:selection:bg-[#A855F7] selection:text-white pb-20 md:pb-0 transition-colors duration-200">
-      {/* Header */}
+    <AppMotionProvider>
+      <div className="min-h-dvh bg-[var(--background)] text-[var(--foreground)] flex flex-col font-sans selection:bg-[var(--accent)] selection:text-[var(--accent-foreground)] pb-20 md:pb-0 transition-colors duration-200">
+        {/* Header */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -1054,11 +1061,11 @@ export default function App() {
       {!isOnline ? (
         <div
           role="status"
-          className="bg-amber-50 dark:bg-amber-500/15 border-b border-amber-200 dark:border-amber-500/35 px-3 sm:px-6 py-2 no-print"
+          className="bg-[var(--warning-soft)] border-b border-[var(--warning)]/35 px-3 sm:px-6 py-2 no-print"
         >
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 text-xs font-semibold text-amber-900 dark:text-amber-200">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 text-xs font-semibold text-amber-900 dark:text-[var(--warning)]">
             <div className="flex items-center gap-2 min-w-0">
-              <WifiOff className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <WifiOff className="w-4 h-4 text-amber-700 dark:text-[var(--warning)] shrink-0" />
               <span className="truncate">Mode offline — data tersimpan aman di perangkat</span>
             </div>
           </div>
@@ -1066,11 +1073,11 @@ export default function App() {
       ) : syncError ? (
         <div
           role="status"
-          className="bg-red-50 dark:bg-red-500/15 border-b border-red-200 dark:border-red-500/35 px-3 sm:px-6 py-2 no-print"
+          className="bg-[var(--danger-soft)] border-b border-[var(--danger)]/35 px-3 sm:px-6 py-2 no-print"
         >
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 text-xs font-semibold text-red-900 dark:text-red-200">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 text-xs font-semibold text-red-900 dark:text-[var(--danger)]">
             <div className="flex items-center gap-2 min-w-0">
-              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-[var(--danger)] shrink-0" />
               <span className="truncate">Sinkronisasi Sheets gagal</span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -1078,7 +1085,7 @@ export default function App() {
                 type="button"
                 onClick={() => handleSyncSpreadsheet(false)}
                 disabled={isSyncing}
-                className="min-h-[36px] px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center gap-1.5 active:scale-[0.97] cursor-pointer disabled:opacity-50"
+                className="min-h-[36px] px-3 py-1 rounded-lg bg-[var(--danger)] hover:opacity-90 text-[var(--danger-foreground)] text-xs font-bold flex items-center gap-1.5 active:scale-[0.97] transition-transform cursor-pointer disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
                 <span>Coba lagi</span>
@@ -1087,7 +1094,7 @@ export default function App() {
                 type="button"
                 onClick={() => setSyncError(null)}
                 aria-label="Tutup peringatan sinkronisasi"
-                className="min-w-[36px] min-h-[36px] rounded-lg flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 cursor-pointer"
+                className="min-w-[36px] min-h-[36px] rounded-lg flex items-center justify-center text-[var(--danger)] hover:bg-[var(--danger)]/15 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1097,46 +1104,51 @@ export default function App() {
       ) : null}
 
       {/* Floating Status Toast (Supports Undo action, positioned cleanly above overlays) */}
-      {toast && (
-        <div
-          data-toast-overlay="true"
-          className="fixed top-16 left-3 right-3 sm:top-auto sm:left-auto sm:bottom-8 sm:right-6 z-[100050] animate-in fade-in slide-in-from-top-2 sm:slide-in-from-bottom-2 duration-150 pointer-events-none flex justify-center sm:justify-end"
-        >
-          <div
-            role="status"
-            className={`pointer-events-auto flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-2xl border shadow-xl text-xs font-semibold w-full sm:w-auto sm:max-w-md ${
-              toast.type === 'success'
-                ? 'bg-[var(--surface)] border-[var(--success)]/50 text-emerald-700 dark:text-[var(--success)]'
-                : toast.type === 'error'
-                ? 'bg-[var(--surface)] border-[var(--danger)]/50 text-[var(--danger)]'
-                : 'bg-[var(--surface)] border-[var(--accent)]/35 text-[var(--foreground)]'
-            }`}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-[var(--success)] shrink-0" />}
-              {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-[var(--danger)] shrink-0" />}
-              {toast.type === 'info' && <Info className="w-4 h-4 text-[var(--accent)] shrink-0" />}
-              <span className="break-words">{toast.message}</span>
-            </div>
-            {toast.action && (
-              <button
-                type="button"
-                onClick={() => {
-                  const act = toast.action;
-                  setToast(null);
-                  act?.onAction();
-                }}
-                className="min-h-[36px] px-3 py-1 rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 font-bold text-xs shrink-0 active:scale-[0.97] transition-all cursor-pointer"
-              >
-                {toast.action.label}
-              </button>
-            )}
+      <AnimatedToastContainer
+        toastKey={toast ? toast.id : null}
+        className="fixed top-16 left-3 right-3 sm:top-auto sm:left-auto sm:bottom-8 sm:right-6 z-[100050] pointer-events-none flex justify-center sm:justify-end"
+      >
+        {toast && (
+          <div data-toast-overlay="true" className="w-full sm:w-auto sm:max-w-md pointer-events-auto">
+            <LiquidSurface
+              role="status"
+              borderRadius={16}
+              material="thin"
+              className={`flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-semibold w-full ${
+                toast.type === 'success'
+                  ? 'border-[var(--success)]/45 text-emerald-700 dark:text-[var(--success)]'
+                  : toast.type === 'error'
+                  ? 'border-[var(--danger)]/45 text-[var(--danger)]'
+                  : 'border-[var(--accent)]/35 text-[var(--foreground)]'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-[var(--success)] shrink-0" />}
+                {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-[var(--danger)] shrink-0" />}
+                {toast.type === 'info' && <Info className="w-4 h-4 text-[var(--accent)] shrink-0" />}
+                <span className="break-words">{toast.message}</span>
+              </div>
+              {toast.action && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const act = toast.action;
+                    setToast(null);
+                    act?.onAction();
+                  }}
+                  className="min-h-[36px] px-3 py-1 rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 font-bold text-xs shrink-0 active:scale-[0.97] transition-transform cursor-pointer"
+                >
+                  {toast.action.label}
+                </button>
+              )}
+            </LiquidSurface>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatedToastContainer>
 
       {/* Main Content Body */}
       <main className="flex-1 px-3 sm:px-6 py-4 sm:py-6 max-w-7xl mx-auto w-full">
+        <ViewFadeTransition viewKey={activeTab}>
         {activeTab === 'pos' && (
           <PosRegisterView
             products={products}
@@ -1322,21 +1334,22 @@ export default function App() {
             </Suspense>
           </ChunkErrorBoundary>
         )}
+        </ViewFadeTransition>
       </main>
 
       {/* Clean Desktop Footer */}
-      <footer className="py-3 px-4 sm:px-6 border-t border-slate-200 dark:border-[#2B2B33] bg-white dark:bg-[#1B1B20] text-[11px] text-slate-500 dark:text-zinc-400 select-none no-print hidden md:flex items-center justify-between transition-colors">
+      <footer className="py-3 px-4 sm:px-6 border-t border-[var(--border)] bg-[var(--surface)] text-[11px] text-[var(--muted)] select-none no-print hidden md:flex items-center justify-between transition-colors">
         <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${isConnectedGas ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+          <span className={`w-2 h-2 rounded-full ${isConnectedGas ? 'bg-[var(--success)]' : 'bg-[var(--warning)]'}`} />
           <span className="font-medium">
             {isConnectedGas ? 'Terhubung ke Google Spreadsheet' : 'Mode Offline (Data Lokal)'}
           </span>
         </div>
-        <div className="font-semibold text-[#0F172A] dark:text-[#F4F4F6]">
+        <div className="font-semibold text-[var(--foreground)]">
           ORTUKILL KEDIRI POS
         </div>
         <div>
-          Bantuan: <span className="font-semibold text-[#0F172A] dark:text-[#F4F4F6]">{brand.PHONE}</span>
+          Bantuan: <span className="font-semibold text-[var(--foreground)]">{brand.PHONE}</span>
         </div>
       </footer>
 
@@ -1357,20 +1370,24 @@ export default function App() {
       />
 
       {/* Desktop Floating AI Copilot Button (Mobile uses Header button so it never overlaps cart bar) */}
-      <button
-        onClick={() => {
-          void LazyAiCopilotModal.preload();
-          setIsAiCopilotOpen(true);
-        }}
-        onMouseEnter={() => { void LazyAiCopilotModal.preload(); }}
-        type="button"
-        aria-label="Buka AI Copilot Kasir"
-        title="AI Copilot Kasir (Otomasi Suara & Teks)"
-        className="hidden md:flex fixed bottom-6 right-6 z-40 bg-[#0F172A] hover:bg-slate-800 dark:bg-[#1B1B20] dark:hover:bg-[#24242B] dark:border dark:border-[#A855F7]/60 dark:shadow-[0_0_20px_rgba(168,85,247,0.28)] text-white px-4 py-3 rounded-full items-center gap-2 font-bold text-xs shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-      >
-        <Sparkles className="w-4 h-4 text-blue-400 dark:text-[#C084FC]" />
-        <span>AI Copilot</span>
-      </button>
+      <div className="hidden md:block fixed bottom-6 right-6 z-40 no-print">
+        <LiquidSurface borderRadius={999} material="regular" className="rounded-full">
+          <button
+            onClick={() => {
+              void LazyAiCopilotModal.preload();
+              setIsAiCopilotOpen(true);
+            }}
+            onMouseEnter={() => { void LazyAiCopilotModal.preload(); }}
+            type="button"
+            aria-label="Buka AI Copilot Kasir"
+            title="AI Copilot Kasir (Otomasi Suara & Teks)"
+            className="flex items-center gap-2 px-4 py-3 rounded-full text-[var(--foreground)] font-bold text-xs transition-transform hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-[var(--accent)]" />
+            <span>AI Copilot</span>
+          </button>
+        </LiquidSurface>
+      </div>
 
       {/* Thermal Receipt Modal */}
       {isReceiptOpen && activeReceipt && (
@@ -1428,6 +1445,7 @@ export default function App() {
           </Suspense>
         </ChunkErrorBoundary>
       )}
-    </div>
+      </div>
+    </AppMotionProvider>
   );
 }

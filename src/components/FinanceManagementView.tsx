@@ -33,6 +33,8 @@ import { FinanceRecord, FinanceType, FinanceCategory } from '../types';
 import { formatRupiah, getFormattedNow } from '../services/storageService';
 import { GasApiService } from '../services/gasApiService';
 import { AppConfirmDialog } from './AppConfirmDialog';
+import { AnimatedTabPill } from './ui/motion/MotionPrimitives';
+import { LiquidSurface } from './ui/glass/LiquidSurface';
 
 interface FinanceManagementViewProps {
   financeRecords: FinanceRecord[];
@@ -256,21 +258,25 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
     <div className="space-y-4 sm:space-y-5 pb-16 text-[var(--foreground)]">
       {/* Toast Notification */}
       {toast && (
-        <div
-          className={`fixed top-16 sm:top-20 right-4 left-4 sm:left-auto z-[100050] px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2.5 border ${
-            toast.type === 'success'
-              ? 'bg-[var(--surface)] text-emerald-700 dark:text-[var(--success)] border-[var(--success)]/40'
-              : toast.type === 'error'
-              ? 'bg-[var(--surface)] text-red-700 dark:text-[var(--danger)] border-[var(--danger)]/40'
-              : 'bg-[var(--surface)] text-[var(--accent)] border-[var(--accent)]/40'
-          }`}
-        >
-          {toast.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-[var(--success)] flex-shrink-0" />
-          ) : (
-            <AlertCircle className="w-5 h-5 text-red-700 dark:text-[var(--danger)] flex-shrink-0" />
-          )}
-          <span className="text-xs font-bold">{toast.message}</span>
+        <div className="fixed top-16 sm:top-20 right-4 left-4 sm:left-auto z-[100050] pointer-events-none">
+          <LiquidSurface
+            borderRadius={16}
+            material="thin"
+            className={`px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2.5 pointer-events-auto ${
+              toast.type === 'success'
+                ? 'text-emerald-700 dark:text-[var(--success)] border-[var(--success)]/40'
+                : toast.type === 'error'
+                ? 'text-red-700 dark:text-[var(--danger)] border-[var(--danger)]/40'
+                : 'text-[var(--accent)] border-[var(--accent)]/40'
+            }`}
+          >
+            {toast.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-[var(--success)] flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-700 dark:text-[var(--danger)] flex-shrink-0" />
+            )}
+            <span className="text-xs font-bold">{toast.message}</span>
+          </LiquidSurface>
         </div>
       )}
 
@@ -360,30 +366,48 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
             <div className="grid grid-cols-2 gap-1.5 bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)]">
               <Button
                 type="button"
+                fullWidth
                 size="sm"
-                variant={type === 'EXPENSE' ? 'danger' : 'ghost'}
+                variant="ghost"
                 onPress={() => handleTypeChange('EXPENSE')}
-                className={`rounded-lg font-bold text-xs min-h-[44px] ${
-                  type === 'EXPENSE' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                className={`relative rounded-lg font-bold text-xs min-h-[44px] ${
+                  type === 'EXPENSE' ? 'text-[var(--danger-foreground)]' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <MinusCircle className="w-4 h-4 shrink-0" />
-                <span>Pengeluaran (Sheet)</span>
+                {type === 'EXPENSE' && (
+                  <AnimatedTabPill
+                    layoutId="finance-type-pill"
+                    className="absolute inset-0 rounded-lg bg-[var(--danger)] pointer-events-none"
+                  />
+                )}
+                <span className="relative z-10 inline-flex items-center gap-1.5">
+                  <MinusCircle className="w-4 h-4 shrink-0" />
+                  <span>Pengeluaran (Sheet)</span>
+                </span>
               </Button>
 
               <Button
                 type="button"
+                fullWidth
                 size="sm"
-                variant={type === 'INCOME' ? 'primary' : 'ghost'}
+                variant="ghost"
                 onPress={() => handleTypeChange('INCOME')}
-                className={`rounded-lg font-bold text-xs min-h-[44px] ${
+                className={`relative rounded-lg font-bold text-xs min-h-[44px] ${
                   type === 'INCOME'
-                    ? 'bg-[var(--success)] text-[var(--success-foreground)]'
+                    ? 'text-[var(--success-foreground)]'
                     : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <PlusCircle className="w-4 h-4 shrink-0" />
-                <span>Pemasukan (+)</span>
+                {type === 'INCOME' && (
+                  <AnimatedTabPill
+                    layoutId="finance-type-pill"
+                    className="absolute inset-0 rounded-lg bg-[var(--success)] pointer-events-none"
+                  />
+                )}
+                <span className="relative z-10 inline-flex items-center gap-1.5">
+                  <PlusCircle className="w-4 h-4 shrink-0" />
+                  <span>Pemasukan (+)</span>
+                </span>
               </Button>
             </div>
 
@@ -538,10 +562,11 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                     <Button
                       key={pm.value}
                       type="button"
+                      fullWidth
                       size="sm"
                       variant={isSelected ? 'primary' : 'outline'}
                       onPress={() => setPaymentMethod(pm.value)}
-                      className={`px-1 rounded-xl text-xs font-bold min-h-[44px] ${
+                      className={`px-2 rounded-xl text-xs font-bold min-h-[44px] border ${
                         isSelected
                           ? `${pm.bg} ring-2 ${pm.activeRing} border-transparent`
                           : 'bg-[var(--surface-secondary)] text-[var(--foreground)] border-[var(--border)]'
@@ -567,12 +592,13 @@ export const FinanceManagementView: React.FC<FinanceManagementViewProps> = ({
                     <Button
                       key={opt.value}
                       type="button"
+                      fullWidth
                       size="sm"
                       variant={isSelected ? 'primary' : 'outline'}
                       onPress={() => setCategory(opt.value)}
                       className={`justify-start gap-2 px-2.5 rounded-xl border min-h-[44px] ${
                         isSelected
-                          ? ''
+                          ? 'border-transparent'
                           : 'bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--foreground)]'
                       }`}
                     >

@@ -22,6 +22,8 @@ import { Product, BarangMasukRecord, StockAuditRecord } from '../types';
 import { formatRupiah, StorageService } from '../services/storageService';
 import { GasApiService } from '../services/gasApiService';
 import { useOverlayHistory } from '../utils/useOverlayHistory';
+import { AnimatedTabPill } from './ui/motion/MotionPrimitives';
+import { SmartCountUp, FadeContent } from './ui/animated/ReactBitsPrimitives';
 
 interface StockManagementViewProps {
   products: Product[];
@@ -896,7 +898,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
             Total Stok Fisik
           </span>
           <h3 className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tabular-nums font-mono">
-            {inventoryMetrics.totalBottles} Botol
+            <SmartCountUp value={inventoryMetrics.totalBottles} formatter={(v) => `${Math.round(v)} Botol`} />
           </h3>
           <p className="text-[11px] text-[var(--muted)]">
             Formula: Stok Awal + Masuk − Keluar
@@ -908,7 +910,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
             Nilai Aset Modal
           </span>
           <h3 className="text-lg sm:text-xl font-extrabold text-amber-700 dark:text-[var(--warning)] tabular-nums font-mono">
-            {formatRupiah(inventoryMetrics.totalAssetCost)}
+            <SmartCountUp value={inventoryMetrics.totalAssetCost} formatter={formatRupiah} />
           </h3>
           <p className="text-[11px] text-[var(--muted)]">
             Total biaya HPP tertanam
@@ -920,7 +922,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
             Potensi Omset
           </span>
           <h3 className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tabular-nums font-mono">
-            {formatRupiah(inventoryMetrics.totalPotentialRevenue)}
+            <SmartCountUp value={inventoryMetrics.totalPotentialRevenue} formatter={formatRupiah} />
           </h3>
           <p className="text-[11px] text-[var(--muted)]">
             Bila seluruh stok terjual
@@ -932,7 +934,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
             Potensi Keuntungan
           </span>
           <h3 className="text-lg sm:text-xl font-extrabold text-emerald-700 dark:text-[var(--success)] tabular-nums font-mono">
-            +{formatRupiah(inventoryMetrics.potentialProfit)}
+            <SmartCountUp value={inventoryMetrics.potentialProfit} formatter={(v) => `+${formatRupiah(v)}`} />
           </h3>
           <p className="text-[11px] text-[var(--muted)]">
             Estimasi margin kotor
@@ -942,38 +944,35 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
 
       {/* Main Tab Switcher (Katalog, Riwayat Masuk, Audit Log) */}
       <Card className="bg-[var(--surface)] rounded-2xl p-1.5 gap-1 border border-[var(--border)] shadow-none flex flex-row items-center overflow-x-auto no-scrollbar">
-        <Button
-          variant={activeTab === 'PRODUCTS' ? 'primary' : 'ghost'}
-          onPress={() => setActiveTab('PRODUCTS')}
-          className={`flex-1 min-w-fit whitespace-nowrap rounded-xl text-xs font-bold min-h-[44px] px-3.5 ${
-            activeTab === 'PRODUCTS' ? '' : 'text-[var(--muted)]'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Katalog &amp; Stok ({filteredProducts.length})</span>
-        </Button>
-
-        <Button
-          variant={activeTab === 'BARANG_MASUK' ? 'primary' : 'ghost'}
-          onPress={() => setActiveTab('BARANG_MASUK')}
-          className={`flex-1 min-w-fit whitespace-nowrap rounded-xl text-xs font-bold min-h-[44px] px-3.5 ${
-            activeTab === 'BARANG_MASUK' ? '' : 'text-[var(--muted)]'
-          }`}
-        >
-          <History className="w-3.5 h-3.5" />
-          <span>Riwayat Masuk ({barangMasukList.length})</span>
-        </Button>
-
-        <Button
-          variant={activeTab === 'AUDIT_LOG' ? 'primary' : 'ghost'}
-          onPress={() => setActiveTab('AUDIT_LOG')}
-          className={`flex-1 min-w-fit whitespace-nowrap rounded-xl text-xs font-bold min-h-[44px] px-3.5 ${
-            activeTab === 'AUDIT_LOG' ? '' : 'text-[var(--muted)]'
-          }`}
-        >
-          <ClipboardList className="w-3.5 h-3.5" />
-          <span>Audit Log ({auditLogs.length})</span>
-        </Button>
+        {([
+          { id: 'PRODUCTS', icon: Layers, label: `Katalog & Stok (${filteredProducts.length})` },
+          { id: 'BARANG_MASUK', icon: History, label: `Riwayat Masuk (${barangMasukList.length})` },
+          { id: 'AUDIT_LOG', icon: ClipboardList, label: `Audit Log (${auditLogs.length})` },
+        ] as const).map((tab) => {
+          const Icon = tab.icon;
+          const isSelected = activeTab === tab.id;
+          return (
+            <Button
+              key={tab.id}
+              variant="ghost"
+              onPress={() => setActiveTab(tab.id)}
+              className={`relative flex-1 min-w-fit whitespace-nowrap rounded-xl text-xs font-bold min-h-[44px] px-3.5 ${
+                isSelected ? 'text-[var(--accent-foreground)]' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+              }`}
+            >
+              {isSelected && (
+                <AnimatedTabPill
+                  layoutId="stock-main-tabs-pill"
+                  className="absolute inset-0 rounded-xl bg-[var(--accent)] pointer-events-none"
+                />
+              )}
+              <span className="relative z-10 inline-flex items-center gap-1.5">
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+              </span>
+            </Button>
+          );
+        })}
       </Card>
 
       {/* ========================================================================= */}
@@ -1117,11 +1116,13 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
           {/* MOBILE VIEW (<640px): Product Card List */}
           <div className="space-y-3 sm:hidden">
             {filteredProducts.length === 0 ? (
-              <Card className="bg-[var(--surface)] rounded-2xl p-8 text-center border border-[var(--border)] shadow-none items-center gap-1">
-                <Package className="w-8 h-8 text-[var(--muted)] mx-auto mb-1 opacity-60" />
-                <p className="text-sm font-bold text-[var(--foreground)]">Tidak ada produk yang cocok</p>
-                <p className="text-xs text-[var(--muted)]">Coba sesuaikan kata kunci pencarian atau filter status stok.</p>
-              </Card>
+              <FadeContent>
+                <Card className="bg-[var(--surface)] rounded-2xl p-8 text-center border border-[var(--border)] shadow-none items-center gap-1">
+                  <Package className="w-8 h-8 text-[var(--muted)] mx-auto mb-1 opacity-60" />
+                  <p className="text-sm font-bold text-[var(--foreground)]">Tidak ada produk yang cocok</p>
+                  <p className="text-xs text-[var(--muted)]">Coba sesuaikan kata kunci pencarian atau filter status stok.</p>
+                </Card>
+              </FadeContent>
             ) : (
               visibleProducts.map((p) => (
                 <StockMobileCard
@@ -1451,7 +1452,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
       {/* ========================================================================= */}
       {/* MODAL 1: RESTOCK PRODUK                                                   */}
       {/* ========================================================================= */}
-      <Modal
+      <Modal.Backdrop
         isOpen={Boolean(restockProduct)}
         onOpenChange={(open) => {
           if (!open) {
@@ -1459,8 +1460,8 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
             setRestockFeedback(null);
           }
         }}
+        variant="opaque"
       >
-        <Modal.Backdrop variant="opaque">
           <Modal.Container placement="auto" size="md" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Restock Barang Masuk"
@@ -1681,12 +1682,11 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       {/* ========================================================================= */}
       {/* MODAL 2: KOREKSI STOK / STOCK OPNAME                                      */}
       {/* ========================================================================= */}
-      <Modal
+      <Modal.Backdrop
         isOpen={Boolean(correctingProduct)}
         onOpenChange={(open) => {
           if (!open) {
@@ -1694,8 +1694,8 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
             setCorrectionFeedback(null);
           }
         }}
+        variant="opaque"
       >
-        <Modal.Backdrop variant="opaque">
           <Modal.Container placement="auto" size="md" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Koreksi Stok (Stock Opname)"
@@ -1883,18 +1883,17 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       {/* ========================================================================= */}
       {/* MODAL 3: TAMBAH PRODUK BARU (DATABASE_PRODUK B:L)                         */}
       {/* ========================================================================= */}
-      <Modal
+      <Modal.Backdrop
         isOpen={isAddModalOpen}
         onOpenChange={(open) => {
           if (!open) setIsAddModalOpen(false);
         }}
+        variant="opaque"
       >
-        <Modal.Backdrop variant="opaque">
           <Modal.Container placement="auto" size="lg" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Tambah Master Produk Baru"
@@ -2191,18 +2190,17 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       {/* ========================================================================= */}
       {/* MODAL 4: EDIT PRODUK (SKU READONLY, HANYA B:L)                           */}
       {/* ========================================================================= */}
-      <Modal
+      <Modal.Backdrop
         isOpen={Boolean(editingProduct)}
         onOpenChange={(open) => {
           if (!open) setEditingProduct(null);
         }}
+        variant="opaque"
       >
-        <Modal.Backdrop variant="opaque">
           <Modal.Container placement="auto" size="lg" className="p-0 sm:p-4">
             <Modal.Dialog
               aria-label="Edit Info & Harga Produk"
@@ -2395,7 +2393,6 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
     </div>
   );
 };

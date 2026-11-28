@@ -32,6 +32,8 @@ import {
 } from 'recharts';
 import { TransactionReceipt, FinanceRecord, SalesTarget, BarangMasukRecord } from '../types';
 import { formatRupiah, normalizeDateToYmd, classifyProduct, StorageService } from '../services/storageService';
+import { AnimatedTabPill } from './ui/motion/MotionPrimitives';
+import { SmartCountUp } from './ui/animated/ReactBitsPrimitives';
 
 export interface AnalyticsDashboardProps {
   transactions: TransactionReceipt[];
@@ -722,7 +724,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
           <div>
             <p className="text-lg sm:text-xl font-black text-[var(--foreground)] tracking-tight tabular-nums">
-              {formatRupiah(kpiStats.omset)}
+              <SmartCountUp value={kpiStats.omset} formatter={formatRupiah} />
             </p>
             <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevOmset_N)}`}>
               vs Bln Lalu: {formatRupiah(kpiStats.prevOmset_N)} (tgl 1..{kpiStats.N})
@@ -746,7 +748,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
           <div>
             <p className="text-lg sm:text-xl font-black text-emerald-700 dark:text-[var(--success)] tracking-tight tabular-nums">
-              {formatRupiah(kpiStats.cuan)}
+              <SmartCountUp value={kpiStats.cuan} formatter={formatRupiah} />
             </p>
             <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevCuan_N)}`}>
               vs Bln Lalu: {formatRupiah(kpiStats.prevCuan_N)}
@@ -770,7 +772,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
           <div>
             <p className="text-lg sm:text-xl font-black text-[var(--foreground)] tracking-tight tabular-nums">
-              {kpiStats.marginPct}%
+              <SmartCountUp value={kpiStats.marginPct} formatter={(v) => `${Math.round(v)}%`} />
             </p>
             <p className="text-[10px] text-[var(--muted)] mt-0.5">
               Rasio Laba Bersih Penjualan
@@ -794,7 +796,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
           <div>
             <p className="text-lg sm:text-xl font-black text-[var(--foreground)] tracking-tight tabular-nums">
-              {kpiStats.nota} <span className="text-xs font-bold text-[var(--muted)]">Nota</span>
+              <SmartCountUp value={kpiStats.nota} formatter={(v) => `${Math.round(v)}`} /> <span className="text-xs font-bold text-[var(--muted)]">Nota</span>
             </p>
             <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums">
               vs Bln Lalu: {kpiStats.prevNota_N} Nota (1..{kpiStats.N})
@@ -818,7 +820,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
           <div>
             <p className="text-lg sm:text-xl font-black text-[var(--foreground)] tracking-tight tabular-nums">
-              {kpiStats.botol} <span className="text-xs font-bold text-[var(--muted)]">Btl</span>
+              <SmartCountUp value={kpiStats.botol} formatter={(v) => `${Math.round(v)}`} /> <span className="text-xs font-bold text-[var(--muted)]">Btl</span>
             </p>
             <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums">
               vs Bln Lalu: {kpiStats.prevBotol_N} Btl (excl. promo)
@@ -1153,39 +1155,30 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
           {/* Toggle Metrik: Qty | Omzet | Cuan */}
           <div className="flex items-center bg-[var(--surface-secondary)] p-1 rounded-full border border-[var(--border)] self-start sm:self-auto gap-1">
-            <Button
-              type="button"
-              size="sm"
-              variant={productRankingMetric === 'QTY' ? 'primary' : 'ghost'}
-              onPress={() => setProductRankingMetric('QTY')}
-              className={`px-3.5 rounded-full text-xs font-bold min-h-[38px] ${
-                productRankingMetric === 'QTY' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-              }`}
-            >
-              Qty
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={productRankingMetric === 'OMZET' ? 'primary' : 'ghost'}
-              onPress={() => setProductRankingMetric('OMZET')}
-              className={`px-3.5 rounded-full text-xs font-bold min-h-[38px] ${
-                productRankingMetric === 'OMZET' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-              }`}
-            >
-              Omzet
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={productRankingMetric === 'CUAN' ? 'primary' : 'ghost'}
-              onPress={() => setProductRankingMetric('CUAN')}
-              className={`px-3.5 rounded-full text-xs font-bold min-h-[38px] ${
-                productRankingMetric === 'CUAN' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-              }`}
-            >
-              Cuan
-            </Button>
+            {(['QTY', 'OMZET', 'CUAN'] as const).map((metric) => {
+              const isSelected = productRankingMetric === metric;
+              const label = metric === 'QTY' ? 'Qty' : metric === 'OMZET' ? 'Omzet' : 'Cuan';
+              return (
+                <Button
+                  key={metric}
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => setProductRankingMetric(metric)}
+                  className={`relative px-3.5 rounded-full text-xs font-bold min-h-[38px] ${
+                    isSelected ? 'text-[var(--accent-foreground)]' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                  }`}
+                >
+                  {isSelected && (
+                    <AnimatedTabPill
+                      layoutId="analytics-ranking-pill"
+                      className="absolute inset-0 rounded-full bg-[var(--accent)] pointer-events-none"
+                    />
+                  )}
+                  <span className="relative z-10">{label}</span>
+                </Button>
+              );
+            })}
           </div>
         </div>
 

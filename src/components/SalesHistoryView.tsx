@@ -53,6 +53,8 @@ import { TransactionReceipt, Product, FinanceRecord, SalesTarget } from '../type
 import { formatRupiah, normalizeDateToYmd, classifyProduct, StorageService } from '../services/storageService';
 import { FinanceManagementView } from './FinanceManagementView';
 import { useOverlayHistory } from '../utils/useOverlayHistory';
+import { AnimatedTabPill } from './ui/motion/MotionPrimitives';
+import { SmartCountUp, FadeContent } from './ui/animated/ReactBitsPrimitives';
 
 interface SalesHistoryViewProps {
   transactions: TransactionReceipt[];
@@ -1262,37 +1264,33 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
           </div>
 
           {/* Quick Target Grain (Harian, Mingguan, Bulanan) */}
-          <div className="flex items-center bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)]">
-            <Button
-              size="sm"
-              variant={targetGrain === 'HARIAN' ? 'primary' : 'ghost'}
-              onPress={() => setTargetGrain('HARIAN')}
-              className={`rounded-lg text-xs font-bold min-h-[38px] px-3 ${
-                targetGrain === 'HARIAN' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-              }`}
-            >
-              Harian
-            </Button>
-            <Button
-              size="sm"
-              variant={targetGrain === 'MINGGUAN' ? 'primary' : 'ghost'}
-              onPress={() => setTargetGrain('MINGGUAN')}
-              className={`rounded-lg text-xs font-bold min-h-[38px] px-3 ${
-                targetGrain === 'MINGGUAN' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-              }`}
-            >
-              Mingguan
-            </Button>
-            <Button
-              size="sm"
-              variant={targetGrain === 'BULANAN' ? 'primary' : 'ghost'}
-              onPress={() => setTargetGrain('BULANAN')}
-              className={`rounded-lg text-xs font-bold min-h-[38px] px-3 ${
-                targetGrain === 'BULANAN' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-              }`}
-            >
-              Bulanan
-            </Button>
+          <div className="flex items-center bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)] gap-0.5">
+            {([
+              { id: 'HARIAN', label: 'Harian' },
+              { id: 'MINGGUAN', label: 'Mingguan' },
+              { id: 'BULANAN', label: 'Bulanan' },
+            ] as const).map((grain) => {
+              const isSelected = targetGrain === grain.id;
+              return (
+                <Button
+                  key={grain.id}
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => setTargetGrain(grain.id)}
+                  className={`relative rounded-lg text-xs font-bold min-h-[38px] px-3 ${
+                    isSelected ? 'text-[var(--accent-foreground)]' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                  }`}
+                >
+                  {isSelected && (
+                    <AnimatedTabPill
+                      layoutId="history-grain-pill"
+                      className="absolute inset-0 rounded-lg bg-[var(--accent)] pointer-events-none"
+                    />
+                  )}
+                  <span className="relative z-10">{grain.label}</span>
+                </Button>
+              );
+            })}
           </div>
 
           <div className="h-4 w-px bg-[var(--separator)] mx-1 hidden sm:block" />
@@ -1618,7 +1616,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
               </div>
               <div>
                 <p className="text-xl sm:text-2xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
-                  {formatRupiah(cashFlowMetrics.omzet)}
+                  <SmartCountUp value={cashFlowMetrics.omzet} formatter={formatRupiah} />
                 </p>
                 <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
                   {cashFlowMetrics.notaCount} transaksi kasir tercatat
@@ -1639,7 +1637,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
               </div>
               <div>
                 <p className="text-xl sm:text-2xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
-                  {formatRupiah(cashFlowMetrics.restock)}
+                  <SmartCountUp value={cashFlowMetrics.restock} formatter={formatRupiah} />
                 </p>
                 <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
                   {cashFlowMetrics.restockCount} pengadaan stok barang
@@ -1660,7 +1658,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
               </div>
               <div>
                 <p className="text-xl sm:text-2xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
-                  {formatRupiah(cashFlowMetrics.operasional)}
+                  <SmartCountUp value={cashFlowMetrics.operasional} formatter={formatRupiah} />
                 </p>
                 <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
                   {cashFlowMetrics.operasionalCount} biaya selain restock
@@ -1692,7 +1690,10 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
                 <p className={`text-xl sm:text-2xl font-extrabold tracking-tight tabular-nums font-mono ${
                   cashFlowMetrics.netCashFlow >= 0 ? 'text-emerald-700 dark:text-[var(--success)]' : 'text-red-700 dark:text-[var(--danger)]'
                 }`}>
-                  {cashFlowMetrics.netCashFlow >= 0 ? '+' : ''}{formatRupiah(cashFlowMetrics.netCashFlow)}
+                  <SmartCountUp
+                    value={cashFlowMetrics.netCashFlow}
+                    formatter={(v) => `${v >= 0 ? '+' : ''}${formatRupiah(v)}`}
+                  />
                 </p>
                 <p className="text-[11px] text-[var(--muted)] mt-0.5 font-medium">
                   Omzet − Restock − Pengeluaran
@@ -1751,7 +1752,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
             </div>
             <div>
               <p className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
-                {formatRupiah(kpiStats.omset)}
+                <SmartCountUp value={kpiStats.omset} formatter={formatRupiah} />
               </p>
               <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevOmset_N)}`}>
                 vs Bln Lalu (1..{kpiStats.N}): {formatRupiah(kpiStats.prevOmset_N)}
@@ -1775,7 +1776,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
             </div>
             <div>
               <p className="text-lg sm:text-xl font-extrabold text-emerald-700 dark:text-[var(--success)] tracking-tight tabular-nums font-mono">
-                {formatRupiah(kpiStats.cuan)}
+                <SmartCountUp value={kpiStats.cuan} formatter={formatRupiah} />
               </p>
               <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums" title={`Lalu (1..${kpiStats.N}): ${formatRupiah(kpiStats.prevCuan_N)}`}>
                 vs Bln Lalu: {formatRupiah(kpiStats.prevCuan_N)}
@@ -1799,7 +1800,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
             </div>
             <div>
               <p className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
-                {kpiStats.marginPct}%
+                <SmartCountUp value={kpiStats.marginPct} formatter={(v) => `${Math.round(v)}%`} />
               </p>
               <p className="text-[10px] text-[var(--muted)] mt-0.5">
                 Rasio Laba Kotor Penjualan
@@ -1823,7 +1824,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
             </div>
             <div>
               <p className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
-                {kpiStats.nota} <span className="text-xs font-bold text-[var(--muted)]">Nota</span>
+                <SmartCountUp value={kpiStats.nota} formatter={(v) => `${Math.round(v)}`} /> <span className="text-xs font-bold text-[var(--muted)]">Nota</span>
               </p>
               <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate tabular-nums">
                 vs Bln Lalu: {kpiStats.prevNota_N} Nota
@@ -1847,7 +1848,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
             </div>
             <div>
               <p className="text-lg sm:text-xl font-extrabold text-[var(--foreground)] tracking-tight tabular-nums font-mono">
-                {kpiStats.botol} <span className="text-xs font-bold text-[var(--muted)]">Btl</span>
+                <SmartCountUp value={kpiStats.botol} formatter={(v) => `${Math.round(v)}`} /> <span className="text-xs font-bold text-[var(--muted)]">Btl</span>
               </p>
               <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate">
                 Exclude promo &amp; diskon
@@ -1928,36 +1929,32 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
           {/* Metric Selector for Top Products: QTY | CUAN | OMSET */}
           <div className="flex items-center bg-[var(--surface)] p-1 rounded-full border border-[var(--border)] self-start sm:self-auto overflow-x-auto max-w-full no-scrollbar gap-1">
             <span className="text-[10px] font-bold text-[var(--muted)] px-2.5 uppercase whitespace-nowrap">Urutkan:</span>
-            <Button
-              size="sm"
-              variant={productRankingMetric === 'QTY' ? 'primary' : 'ghost'}
-              onPress={() => setProductRankingMetric('QTY')}
-              className={`rounded-full text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
-                productRankingMetric === 'QTY' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-              }`}
-            >
-              Terlaris (Botol)
-            </Button>
-            <Button
-              size="sm"
-              variant={productRankingMetric === 'CUAN' ? 'primary' : 'ghost'}
-              onPress={() => setProductRankingMetric('CUAN')}
-              className={`rounded-full text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
-                productRankingMetric === 'CUAN' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-              }`}
-            >
-              Cuan Tertinggi
-            </Button>
-            <Button
-              size="sm"
-              variant={productRankingMetric === 'OMSET' ? 'primary' : 'ghost'}
-              onPress={() => setProductRankingMetric('OMSET')}
-              className={`rounded-full text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
-                productRankingMetric === 'OMSET' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-              }`}
-            >
-              Omzet
-            </Button>
+            {([
+              { id: 'QTY', label: 'Terlaris (Botol)' },
+              { id: 'CUAN', label: 'Cuan Tertinggi' },
+              { id: 'OMSET', label: 'Omzet' },
+            ] as const).map((item) => {
+              const isSelected = productRankingMetric === item.id;
+              return (
+                <Button
+                  key={item.id}
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => setProductRankingMetric(item.id)}
+                  className={`relative rounded-full text-xs font-bold whitespace-nowrap min-h-[38px] px-3 ${
+                    isSelected ? 'text-[var(--accent-foreground)]' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                  }`}
+                >
+                  {isSelected && (
+                    <AnimatedTabPill
+                      layoutId="history-ranking-pill"
+                      className="absolute inset-0 rounded-full bg-[var(--accent)] pointer-events-none"
+                    />
+                  )}
+                  <span className="relative z-10">{item.label}</span>
+                </Button>
+              );
+            })}
           </div>
         </div>
 
@@ -2317,35 +2314,42 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
 
                   {/* View Mode toggle (Group by date vs flat) */}
                   <div className="flex items-center bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)] gap-1">
-                    <Button
-                      size="sm"
-                      variant={logViewMode === 'BY_DATE' ? 'primary' : 'ghost'}
-                      onPress={() => setLogViewMode('BY_DATE')}
-                      className={`px-3 rounded-lg text-xs font-bold min-h-[38px] ${
-                        logViewMode === 'BY_DATE' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-                      }`}
-                    >
-                      Per Tanggal
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={logViewMode === 'FLAT_LOG' ? 'primary' : 'ghost'}
-                      onPress={() => setLogViewMode('FLAT_LOG')}
-                      className={`px-3 rounded-lg text-xs font-bold min-h-[38px] ${
-                        logViewMode === 'FLAT_LOG' ? '' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-                      }`}
-                    >
-                      Semua Baris
-                    </Button>
+                    {([
+                      { id: 'BY_DATE', label: 'Per Tanggal' },
+                      { id: 'FLAT_LOG', label: 'Semua Baris' },
+                    ] as const).map((mode) => {
+                      const isSelected = logViewMode === mode.id;
+                      return (
+                        <Button
+                          key={mode.id}
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => setLogViewMode(mode.id)}
+                          className={`relative px-3 rounded-lg text-xs font-bold min-h-[38px] ${
+                            isSelected ? 'text-[var(--accent-foreground)]' : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                          }`}
+                        >
+                          {isSelected && (
+                            <AnimatedTabPill
+                              layoutId="history-log-mode-pill"
+                              className="absolute inset-0 rounded-lg bg-[var(--accent)] pointer-events-none"
+                            />
+                          )}
+                          <span className="relative z-10">{mode.label}</span>
+                        </Button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               {/* Table Content */}
               {filteredLogItems.length === 0 ? (
-                <div className="py-12 text-center text-xs text-[var(--muted)] border border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface-secondary)]">
-                  Tidak ada data transaksi yang cocok dengan filter.
-                </div>
+                <FadeContent>
+                  <div className="py-12 text-center text-xs text-[var(--muted)] border border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface-secondary)]">
+                    Tidak ada data transaksi yang cocok dengan filter.
+                  </div>
+                </FadeContent>
               ) : logViewMode === 'BY_DATE' ? (
                 <div className="space-y-3">
                   {visibleDateGroups.map(({ group, visibleItems }) => {
@@ -2714,8 +2718,7 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
       </section>
 
       {/* Modal Target Omzet Editing */}
-      <Modal isOpen={isEditingTarget} onOpenChange={(open) => { if (!open) setIsEditingTarget(false); }}>
-        <Modal.Backdrop variant="opaque">
+      <Modal.Backdrop isOpen={isEditingTarget} onOpenChange={(open) => { if (!open) setIsEditingTarget(false); }} variant="opaque">
           <Modal.Container placement="auto" size="sm" className="p-0 sm:p-4">
             <Modal.Dialog className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92dvh] w-full flex flex-col">
               <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
@@ -2774,11 +2777,9 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
 
       {/* Modal Konfirmasi Hapus Transaksi & Hapus Baris di Google Sheets */}
-      <Modal isOpen={Boolean(deletingTrx)} onOpenChange={(open) => { if (!open) setDeletingTrx(null); }}>
-        <Modal.Backdrop variant="opaque">
+      <Modal.Backdrop isOpen={Boolean(deletingTrx)} onOpenChange={(open) => { if (!open) setDeletingTrx(null); }} variant="opaque">
           <Modal.Container placement="auto" size="md" className="p-0 sm:p-4">
             <Modal.Dialog className="relative p-0 gap-0 overflow-hidden bg-[var(--overlay)] text-[var(--overlay-foreground)] border-t sm:border border-[var(--border)] rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92dvh] w-full flex flex-col">
               <div className="w-10 h-1 rounded-full bg-[var(--separator)] mx-auto mt-2.5 sm:hidden shrink-0" />
@@ -2858,7 +2859,6 @@ export const SalesHistoryView: React.FC<SalesHistoryViewProps> = ({
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
-      </Modal>
     </div>
   );
 };
